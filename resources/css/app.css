@@ -1,0 +1,126 @@
+@import 'tailwindcss';
+@import 'bootstrap/dist/css/bootstrap.min.css';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+@source '../**/*.blade.php';
+@source '../**/*.js';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+
+/* resources/css/app.css */
+
+/* Stepper adjustments for mobile */
+/* Stepper styling */
+.stepper-wrapper {
+    margin-bottom: 20px;
+    padding: 0 15px;
+}
+
+.stepper-inner {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+}
+
+.step {
+    text-align: center;
+    position: relative;
+    flex: 1;
+}
+
+.step-circle {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 5px;
+    font-weight: bold;
+}
+
+.step.active .step-circle {
+    background-color: #007bff;
+}
+
+.step.completed .step-circle {
+    background-color: #28a745;
+}
+
+.step-label {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Form navigation buttons */
+.form-navigation {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+/* Form sections */
+.form-section {
+    padding: 20px;
+    background: #fff;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+/* Document upload styling */
+.file-upload-wrapper {
+    margin-bottom: 15px;
+}
+
+.file-preview {
+    font-size: 0.9em;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .step-label {
+        display: none;
+    }
+    
+    .step-circle {
+        width: 25px;
+        height: 25px;
+        font-size: 12px;
+    }
+    
+    .form-section {
+        padding: 15px;
+    }
+    
+    .form-navigation {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: white;
+        padding: 10px;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        z-index: 1000;
+    }
+    
+    .step-content {
+        margin-bottom: 70px;
+    }
+}
+
+/* Badge colors */
+.badge.bg-secondary { background-color: #6c757d; }
+.badge.bg-info { background-color: #0dcaf0; }
+.badge.bg-primary { background-color: #0d6efd; }
+.badge.bg-warning { background-color: #ffc107; color: #000; }
+.badge.bg-success { background-color: #198754; }
+.badge.bg-danger { background-color: #dc3545; }

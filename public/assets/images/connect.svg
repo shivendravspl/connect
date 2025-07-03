@@ -1,0 +1,17 @@
+
+<svg width="300" height="120" viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#9b59b6;stop-opacity:1" />
+            <stop offset="50%" style="stop-color:#3498db;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#e74c3c;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <circle cx="80" cy="35" r="20" fill="none" stroke="#3498db" stroke-width="4" opacity="0.8"/>
+    <circle cx="110" cy="35" r="20" fill="none" stroke="#e74c3c" stroke-width="4" opacity="0.8"/>
+    <circle cx="95" cy="55" r="20" fill="none" stroke="#f39c12" stroke-width="4" opacity="0.8"/>
+    <circle cx="95" cy="40" r="6" fill="url(#grad2)"/>
+    <text x="25" y="95" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#2c3e50">C</text>
+    <circle cx="65" cy="87" r="12" fill="none" stroke="#3498db" stroke-width="3"/>
+    <text x="85" y="95" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#2c3e50">NNECT</text>
+</svg>

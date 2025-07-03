@@ -1,0 +1,164 @@
+@extends('layouts.app')
+@push('breadcrumb')
+    <li class="breadcrumb-item active">{{ page_name }}</li>
+@endpush
+@push('bottom_style')
+    <link rel="stylesheet" href="{{URL::to('/')}}/assets/css/bootstrap-grid.min.css">
+@endpush
+@section('content')
+    <div class="page-content-width-full">
+        <div class="content-layout content-width-full js-ak-DataTable">
+            <div class="content-element">
+                <div class="content-header">
+                    <div class="action">
+                        <div class="left">
+                            <form class="search-container">
+                                <input name="{{ parent }}_source" value="{{ parent }}" type="hidden"/>
+                                <input name="{{ parent }}_length" value="{{Request()->query("{{ parent }}_length")}}"
+                                       type="hidden"/>
+                                <div class="search">
+                                    <input type="text" autocomplete="off" placeholder="Search" name="{{ parent }}_search"
+                                           value="{{(Request()->query("{{ parent }}_source") == "{{ parent }}")?Request()->query("{{ parent }}_search")??"":""}}"
+                                           class="form-input js-ak-search-input">
+                                    <button class="search-button" draggable="false">
+                                        @includeIf("layouts.icons.search_icon")
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="right">
+                            <a href="{{route('{{ listRoute }}')}}">Mapped List</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-1">
+                        <span style="font-weight: bold;margin-left: 25px;">↱</span>
+                        <label class="text-primary">
+                            <input id="check_all" type="checkbox" name="" style="display: inline-block!important;"
+                                   class="form-checkbox">
+                        </label>
+                    </div>
+                    <div class="col-md-5">
+                        <select name="{{ parent_mapping_name }}" id="{{ parent_mapping_name }}" class="form-select js-ak-select2">
+                            <option value="">Select {{ parent }}</option>
+                            @foreach(${{ parent }}_list as $key=>$value)
+                                <option value="{{$key}}">{{$value}}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" name="effective_from" autocomplete="off" id="effective_from"
+                               class="form-input js-ak-date-picker" placeholder="Effective Date">
+                    </div>
+                    <div class="col-md-1">
+                        <button class="button primary-button" id="map_btn">Map</button>
+                    </div>
+                </div>
+                <div class="content table-content">
+                    <table class="table js-ak-content">
+                        <thead>
+                        <tr data-sort-method='thead'>
+                            <th>#</th>
+                            <th class="table-id" data-sort-method="number">S.No</th>
+                            {{ table_heading }}
+                        </tr>
+                        </thead>
+                        <tbody>
+                            @foreach(${{ child }}_list as $data)
+                                <tr>
+                                    <td><input type="checkbox" class="form-checkbox check" onclick="checkAllOrNot()" value="{{$data->id}}" name="{{ child_small_case }}_select"></td>
+                                     <td>{{$loop->iteration}}</td>
+                                     {{ table_body }}
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                <div class="content-footer">
+                    <div class="left">
+                        <div class="change-length js-ak-table-length-DataTable"></div>
+                    </div>
+                    <div class="right">
+                        <div class="content-pagination">
+                            <nav class="pagination-container">
+                                <div class="pagination-content">
+                                    <div class="pagination-info js-ak-pagination-info"></div>
+                                    <div class="pagination-box-data-table js-ak-pagination-box"></div>
+                                </div>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+
+@push('bottom_script')
+    <script>
+        $('#check_all').click(function () {
+            if ($(this).prop("checked") === true) {
+                $('.check').prop("checked", true);
+            } else if ($(this).prop("checked") === false) {
+                $('.check').prop("checked", false);
+            }
+        });
+        function checkAllOrNot() {
+            var all_chk = 1;
+            $('.check').each(function () {
+                if ($(this).prop("checked") == false) {
+                    all_chk = 0;
+                }
+            });
+            if (all_chk == 0) {
+                $('#check_all').prop("checked", false);
+            } else if (all_chk == 1) {
+                $('#check_all').prop("checked", true);
+            }
+        }
+
+        $(document).on('click','#map_btn',function(){
+            var {{ child_plural }} = [];
+            var {{ parent_mapping_name }} = $("#{{ parent_mapping_name }}").val();
+            var effective_from = $("#effective_from").val();
+            $("input[name='{{ child_small_case }}_select']").each(function(){
+                if($(this).prop('checked')=== true){
+                    var value = $(this).val();
+                   {{ child_plural }}.push(value);
+                }
+            });
+
+            if({{ child_plural }}.length > 0){
+                if(confirm('Are you sure to map selected {{ child }} to {{ parent }}?')){
+                    $.ajax({
+                        url: "{{url('{{ routeName }}')}}",
+                        method: 'POST',
+                        data:{
+                            {{ child_plural }} : {{ child_plural }},
+                             {{ parent_mapping_name }}:{{ parent_mapping_name }},
+                             effective_from:effective_from
+                        },
+                        headers: {
+                           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success:function(response){
+                            if(response.status === 400){
+                                ToastStart.error('Something went wrong.. Please try again');
+                            }else{
+                                ToastStart.success('{{ child }} Mapped Successfully to {{ parent }}.');
+                            }
+                            setTimeout(function () {
+                                location.reload(true);
+                            }, 2000);
+                        }
+                    });
+                }else{
+                   window.location.reload();
+                }
+            }else{
+                ToastStart.error('No {{ child }} Selected!\nPlease select at least one {{ child }} to proceed.');
+            }
+        });
+    </script>
+@endpush

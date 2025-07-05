@@ -25,7 +25,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\DistributorApplicationController;
 use Illuminate\Support\Facades\DB;
-
+use App\Http\Controllers\ApprovalController;
 
 
 
@@ -35,7 +35,16 @@ Route::get('/', function () {
 
 Auth::routes();
 
-Route::get('/home', [HomeController::class, 'index'])->name('home');
+// Redirect /home to /dashboard for consistency
+Route::get('/home', function () {
+    return redirect()->route('dashboard');
+});
+
+// Main dashboard route - accessible to all authenticated users
+Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard')->middleware('auth');
+Route::get('/dashboard/status-counts', [HomeController::class, 'statusCounts'])
+    ->name('dashboard.status-counts')
+    ->middleware('auth');
 
 Route::middleware('auth')->group(function () {
     // Change Password Routes (accessible to all authenticated users)
@@ -162,7 +171,6 @@ Route::middleware('auth')->group(function () {
                 ->where('core_region.is_active', 1)
                 ->pluck('core_region.region_name', 'core_region.id')
                 ->toArray();
-            
             return response()->json(['regions' => $regions]);
         });
         
@@ -212,16 +220,19 @@ Route::middleware(['auth'])->group(function () {
         ->except(['destroy']);
     Route::post('/applications/save-step/{stepNumber}', [DistributorApplicationController::class, 'saveStep'])->name('applications.save-step');
     Route::post('/applications/remove-document/{application_id}', [DistributorApplicationController::class, 'removeDocument'])->name('applications.remove-document');
+     // Submit application to start approval workflow
+    Route::post('/distributor-applications/{application}/submit', [DistributorApplicationController::class, 'submitApplication'])->name('applications.submit');
     
-    Route: Route::get('/get-districts/{state_id}', [DistributorApplicationController::class, 'getDistricts']);
-    // Approval workflow
-    Route::prefix('applications/{application}')->group(function () {
-        Route::post('approve', [ApprovalController::class, 'approve'])->name('applications.approve');
-        Route::post('reject', [ApprovalController::class, 'reject'])->name('applications.reject');
-        Route::post('revert', [ApprovalController::class, 'revert'])->name('applications.revert');
-        Route::post('hold', [ApprovalController::class, 'hold'])->name('applications.hold');
+    Route::get('/get-districts/{state_id}', [DistributorApplicationController::class, 'getDistricts']);
+      // Approval routes
+    Route::prefix('approvals')->group(function () {
+        Route::get('/dashboard', [ApprovalController::class, 'dashboard'])->name('approvals.dashboard');
+        Route::get('/{application}', [ApprovalController::class, 'show'])->name('approvals.show');
+        Route::post('/{application}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
+        Route::post('/{application}/reject', [ApprovalController::class, 'reject'])->name('approvals.reject');
+        Route::post('/{application}/revert', [ApprovalController::class, 'revert'])->name('approvals.revert');
+        Route::post('/{application}/hold', [ApprovalController::class, 'hold'])->name('approvals.hold');
     });
-    
     // Document management
     Route::post('applications/{application}/documents', [DocumentController::class, 'store'])->name('documents.store');
     Route::post('documents/{document}/verify', [DocumentController::class, 'verify'])->name('documents.verify');

@@ -28,7 +28,6 @@ class Declaration extends Model
     // Optional: relationship with the application model if defined
     public function application()
     {
-        dd(1);
          return $this->belongsTo(DistributorApplication::class, 'application_id', 'id');
     }
 }

@@ -44,12 +44,12 @@
                                         </td>
                                         <td>{{ $application->created_at->format('d-M-Y') }}</td>
                                         <td>
-                                            <a href="{{ route('applications.show', $application) }}" class="btn btn-sm btn-info">
-                                                <i class="fas fa-eye"></i>
+                                            <a href="{{ route('applications.show', $application) }}" class="btn btn-lg btn-info">
+                                                <i class="bx bx-show fs-14"></i>
                                             </a>
                                             @if(in_array($application->status, ['draft', 'reverted']))
-                                            <a href="{{ route('applications.edit', $application) }}" class="btn btn-sm btn-warning">
-                                                <i class="fas fa-edit"></i>
+                                            <a href="{{ route('applications.edit', $application) }}" class="btn btn-sm btn-info edit-user">
+                                                <i class="bx bx-pencil fs-14"></i>
                                             </a>
                                             @endif
                                         </td>

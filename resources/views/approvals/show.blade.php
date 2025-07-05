@@ -33,7 +33,7 @@
 
 @section('content')
 <div class="container mt-5">
-    <h2 class="mb-4">Distributor Application - View (Application ID: {{ $application->application_code }})</h2>
+    <h2 class="mb-4">Distributor Application - Review (Application ID: {{ $application->application_code }})</h2>
     <div class="card">
         <div class="card-body">
             <!-- Application Status -->
@@ -918,7 +918,7 @@
         <h5>Take Action</h5>
     </div>
     <div class="card-body">
-        <form action="{{ route('approvals.approve', $application) }}" method="POST" class="d-inline">
+        <form id="approve-form" action="{{ route('approvals.approve', $application) }}" method="POST" class="d-inline">
             @csrf
             <div class="mb-3">
                 <label for="approveRemarks" class="form-label">Remarks (Optional)</label>
@@ -1025,6 +1025,13 @@
 @endsection
 
 @push('scripts')
+<script>
+   document.getElementById('approve-form').addEventListener('submit', function() {
+        document.querySelectorAll('.card-body button').forEach(button => {
+            button.disabled = true;
+        });
+    });
+</script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 @endpush

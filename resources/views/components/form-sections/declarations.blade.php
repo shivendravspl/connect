@@ -164,18 +164,6 @@
         </div>
     </div>
 
-    <!-- Form Filled By Section -->
-    <div class="card mt-4">
-        <div class="card-body">
-            <h6 class="mb-3">Form Filled By</h6>
-            <div class="form-group mb-3">
-                <label class="form-label">Name</label>
-                <p class="form-control-plaintext">{{ Auth::user()->name }}</p>
-            </div>
-        </div>
-    </div>
-
-
     <!-- Hidden inputs -->
     <input type="hidden" name="current_step" value="8">
 </div>

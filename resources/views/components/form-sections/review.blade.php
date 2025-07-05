@@ -1,3 +1,4 @@
+<!-- Review Section -->
 <div id="review" class="form-section">
     <h5 class="mb-4">Review & Submit</h5>
     
@@ -22,6 +23,8 @@
             I confirm that all the information provided in this application is accurate to the best of my knowledge.
         </label>
     </div>
+
+    {{--<button type="button" class="btn btn-primary" id="submit-application">Submit Application</button>--}}
 </div>
 
 @push('scripts')
@@ -47,21 +50,6 @@ $(document).ready(function() {
             year: 'numeric'
         });
 
-        // Get verification data (replace with your actual data source)
-        const verificationData = {
-            filledBy: getValue('#applicant_name'),
-            verifiers: [
-                {
-                    name: "Amir Khan", // Should come from your system
-                    designation: "Area Business Manager"
-                },
-                {
-                    name: "Surendra", // Should come from your system
-                    designation: "Regional Business Manager"
-                }
-            ]
-        };
-
         // Build business plans HTML
         let businessPlansHtml = '<ul>';
         $('[name^="business_plans["]').each(function() {
@@ -76,47 +64,7 @@ $(document).ready(function() {
         });
         businessPlansHtml += businessPlansHtml === '<ul>' ? '<li>No business plans added</li></ul>' : '</ul>';
 
-        // Build verification HTML
-        let verificationHtml = `
-        <div class="verification-section mt-4">
-            <h6>Verification Details</h6>
-            <div class="row">
-                <div class="col-md-6">
-                    <p><strong>Form Filled by:</strong> ${verificationData.filledBy}</p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Date:</strong> ${today}</p>
-                </div>
-            </div>
-            
-            <div class="mt-3">
-                <p><strong>Verified by VNR Seeds Pvt. Ltd.</strong></p>
-                <div class="table-responsive">
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Designation</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>`;
-        
-        verificationData.verifiers.forEach(verifier => {
-            verificationHtml += `
-                            <tr>
-                                <td>${verifier.name}</td>
-                                <td>${verifier.designation}</td>
-                                <td>${today}</td>
-                            </tr>`;
-        });
-        
-        verificationHtml += `
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>`;
+       
 
         // Build complete summary HTML
         const summaryHtml = `
@@ -153,21 +101,56 @@ $(document).ready(function() {
                 <h6>Business Plan</h6>
                 ${businessPlansHtml}
             </div>
-        </div>
-        ${verificationHtml}`;
+        </div>`;
 
         $('#review-summary').html(summaryHtml);
     }
 
-    // Generate summary immediately when page loads (for testing)
-    generateReviewSummary();
-    
-    // Also generate when review section is shown via navigation
+    // Generate summary when review section is shown
     $(document).on('click', '.next', function() {
         if ($(this).closest('.form-navigation').prev().attr('id') === 'review') {
             generateReviewSummary();
         }
     });
+
+    // Handle final submission
+    $('#submit-application').on('click', function() {
+        if (!$('#confirm_accuracy').is(':checked')) {
+            alert('Please confirm the accuracy of the information before submitting.');
+            return;
+        }
+
+        const applicationId = $('#application_id').val(); // Ensure application_id is stored in a hidden input
+        if (!applicationId) {
+            alert('Error: Application ID is missing.');
+            return;
+        }
+
+        $.ajax({
+            url: `/distributor-applications/${applicationId}/submit`,
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                confirm_accuracy: true
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    window.location.href = '/dashboard'; // Redirect to dashboard or success page
+                } else {
+                    alert('Error: ' + response.error);
+                }
+            },
+            error: function(xhr) {
+                alert('Error: ' + (xhr.responseJSON.error || 'Failed to submit application.'));
+            }
+        });
+    });
+
+    // Generate summary immediately when page loads
+    generateReviewSummary();
 });
 </script>
 @endpush

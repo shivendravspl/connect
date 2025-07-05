@@ -67,14 +67,14 @@
                         {{--<div class="step-content" data-step="9" style="display:none;">
                             @include('components.form-sections.documents', ['application' => $application])
                         </div>--}}
-                        <div class="step-content" data-step="9" style="display:none;">
+                        {{--<div class="step-content" data-step="9" style="display:none;">
                             @include('components.form-sections.review', ['application' => $application])
-                        </div>
+                        </div>--}}
 
                         <div class="form-navigation mt-4">
                             <button type="button" class="btn btn-secondary previous" style="display:none;">Previous</button>
                             <button type="button" class="btn btn-primary next">Next</button>
-                            <button type="submit" class="btn btn-success submit" style="display:none;" name="submit">Submit Application</button>
+                            <button type="submit" class="btn btn-success submit" style="display:none;" name="submit" id="submit-application">Submit Application</button>
                         </div>
                     </form>
                 </div>

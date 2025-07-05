@@ -9,8 +9,8 @@
         $businessPlans = old('business_plans', []);
         
         // If editing existing application
-        if(isset($application->businessPlans) && $application->businessPlans->count() > 0) {
-            $businessPlans = $application->businessPlans->map(function($plan) use ($year2025, $year2026) {
+        if(isset($application->businessPlan) && $application->businessPlan->count() > 0) {
+            $businessPlans = $application->businessPlan->map(function($plan) use ($year2025, $year2026) {
                 return [
                     'crop' => $plan->crop,
                     'fy2025_26' => $plan->yearly_targets[$year2025->id] ?? '',

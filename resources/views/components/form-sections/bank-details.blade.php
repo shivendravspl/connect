@@ -2,7 +2,7 @@
     <h5 class="mb-4">Bank Details</h5>
 
     @php
-    $bankDetails = $application->bankDetails ?? null;
+    $bankDetails = $application->bankDetail ?? null;
     @endphp
 
     <div class="row">

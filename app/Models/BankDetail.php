@@ -26,4 +26,9 @@ class BankDetail extends Model
     ];
 
     public $timestamps = true;
+
+     public function application()
+    {
+        return $this->belongsTo(DistributorApplication::class, 'application_id', 'id');
+    }
 }

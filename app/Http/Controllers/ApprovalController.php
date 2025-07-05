@@ -6,146 +6,209 @@ use App\Models\DistributorApplication;
 use App\Models\ApprovalLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Notifications\ApplicationApproved;
-use App\Notifications\ApplicationRejected;
-use App\Notifications\ApplicationReverted;
-use App\Notifications\ApplicationOnHold;
+use App\Models\Employee;
 
 class ApprovalController extends Controller
 {
+   
+    public function show(DistributorApplication $application)
+    {
+        $user = Auth::user();
+        // Authorization check - only approver or creator can view
+        if ($application->current_approver_id !== $user->emp_id && $application->created_by !== $user->emp_id) {
+            abort(403);
+        }
+
+        $application->load([
+            'entityDetails',
+            'distributionDetail',
+            'businessPlan',
+            'financialInfo',
+            'existingDistributorships',
+            'bankDetail',
+            'declarations',
+            'approvalLogs.user'
+        ]);
+
+        return view('approvals.show', compact('application'));
+    }
+
     public function approve(Request $request, DistributorApplication $application)
     {
-        $this->authorize('approve', $application);
-        
-        $validated = $request->validate([
-            'remarks' => 'nullable|string|max:500',
-        ]);
-        
-        $nextStatus = $this->getNextStatus($application->status);
-        
-        $approvalLog = $application->approvalLogs()->create([
-            'user_id' => Auth::id(),
-            'role' => $application->currentApproverRole(),
-            'action' => 'approve',
-            'remarks' => $validated['remarks'] ?? null,
-        ]);
-        
-        $application->update(['status' => $nextStatus]);
-        
-        // Notify next approver or applicant if final approval
-        if ($nextStatus === 'gm_approved') {
-            $this->notifyMIS($application);
-        } elseif ($nextStatus === 'completed') {
-            $application->creator->notify(new ApplicationApproved($application));
-        } else {
-            $this->notifyNextApprover($application);
+        // Authorization check
+        $user = Auth::user();
+        if ($application->current_approver_id !== $user->emp_id) {
+            abort(403);
         }
-        
-        return redirect()->back()
-            ->with('success', 'Application approved successfully!');
+
+        // Get next approval level based on current level
+        $nextLevel = $this->getNextApprovalLevel($application->approval_level);
+
+          // Create approval log
+        ApprovalLog::create([
+            'application_id' => $application->id,
+            'user_id' => $user->emp_id,
+            'role' => $application->approval_level,
+            'action' => 'approve',
+            'remarks' => $request->remarks ?? null
+        ]);
+        // Update application status
+        if ($nextLevel === 'completed') {
+            $application->update([
+                'status' => 'approved',
+                'current_approver_id' => $user->emp_id,
+                'approval_level' => 'completed'
+            ]);
+        } else {
+            $nextApproverId = $this->getNextApproverId($nextLevel, $user->emp_id);
+            $application->update([
+                'status' => 'submitted',
+                'current_approver_id' => $nextApproverId,
+                'approval_level' => $nextLevel
+            ]);
+        }
+      
+
+        // TODO: Send notification to next approver or creator
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Application approved successfully');
     }
-    
+
     public function reject(Request $request, DistributorApplication $application)
-    {
-        $this->authorize('approve', $application);
-        
-        $validated = $request->validate([
-            'remarks' => 'required|string|max:500',
+    {   
+        // Authorization check
+        $user = Auth::user();
+        if ($application->current_approver_id !== $user->emp_id) {
+            abort(403);
+        }
+
+        $request->validate([
+            'remarks' => 'required|string'
         ]);
-        
-        $approvalLog = $application->approvalLogs()->create([
-            'user_id' => Auth::id(),
-            'role' => $application->currentApproverRole(),
+
+            // Create approval log
+        ApprovalLog::create([
+            'application_id' => $application->id,
+            'user_id' => $user->emp_id,
+            'role' => $application->approval_level,
             'action' => 'reject',
-            'remarks' => $validated['remarks'],
+            'remarks' => $request->remarks
         ]);
-        
-        $application->update(['status' => 'rejected']);
-        
-        $application->creator->notify(new ApplicationRejected($application));
-        
-        return redirect()->back()
-            ->with('success', 'Application rejected successfully!');
+        // Update application status
+        $application->update([
+            'status' => 'rejected',
+            'current_approver_id' => $user->emp_id
+        ]);
+
+        // TODO: Send notification to creator
+
+        return redirect()->route('dashboard')
+            ->with('success', 'Application rejected successfully');
     }
-    
+
     public function revert(Request $request, DistributorApplication $application)
     {
-        $this->authorize('approve', $application);
-        
-        $validated = $request->validate([
-            'remarks' => 'required|string|max:500',
+        // Authorization check
+        $user = Auth::user();
+        if ($application->current_approver_id !== $user->emp_id) {
+            abort(403);
+        }
+
+        $request->validate([
+            'remarks' => 'required|string'
         ]);
-        
-        $approvalLog = $application->approvalLogs()->create([
-            'user_id' => Auth::id(),
-            'role' => $application->currentApproverRole(),
+
+        // Create approval log
+        ApprovalLog::create([
+            'application_id' => $application->id,
+            'user_id' => $user->emp_id,
+            'role' => $application->approval_level,
             'action' => 'revert',
-            'remarks' => $validated['remarks'],
+            'remarks' => $request->remarks
         ]);
-        
-        $application->update(['status' => 'reverted']);
-        
-        $application->creator->notify(new ApplicationReverted($application));
-        
-        return redirect()->back()
-            ->with('success', 'Application reverted to applicant successfully!');
+        // Update application status
+        $application->update([
+            'status' => 'reverted',
+            'current_approver_id' => $user->emp_id
+        ]);
+
+     
+
+        // TODO: Send notification to creator
+        return redirect()->route('dashboard')
+            ->with('success', 'Application reverted successfully');
     }
-    
+
     public function hold(Request $request, DistributorApplication $application)
     {
-        $this->authorize('approve', $application);
-        
-        $validated = $request->validate([
-            'remarks' => 'required|string|max:500',
-            'follow_up_date' => 'required|date|after:today',
-        ]);
-        
-        $approvalLog = $application->approvalLogs()->create([
-            'user_id' => Auth::id(),
-            'role' => $application->currentApproverRole(),
-            'action' => 'hold',
-            'remarks' => $validated['remarks'],
-            'follow_up_date' => $validated['follow_up_date'],
-        ]);
-        
-        $application->update(['status' => 'on_hold']);
-        
-        $application->creator->notify(new ApplicationOnHold($application));
-        
-        return redirect()->back()
-            ->with('success', 'Application put on hold successfully!');
-    }
-    
-    protected function getNextStatus($currentStatus)
-    {
-        $statusFlow = [
-            'submitted' => 'rbm_approved',
-            'rbm_approved' => 'zbm_approved',
-            'zbm_approved' => 'gm_approved',
-            'gm_approved' => 'completed',
-        ];
-        
-        return $statusFlow[$currentStatus] ?? $currentStatus;
-    }
-    
-    protected function notifyNextApprover($application)
-    {
-        $nextRole = $application->currentApproverRole();
-        $approvers = User::role($nextRole)
-            ->where('region', $application->region)
-            ->get();
-            
-        foreach ($approvers as $approver) {
-            $approver->notify(new ApplicationApprovalRequired($application));
+        // Authorization check
+        $user = Auth::user();
+        if ($application->current_approver_id !== $user->emp_id) {
+            abort(403);
         }
+
+        $request->validate([
+            'remarks' => 'required|string',
+            'follow_up_date' => 'required|date'
+        ]);
+
+         // Create approval log
+        ApprovalLog::create([
+            'application_id' => $application->id,
+            'user_id' => $user->emp_id,
+            'role' => $application->approval_level,
+            'action' => 'hold',
+            'remarks' => $request->remarks,
+            'follow_up_date' => $request->follow_up_date
+        ]);
+        // Update application status
+        $application->update([
+            'status' => 'on_hold',
+            'current_approver_id' => $user->emp_id // Keep with current approver
+        ]);
+
+        // TODO: Set up reminder notification for follow-up date
+
+        return redirect()->route('dashboard')
+             ->with('success', 'Application put on hold successfully');
     }
-    
-    protected function notifyMIS($application)
+
+    private function getNextApprovalLevel($currentLevel)
     {
-        $misUsers = User::role('mis')->get();
-        
-        foreach ($misUsers as $user) {
-            $user->notify(new ApplicationReadyForProcessing($application));
+        $currentLevel = strtolower($currentLevel); // Normalize input
+        $levels = [
+            null => 'rbm', // Initial submission goes to RBM
+            'rbm' => 'zbm',
+            'zbm' => 'gm',
+            'gm' => 'completed'
+        ];
+
+        return $levels[$currentLevel] ?? 'completed';
+    }
+
+    private function getNextApproverId($nextLevel, $currentUserEmpId)
+    {
+        // This is a simplified version - you'll need to implement your own logic
+        // based on your organizational hierarchy
+        switch ($nextLevel) {
+            case 'rbm':
+                // Get RBM for the application's region
+                return Employee::where('id', $currentUserEmpId)
+                    ->value('emp_reporting');
+                
+            case 'zbm':
+                // Get ZBM for the application's zone
+                return Employee::where('id', $currentUserEmpId)
+                    ->value('emp_reporting');
+                    
+            case 'gm_sales':
+                // Get GM Sales
+                return Employee::where('id', $currentUserEmpId)
+                    ->value('id');
+                    
+            default:
+                return null;
         }
     }
 }

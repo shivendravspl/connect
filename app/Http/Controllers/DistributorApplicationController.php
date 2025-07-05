@@ -9,8 +9,9 @@ use App\Models\BankDetail;
 use App\Models\BusinessPlan;
 use App\Models\FinancialInfo;
 use App\Models\ExistingDistributorship;
-use App\Models\Declaration;
 use App\Models\Document;
+use App\Models\Employee;
+use App\Models\ApprovalLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -352,23 +353,20 @@ class DistributorApplicationController extends Controller
 
     public function show(DistributorApplication $application)
     {
-        $this->authorize('view', $application);
+       // $this->authorize('view', $application);
 
         $application->load([
             'entityDetails',
-            'DistributionDetail',
+            'distributionDetail',
             'bankDetail',
-            'BusinessPlan',
+            'businessPlan',
             'financialInfo',
             'existingDistributorships',
             'declarations',
-            'documents',
             'approvalLogs.user',
-            'agreement',
-            'securityDeposits',
-            'securityCheques'
         ]);
-
+        //dd($application->entityDetails->documents_data);
+        // Pass additional data (e.g., territory_list, region_list) if needed
         return view('applications.show', compact('application'));
     }
 
@@ -2193,7 +2191,6 @@ class DistributorApplicationController extends Controller
             Log::error('saveStep8: Application ID is missing.');
             return response()->json(['success' => false, 'error' => 'Application ID is missing.'], 400);
         }
-
         // Log incoming request data for debugging
         Log::debug('saveStep8 request data:', $request->all());
         Log::debug('has_question_j specific:', [
@@ -2371,15 +2368,41 @@ class DistributorApplicationController extends Controller
             // Insert new declarations
             DB::table('declarations')->insert($data);
 
+         // Get the current user from core_employee
+        $currentUser = Employee::where('id', $user->emp_id)->first();
+        if (!$currentUser) {
+            Log::error('saveStep8: Current user not found in core_employee.', ['user_id' => $user->id]);
+            return response()->json(['success' => false, 'error' => 'User not found.'], 404);
+        }
+        // Determine approval level and approver based on territory, region, zone, and bu
+         $approverData = $this->getApproverIdAndLevel($currentUser);
+        if (!$approverData) {
+            Log::error('saveStep8: Approver not found or invalid designation.', [
+                'user_id' => $user->id,
+                'emp_reporting' => $currentUser->emp_reporting
+            ]);
+            return response()->json(['success' => false, 'error' => 'Approver not assigned or invalid designation.'], 404);
+        }
+
+        $approverId = $approverData['approverId'];
+        $approvalLevel = $approverData['approvalLevel'];
+
             //Update application status (uncomment if needed)
-            // DB::table('distributor_applications')
-            //     ->where('id', $application_id)
-            //     ->update(['status' => 'submitted']);
+            DB::table('distributor_applications')
+                ->where('id', $application_id)
+                ->update([
+                    'status' => 'submitted',
+                    'current_approver_id' => $approverId,
+                    'approval_level' => $approvalLevel,
+                    'updated_at' => now()
+                 ]);
 
             DB::commit();
+            //$this->sendNotification($application_id, $approverId, 'submitted');
             Log::info('saveStep8: Declarations saved successfully for application_id: ' . $application_id);
             return response()->json([
                 'success' => true,
+                'redirect' => route('applications.index'),
                 'message' => 'Step 8 saved successfully!',
                 'application_id' => $application_id
             ]);
@@ -2389,6 +2412,64 @@ class DistributorApplicationController extends Controller
             return response()->json(['success' => false, 'error' => 'Failed to save step 8.'], 500);
         }
     }
+
+    private function getApproverIdAndLevel($employee)
+{
+    // Map designations to integer approval levels
+    $designationMap = [
+        'Regional Business Manager' => 'rbm',
+        'Zonal Business Manager' => 'zbm',
+        'General Manager' => 'gm'
+    ];
+
+    // Fetch the manager directly using emp_reporting
+    $approverId = $employee->emp_reporting;
+    if (!$approverId) {
+        Log::error('No manager found for employee.', ['employee_id' => $employee->id]);
+        return null;
+    }
+
+    // Fetch the manager's details
+    $manager = Employee::where('id', $approverId)->first();
+    if (!$manager) {
+        Log::error('Manager not found in core_employee.', ['manager_id' => $approverId]);
+        return null;
+    }
+
+    // Determine approval level based on manager's designation
+    $approvalLevel = $designationMap[$manager->emp_designation] ?? null;
+    if (!$approvalLevel) {
+        Log::warning('Manager designation not mapped to an approval level.', [
+            'employee_id' => $employee->id,
+            'manager_id' => $manager->id,
+            'manager_designation' => $manager->emp_designation
+        ]);
+        return null;
+    }
+
+    return [
+        'approverId' => $approverId,
+        'approvalLevel' => $approvalLevel
+    ];
+}
+
+// private function sendNotification($application_id, $approver_id, $action)
+// {
+//     $application = DistributorApplication::find($application_id);
+//     $recipient = Employee::find($approver_id);
+
+//     if ($recipient) {
+//         Mail::to($recipient->emp_email)->send(new ApplicationActionNotification($application, $action));
+//     }
+
+//     // CC Business Head for GM approval
+//     if ($application->approval_level === 3 && $action === 'submitted') {
+//         $businessHead = Employee::where('emp_designation', 'Business Head')->first();
+//         if ($businessHead) {
+//             Mail::to($businessHead->emp_email)->send(new ApplicationActionNotification($application, $action));
+//         }
+//     }
+// }
 
 
     // private function saveStep9(Request $request, $user, $application_id)
@@ -2646,64 +2727,4 @@ class DistributorApplicationController extends Controller
         }
     }
 
-     public function submitApplication(Request $request, DistributorApplication $application)
-    {
-        try {
-            $user = Auth::user();
-            if ($application->created_by !== $user->id) {
-                return response()->json(['success' => false, 'error' => 'Unauthorized'], 403);
-            }
-
-            if ($application->status !== 'draft') {
-                return response()->json(['success' => false, 'error' => 'Application is not in draft status.'], 400);
-            }
-
-            // Validate the confirm_accuracy checkbox
-            $validated = $request->validate([
-                'confirm_accuracy' => 'required|accepted',
-            ], [
-                'confirm_accuracy.required' => 'You must confirm the accuracy of the information.',
-                'confirm_accuracy.accepted' => 'You must confirm the accuracy of the information.'
-            ]);
-
-            // Get the initiator's employee record
-            $initiator = $user->employee;
-            if (!$initiator) {
-                return response()->json(['success' => false, 'error' => 'Your employee record could not be found.'], 404);
-            }
-
-            // Find the first approver (RBM)
-            $firstApprover = $initiator->manager;
-            if (!$firstApprover || !$firstApprover->user) {
-                return response()->json(['success' => false, 'error' => 'Your reporting manager is not configured or does not have a user account.'], 404);
-            }
-
-            // Update application status and assign to RBM
-            $application->status = 'submitted';
-            $application->current_approver_id = $firstApprover->user->id;
-            $application->approval_level = 1; // Level 1: RBM
-            $application->save();
-
-            // Log the submission
-            ApprovalLog::create([
-                'application_id' => $application->id,
-                'user_id' => $user->id,
-                'role' => $initiator->emp_designation,
-                'action' => 'Submitted',
-                'remarks' => 'Application submitted for approval.'
-            ]);
-
-            // Notify RBM and initiator
-            $firstApprover->user->notify(new \App\Notifications\ApprovalRequired($application));
-            $application->creator->notify(new \App\Notifications\ApplicationStatusUpdated($application, 'Submitted'));
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Application submitted and sent to Regional Business Manager for approval.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error("Error in submitApplication: " . $e->getMessage());
-            return response()->json(['success' => false, 'error' => 'An unexpected error occurred.'], 500);
-        }
-    }
 }

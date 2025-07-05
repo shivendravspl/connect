@@ -80,14 +80,14 @@
                         </div> --}}
                         
                         <!-- Step 10: Review -->
-                        <div class="step-content" data-step="9" style="display:none;">
+                        {{--<div class="step-content" data-step="9" style="display:none;">
                             @include('components.form-sections.review')
-                        </div>
+                        </div>--}}
                         
                         <div class="form-navigation mt-4">
                             <button type="button" class="btn btn-secondary previous" style="display:none;">Previous</button>
                             <button type="button" class="btn btn-primary next">Next</button>
-                            <button type="submit" class="btn btn-success submit" style="display:none;">Submit Application</button>
+                            <button  id="submit-application" type="submit" class="btn btn-success submit" style="display:none;">Submit Application</button>
                         </div>
                     </form>
                 </div>

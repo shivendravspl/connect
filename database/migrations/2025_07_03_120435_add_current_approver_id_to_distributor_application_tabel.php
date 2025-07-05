@@ -14,7 +14,7 @@ return new class extends Migration
                 }
 
                 if (!Schema::hasColumn('distributor_applications', 'approval_level')) {
-                    $table->unsignedBigInteger('approval_level')->nullable()->after('current_approver_id');
+                    $table->string('approval_level')->nullable()->after('current_approver_id');
                 }
             });
         }

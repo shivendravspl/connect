@@ -11,10 +11,7 @@ class Agreement extends Model
         'status', 'created_by'
     ];
     
-    public function application()
-    {
-        return $this->belongsTo(DistributorApplication::class);
-    }
+
     
     public function creator()
     {

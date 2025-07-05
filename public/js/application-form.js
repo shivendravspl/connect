@@ -335,12 +335,6 @@ $(document).ready(function() {
                     if (field.attr('type') === 'file') {
                         if (field[0].files.length > 0) {
                             formData.append(field.attr('name'), field[0].files[0]);
-                        } else if (stepNumber === 9 && !removedDocuments[field.attr('name').replace('documents[', '').replace(']', '')]) {
-                            const preview = field.siblings('.file-preview');
-                            const fileLink = preview.find('a').attr('href');
-                            if (fileLink) {
-                                formData.append(`${field.attr('name')}_existing`, fileLink);
-                            }
                         }
                     } else if (field.attr('id') === 'area_covered') {
                         const values = (field.val() || []).filter(val => val !== null && val !== undefined);
@@ -355,13 +349,7 @@ $(document).ready(function() {
                 });
             }
 
-            if (stepNumber === 9) {
-                for (const type in removedDocuments) {
-                    if (removedDocuments[type]) {
-                        formData.append(`remove_documents[${type}]`, '1');
-                    }
-                }
-            }
+         
 
             formData.append('current_step', stepNumber);
             formData.append('application_id', $('#application_id').val() || '');
@@ -387,11 +375,13 @@ $(document).ready(function() {
                                 value: response.application_id
                             }).appendTo(formElement);
                         }
-                        if (stepNumber === 9) {
-                            removedDocuments = {};
-                        }
-                        resolve(response);
+                        
                         showSidebarNotification(response.message, 'success');
+                        if (response.redirect) {
+                            window.location.href = response.redirect;
+                        } else {
+                            resolve(response);
+                        }
                     } else {
                         showSidebarNotification(response.error || 'Failed to save data', 'error');
                         reject(response.error);
@@ -550,40 +540,7 @@ $(document).ready(function() {
             }
         });
 
-        if (stepNumber === 9) {
-            const optionalFileInputs = [
-                { id: '#gst_certificate', label: 'GST Certificate' },
-                { id: '#seed_license', label: 'Seed License' },
-                { id: '#other_document', label: 'Other Relevant Document' }
-            ];
-
-            optionalFileInputs.forEach(input => {
-                const $input = $(input.id);
-                if ($input.length === 0) {
-                    console.error(`Input element with ID ${input.id} not found in the DOM for step ${stepNumber}`);
-                    errors.push(`${input.label} input field is missing`);
-                    return;
-                }
-                const file = $input[0]?.files?.[0];
-                if (file) {
-                    const maxSize = 2 * 1024 * 1024;
-                    if (file.size > maxSize) {
-                        $input.addClass('is-invalid');
-                        $input.closest('.file-upload-wrapper').append(`<div class="invalid-feedback text-danger">File size must not exceed 2MB</div>`);
-                        isValid = false;
-                        errors.push(`${input.label}: File size must not exceed 2MB`);
-                    }
-                    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-                    if (!allowedTypes.includes(file.type)) {
-                        $input.addClass('is-invalid');
-                        $input.closest('.file-upload-wrapper').append(`<div class="invalid-feedback text-danger">Only PDF, JPG, JPEG, or PNG files are allowed</div>`);
-                        isValid = false;
-                        errors.push(`${input.label}: Only PDF, JPG, JPEG, or PNG files are allowed`);
-                    }
-                }
-            });
-        }
-
+       
         if (!isValid) {
             showSidebarNotification('Please complete all required fields:<br>' + errors.join('<br>'), 'error');
             currentSection.find('.is-invalid').first().focus();

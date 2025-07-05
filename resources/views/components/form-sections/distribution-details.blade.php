@@ -9,7 +9,7 @@
                 <select id="area_covered" name="area_covered[]" style="width: 100%;" multiple required>
                     @php
                         // Get areas from old input or database
-                        $selectedAreas = old('area_covered', $application->distributionDetails->area_covered ?? []);
+                        $selectedAreas = old('area_covered', $application->distributionDetail->area_covered ?? []);
 
                         // Handle malformed JSON or string
                         if (is_string($selectedAreas)) {
@@ -55,9 +55,9 @@
             <div class="form-group mb-3">
                 <label for="appointment_type" class="form-label">Appointment Type *</label>
                 <select class="form-select" id="appointment_type" name="appointment_type" required>
-                    <option value="new_area" {{ old('appointment_type', $application->distributionDetails->appointment_type ?? '') == 'new_area' ? 'selected' : '' }}>New Area</option>
-                    <option value="replacement" {{ old('appointment_type', $application->distributionDetails->appointment_type ?? '') == 'replacement' ? 'selected' : '' }}>Replacement of an existing Distributor</option>
-                    <option value="addition" {{ old('appointment_type', $application->distributionDetails->appointment_type ?? '') == 'addition' ? 'selected' : '' }}>Addition in current distributor area</option>
+                    <option value="new_area" {{ old('appointment_type', $application->distributionDetail->appointment_type ?? '') == 'new_area' ? 'selected' : '' }}>New Area</option>
+                    <option value="replacement" {{ old('appointment_type', $application->distributionDetail->appointment_type ?? '') == 'replacement' ? 'selected' : '' }}>Replacement of an existing Distributor</option>
+                    <option value="addition" {{ old('appointment_type', $application->distributionDetail->appointment_type ?? '') == 'addition' ? 'selected' : '' }}>Addition in current distributor area</option>
                 </select>
                 @error('appointment_type')
                     <div class="text-danger">{{ $message }}</div>
@@ -71,7 +71,7 @@
             <div class="col-md-12">
                 <div class="form-group mb-3">
                     <label for="replacement_reason" class="form-label">Reason for Replacement *</label>
-                    <textarea class="form-control" id="replacement_reason" name="replacement_reason" rows="2">{{ old('replacement_reason', $application->distributionDetails->replacement_reason ?? '') }}</textarea>
+                    <textarea class="form-control" id="replacement_reason" name="replacement_reason" rows="2">{{ old('replacement_reason', $application->distributionDetail->replacement_reason ?? '') }}</textarea>
                     @error('replacement_reason')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
@@ -83,7 +83,7 @@
             <div class="col-md-12">
                 <div class="form-group mb-3">
                     <label for="outstanding_recovery" class="form-label">Commitment to Recover Outstanding *</label>
-                    <textarea class="form-control" id="outstanding_recovery" name="outstanding_recovery" rows="2">{{ old('outstanding_recovery', $application->distributionDetails->outstanding_recovery ?? '') }}</textarea>
+                    <textarea class="form-control" id="outstanding_recovery" name="outstanding_recovery" rows="2">{{ old('outstanding_recovery', $application->distributionDetail->outstanding_recovery ?? '') }}</textarea>
                     @error('outstanding_recovery')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
@@ -95,7 +95,7 @@
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="previous_firm_name" class="form-label">Name of Previous Firm *</label>
-                    <input type="text" class="form-control" id="previous_firm_name" name="previous_firm_name" value="{{ old('previous_firm_name', $application->distributionDetails->previous_firm_name ?? '') }}">
+                    <input type="text" class="form-control" id="previous_firm_name" name="previous_firm_name" value="{{ old('previous_firm_name', $application->distributionDetail->previous_firm_name ?? '') }}">
                     @error('previous_firm_name')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
@@ -104,7 +104,7 @@
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     <label for="previous_firm_code" class="form-label">Code of Previous Firm *</label>
-                    <input type="text" class="form-control" id="previous_firm_code" name="previous_firm_code" value="{{ old('previous_firm_code', $application->distributionDetails->previous_firm_code ?? '') }}">
+                    <input type="text" class="form-control" id="previous_firm_code" name="previous_firm_code" value="{{ old('previous_firm_code', $application->distributionDetail->previous_firm_code ?? '') }}">
                     @error('previous_firm_code')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
@@ -118,7 +118,7 @@
             <div class="col-md-12">
                 <div class="form-group mb-3">
                     <label for="earlier_distributor" class="form-label">If New area, who was the earlier distributor covering that area *</label>
-                    <input type="text" class="form-control" id="earlier_distributor" name="earlier_distributor" value="{{ old('earlier_distributor', $application->distributionDetails->earlier_distributor ?? 'None') }}">
+                    <input type="text" class="form-control" id="earlier_distributor" name="earlier_distributor" value="{{ old('earlier_distributor', $application->distributionDetail->earlier_distributor ?? 'None') }}">
                     @error('earlier_distributor')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
@@ -174,7 +174,7 @@
         }).trigger('change');
         
         // Initialize with correct section
-        const appointmentType = '{{ old("appointment_type", $application->distributionDetails->appointment_type ?? "new_area") }}';
+        const appointmentType = '{{ old("appointment_type", $application->distributionDetail->appointment_type ?? "new_area") }}';
         if (appointmentType === 'replacement') {
             $('#replacement-details').show();
         } else if (appointmentType === 'new_area') {

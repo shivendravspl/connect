@@ -23,7 +23,7 @@ use App\Http\Controllers\CoreVerticalController;
 use App\Http\Controllers\CoreZoneController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\FormController;
-use App\Http\Controllers\DistributorApplicationController;
+use App\Http\Controllers\OnboardingController;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ApprovalController;
 
@@ -216,14 +216,14 @@ Route::view('view_distributor', 'page_builder.distributor1')->name('view_distrib
 
 Route::middleware(['auth'])->group(function () {
   // Application routes
-    Route::resource('applications', DistributorApplicationController::class)
+    Route::resource('applications', OnboardingController::class)
         ->except(['destroy']);
-    Route::post('/applications/save-step/{stepNumber}', [DistributorApplicationController::class, 'saveStep'])->name('applications.save-step');
-    Route::post('/applications/remove-document/{application_id}', [DistributorApplicationController::class, 'removeDocument'])->name('applications.remove-document');
-     // Submit application to start approval workflow
-    Route::post('/distributor-applications/{application}/submit', [DistributorApplicationController::class, 'submitApplication'])->name('applications.submit');
+    Route::post('/applications/save-step/{stepNumber}', [OnboardingController::class, 'saveStep'])->name('applications.save-step');
+    Route::post('/applications/remove-document/{application_id}', [OnboardingController::class, 'removeDocument'])->name('applications.remove-document');
     
-    Route::get('/get-districts/{state_id}', [DistributorApplicationController::class, 'getDistricts']);
+    Route::get('/get-districts/{state_id}', [OnboardingController::class, 'getDistricts']);
+    Route::get('/application/{id}/preview', [OnboardingController::class, 'preview'])->name('application.preview');
+    Route::get('/application/{id}/download', [OnboardingController::class, 'downloadApplicationPdf'])->name('application.download');
       // Approval routes
     Route::prefix('approvals')->group(function () {
         Route::get('/dashboard', [ApprovalController::class, 'dashboard'])->name('approvals.dashboard');

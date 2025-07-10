@@ -131,7 +131,7 @@
     ];
 @endphp
 
-<div id="declarations" class="form-section step-content" data-step="8" style="display: none;">
+<div id="declarations" class="form-section step-content" data-step="7" style="display: none;">
     <h5 class="mb-4">Declarations</h5>
     <p class="text-muted mb-4">Answer the following questions carefully (Select Yes/No, if Yes then specify details)</p>
 

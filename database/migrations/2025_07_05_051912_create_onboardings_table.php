@@ -8,15 +8,20 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('distributor_applications', function (Blueprint $table) {
+        Schema::create('onboardings', function (Blueprint $table) {
             $table->id();
             $table->string('application_code')->unique();
-            $table->string('territory');
+            $table->string('territory')->nullable();
             $table->string('crop_vertical');
-            $table->string('zone');
+            $table->string('region')->nullable();
+            $table->string('zone')->nullable();
+            $table->string('business_unit')->nullable();
             $table->string('district');
-            $table->string('state');
+            $table->string('state');           
             $table->string('status')->default('draft');
+            $table->unsignedTinyInteger('current_progress_step')->nullable()->default(1);
+            $table->unsignedBigInteger('current_approver_id')->nullable();
+            $table->string('approval_level')->nullable();
             $table->foreignId('created_by');
             $table->timestamps();
             $table->softDeletes();
@@ -25,6 +30,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('distributor_applications');
+        Schema::dropIfExists('onboardings');
     }
 };

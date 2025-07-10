@@ -20526,3 +20526,73 @@ span.flatpickr-weekday {
   flex: 1;
 }
 /*# sourceMappingURL=app.min.css.map */
+
+.stepper-wrapper {
+    margin: 2rem 0;
+}
+.stepper {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+}
+.stepper::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: #f3f3f3; /* Lighter inactive line color */
+    z-index: 1;
+}
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+.step-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f3f3f3; /* Default inactive color */
+    color: #878a99; /* Velzon's secondary text color */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: 8px;
+    border: 3px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.step.active .step-circle {
+    background: #405189; /* Velzon's primary dark blue */
+    border-color: #405189;
+    color: white;
+}
+.step.completed .step-circle {
+    background: #0ab39c; /* Velzon's teal/success color */
+    border-color: #0ab39c;
+    color: white;
+}
+.step.clickable {
+    cursor: pointer;
+}
+.step.clickable:hover .step-circle {
+    transform: scale(1.1);
+    transition: transform 0.2s;
+}
+.step-label {
+    font-size: 14px;
+    color: #878a99; /* Velzon's secondary text color */
+    text-align: center;
+    max-width: 100px;
+}
+.step.active .step-label {
+    color: #405189; /* Velzon's primary dark blue */
+    font-weight: bold;
+}
+.step.completed .step-label {
+    color: #0ab39c; /* Velzon's teal/success color */
+}

@@ -40,11 +40,11 @@ class EntityDetails extends Model
     ];
 
     /**
-     * Get the distributor application that owns the entity details.
+     * Get the Onboarding application that owns the entity details.
      */
-    public function distributorApplication()
+    public function Onboarding()
     {
-        return $this->belongsTo(DistributorApplication::class, 'application_id', 'id');
+        return $this->belongsTo(Onboarding::class, 'application_id', 'id');
     }
 
     public function state()

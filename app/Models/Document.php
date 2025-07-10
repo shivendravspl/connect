@@ -21,9 +21,9 @@ class Document extends Model
 
     public $timestamps = true;
 
-    // Optional: Define relationship with DistributorApplication
+    // Optional: Define relationship with Onboarding
     public function application()
     {
-        return $this->belongsTo(DistributorApplication::class, 'application_id');
+        return $this->belongsTo(Onboarding::class, 'application_id');
     }
 }

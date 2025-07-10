@@ -1,11 +1,10 @@
 <div id="basic-details" class="form-section">
-    <h5 class="mb-4">Basic Details</h5>
-    <div class="row">
-        <!-- Territory Dropdown -->
-        <div class="col-md-3">
-            <div class="form-group mb-3">
-                <label for="territory" class="form-label">Territory *</label>
-                <select class="form-control" id="territory" name="territory" required onchange="updateDependentFields()">
+    <h5 class="mb-3">Basic Details</h5>
+    <div class="row g-2">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="form-group mb-2">
+                <label for="territory" class="form-label small">Territory *</label>
+                <select class="form-control form-control-sm" id="territory" name="territory" required onchange="updateDependentFields()">
                     <option value="">Select Territory</option>
                     @foreach($territory_list as $id => $name)
                         <option value="{{ $id }}"
@@ -17,42 +16,43 @@
             </div>
         </div>
 
-        <!-- Region Field -->
-        <div class="col-md-2">
-            <div class="form-group mb-3">
-                <label class="form-label">Region *</label>
-                <input type="text" class="form-control" id="region_display" readonly
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="form-group mb-2">
+                <label class="form-label small">Region *</label>
+                <input type="text" class="form-control form-control-sm" id="region_display" readonly
                     value="{{ isset($application) && $application->region && isset($region_list[$application->region]) ? $region_list[$application->region] : (isset($preselected['region']) && isset($region_list[$preselected['region']]) ? $region_list[$preselected['region']] : '') }}">
-                <input type="hidden" name="region_id" id="region_id"
+                <input type="hidden" name="region" id="region_id"  <--- CHANGED NAME HERE
                     value="{{ isset($application) && $application->region ? $application->region : (isset($preselected['region']) ? $preselected['region'] : '') }}">
             </div>
         </div>
 
-        <!-- Zone Field -->
-        <div class="col-md-2">
-            <div class="form-group mb-3">
-                <label class="form-label">Zone *</label>
-                <input type="text" class="form-control" id="zone_display" readonly
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+            <div class="form-group mb-2">
+                <label class="form-label small">Zone *</label>
+                <input type="text" class="form-control form-control-sm" id="zone_display" readonly
                     value="{{ isset($application) && $application->zone && isset($zone_list[$application->zone]) ? $zone_list[$application->zone] : (isset($preselected['zone']) && isset($zone_list[$preselected['zone']]) ? $zone_list[$preselected['zone']] : '') }}">
-                <input type="hidden" name="zone_id" id="zone_id"
+                <input type="hidden" name="zone" id="zone_id"
                     value="{{ isset($application) && $application->zone ? $application->zone : (isset($preselected['zone']) ? $preselected['zone'] : '') }}">
             </div>
         </div>
-        <!-- Business Unit Dropdown -->
-        <div class="col-md-3">
-            <div class="form-group mb-3">
-                <label class="form-label">Business Unit *</label>
-                <input type="text" class="form-control" id="bu_display" readonly
-                    value="{{ isset($application) && $application->bu && isset($bu_list[$application->bu]) ? $bu_list[$application->bu] : (isset($preselected['bu']) && isset($bu_list[$preselected['bu']]) ? $bu_list[$preselected['bu']] : '') }}">
-                <input type="hidden" name="bu_id" id="bu_id"
-                    value="{{ isset($application) && $application->bu ? $application->bu : (isset($preselected['bu']) ? $preselected['bu'] : '') }}">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="form-group mb-2">
+                <label class="form-label small">Business Unit *</label>
+                <input type="text" class="form-control form-control-sm" id="bu_display" readonly
+                    value="{{ isset($application) && $application->business_unit && isset($bu_list[$application->business_unit]) ? $bu_list[$application->business_unit] : (isset($preselected['bu']) && isset($bu_list[$preselected['bu']]) ? $bu_list[$preselected['bu']] : '') }}">
+                <input type="hidden" name="business_unit" id="bu_id"
+                    value="{{ isset($application) && $application->business_unit ? $application->business_unit : (isset($preselected['bu']) ? $preselected['bu'] : '') }}">
             </div>
         </div>
-        <!-- Crop Vertical -->
-        <div class="col-md-2">
-            <div class="form-group mb-3">
-                <label for="crop_vertical" class="form-label">Crop Vertical *</label>
-                <select class="form-control" id="crop_vertical" name="crop_vertical" required>
+       
+    </div>
+
+    <div class="row g-2">
+         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="form-group mb-2">
+                <label for="crop_vertical" class="form-label small">Crop Vertical *</label>
+                <select class="form-control form-control-sm" id="crop_vertical" name="crop_vertical" required>
+                    <option value="">Select Crop Vertical</option>
                     @foreach($crop_type as $id => $name)
                         <option value="{{ $id }}"
                             {{ (isset($application) && $application->crop_vertical == $id) || (isset($preselected['crop_vertical']) && $preselected['crop_vertical'] == $id) ? 'selected' : '' }}>
@@ -62,13 +62,10 @@
                 </select>
             </div>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="form-group mb-3">
-                <label for="dis_state" class="form-label">State *</label>
-                <select class="form-control" id="dis_state" name="dis_state" required>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="form-group mb-2">
+                <label for="dis_state" class="form-label small">State *</label>
+                <select class="form-control form-control-sm" id="dis_state" name="state" required> <--- CHANGED NAME HERE
                     <option value="">Select State</option>
                     @foreach($states as $state)
                         <option value="{{ $state->id }}"
@@ -79,10 +76,10 @@
                 </select>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="form-group mb-3">
-                <label for="district" class="form-label">District *</label>
-                <select class="form-control" id="district" name="district" required>
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="form-group mb-2">
+                <label for="district" class="form-label small">District *</label>
+                <select class="form-control form-control-sm" id="district" name="district" required>
                     <option value="">Select District</option>
                     @if(isset($application) && $application->district)
                         @php
@@ -100,23 +97,23 @@
 
 @push('scripts')
 <script>
-    // Update dependent fields when Territory changes
-    function updateDependentFields() {
+
+function updateDependentFields() {
         const territoryId = $('#territory').val();
         const $regionDisplay = $('#region_display');
-        const $regionId = $('#region_id');
+        const $regionId = $('#region_id'); // This is the ID of the hidden input
         const $zoneDisplay = $('#zone_display');
+        const $zoneId = $('#zone_id');     // This is the ID of the hidden input
         const $buDisplay = $('#bu_display');
-        
-        const $zoneId = $('#zone_id');
-        const $buId = $('#bu_id');
+        const $buId = $('#bu_id');         // This is the ID of the hidden input
+
         // Clear previous values
         $regionDisplay.val('Loading region...');
         $zoneDisplay.val('Loading zone...');
         $buDisplay.val('Loading Bu...');
-        $regionId.val('');
-        $zoneId.val('');
-        $buId.val('');
+        $regionId.val(''); // Clear the value of the hidden input
+        $zoneId.val('');   // Clear the value of the hidden input
+        $buId.val('');     // Clear the value of the hidden input
 
         if (!territoryId) {
             $regionDisplay.val('');
@@ -138,13 +135,9 @@
                     const regionName = response.regions[regionId];
                     $regionDisplay.val(regionName);
                     $regionId.val(regionId);
-                    $('<input>').attr({
-                        type: 'hidden',
-                        name: 'region',
-                        value: regionId
-                    }).appendTo('#distributorForm');
                 } else {
                     $regionDisplay.val('No region found');
+                    $regionId.val('');
                 }
 
                 // Handle Zone
@@ -152,29 +145,22 @@
                     const zoneId = Object.keys(response.zones)[0];
                     const zoneName = response.zones[zoneId];
                     $zoneDisplay.val(zoneName);
-                    $zoneId.val(zoneId);
-                    $('<input>').attr({
-                        type: 'hidden',
-                        name: 'zone',
-                        value: zoneId
-                    }).appendTo('#distributorForm');
+                    $zoneId.val(zoneId); 
                 } else {
                     $zoneDisplay.val('No zone found');
+                    $zoneId.val('');
                 }
 
-                 // Handle Business UNit
+                // Handle Business Unit
                 if (response.businessUnits && Object.keys(response.businessUnits).length > 0) {
+                    console.log(response);
                     const buId = Object.keys(response.businessUnits)[0];
                     const buName = response.businessUnits[buId];
                     $buDisplay.val(buName);
-                    $buId.val(buId);
-                    $('<input>').attr({
-                        type: 'hidden',
-                        name: 'bu',
-                        value: buId
-                    }).appendTo('#distributorForm');
+                    $buId.val(buId); 
                 } else {
                     $buDisplay.val('No Bu found');
+                    $buId.val('');
                 }
             },
             error: function(xhr) {
@@ -182,44 +168,47 @@
                 $regionDisplay.val('Error loading region');
                 $zoneDisplay.val('Error loading zone');
                 $buDisplay.val('Error loading business unit');
+                $regionId.val('');
+                $zoneId.val('');
+                $buId.val('');
             }
         });
     }
 
     // Load districts based on state
     let isLoading = false;
-$('#dis_state').on('change', function () {
-    if (isLoading) return;
-    isLoading = true;
-    $('#district').html('<option value="">Loading...</option>');
-    const stateId = $(this).val();
+    $('#dis_state').on('change', function () { // dis_state is now name="state" in Blade
+        if (isLoading) return;
+        isLoading = true;
+        $('#district').html('<option value="">Loading...</option>');
+        const stateId = $(this).val();
 
-    if (stateId) {
-        $.ajax({
-            url: '/get-districts/' + stateId,
-            type: 'GET',
-            success: function (data) {
-                let options = '<option value="">Select District</option>';
-                $.each(data, function (index, district) {
-                    options += `<option value="${district.id}" ${district.id == '{{ $application->district ?? '' }}' ? 'selected' : ''}>${$('<div>').text(district.district_name).html()}</option>`;
-                });
-                $('#district').html(options);
-            },
-            error: function(xhr) {
-                console.error('AJAX Error:', xhr.responseText);
-                $('#district').html('<option value="">Error loading districts</option>');
-            },
-            complete: function() {
-                isLoading = false;
-            }
-        });
-    } else {
-        $('#district').html('<option value="">Select District</option>');
-        isLoading = false;
-    }
-});
-
-    // Trigger state change on page load to load districts
+        if (stateId) {
+            $.ajax({
+                url: '/get-districts/' + stateId,
+                type: 'GET',
+                success: function (data) {
+                    let options = '<option value="">Select District</option>';
+                    $.each(data, function (index, district) {
+                        // Ensure $application->district is available if it exists
+                        options += `<option value="${district.id}" ${district.id == "{{ $application->district ?? '' }}" ? 'selected' : ''}>${$('<div>').text(district.district_name).html()}</option>`;
+                    });
+                    $('#district').html(options);
+                },
+                error: function(xhr) {
+                    console.error('AJAX Error:', xhr.responseText);
+                    $('#district').html('<option value="">Error loading districts</option>');
+                },
+                complete: function() {
+                    isLoading = false;
+                }
+            });
+        } else {
+            $('#district').html('<option value="">Select District</option>');
+            isLoading = false;
+        }
+    });
+    // This is important for pre-selected values on edit mode
     $(document).ready(function () {
         if ($('#dis_state').val()) {
             $('#dis_state').trigger('change');

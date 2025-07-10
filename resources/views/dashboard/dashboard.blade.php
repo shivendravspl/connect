@@ -2,55 +2,154 @@
 
 @push('styles')
 <style>
-    /* Status badge colors */
-    .badge {
-        &.bg-approved { background-color: #28a745; }
-        &.bg-rejected { background-color: #dc3545; }
-        &.bg-pending { background-color: #ffc107; color: #212529; }
-        &.bg-reverted { background-color: #fd7e14; }
-        &.bg-on_hold { background-color: #17a2b8; }
-        &.bg-submitted { background-color: #007bff; }
+    /* Base styles with smaller fonts */
+    body {
+        font-size: 14px;
     }
+    
+    h1, h2, h3, h4, h5, h6 {
+        font-weight: 600;
+    }
+    
+    .page-title {
+        font-size: 1.25rem;
+    }
+    
+    .header-title {
+        font-size: 1rem;
+    }
+    
+    .card-title {
+        font-size: 0.9rem;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+        padding: 0.25em 0.5em;
+    }
+    
+    /* Status badge colors */
+    .bg-approved { background-color: #28a745; }
+    .bg-rejected { background-color: #dc3545; }
+    .bg-pending { background-color: #ffc107; color: #212529; }
+    .bg-reverted { background-color: #fd7e14; }
+    .bg-on_hold { background-color: #17a2b8; }
+    .bg-submitted { background-color: #007bff; }
 
     /* Application status cards */
     .status-card {
-        border-left: 4px solid;
-        &.approved { border-left-color: #28a745; }
-        &.rejected { border-left-color: #dc3545; }
-        &.pending { border-left-color: #ffc107; }
-        &.reverted { border-left-color: #fd7e14; }
-        &.on_hold { border-left-color: #17a2b8; }
+        border-left: 3px solid;
     }
+    .approved { border-left-color: #28a745; }
+    .rejected { border-left-color: #dc3545; }
+    .pending { border-left-color: #ffc107; }
+    .reverted { border-left-color: #fd7e14; }
+    .on_hold { border-left-color: #17a2b8; }
 
     /* Action buttons */
+    .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
     .action-btns .btn {
-        margin-right: 5px;
-        margin-bottom: 5px;
+        margin-right: 3px;
+        margin-bottom: 3px;
     }
 
     /* Table improvements */
-    .table-responsive {
-        overflow-x: auto;
+    .table {
+        font-size: 0.8rem;
     }
-
+    
+    .table th, 
+    .table td {
+        padding: 0.5rem;
+    }
+    
     .table-hover tbody tr:hover {
         background-color: rgba(0, 0, 0, 0.03);
     }
 
     /* Action summary table */
-    .action-summary-table th, .action-summary-table td {
+    .action-summary-table th, 
+    .action-summary-table td {
         text-align: center;
     }
 
     /* Pagination */
     .pagination {
-        margin-top: 20px;
-        justify-content: center;
+        margin-top: 1rem;
+        font-size: 0.8rem;
+    }
+    
+    /* Cards */
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    /* Nav tabs */
+    .nav-tabs .nav-link {
+        font-size: 0.8rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Mobile-specific styles */
+    @media (max-width: 768px) {
+        body {
+            font-size: 13px;
+        }
+        
+        .container-fluid {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
+        }
+        
+        .card-body {
+            padding: 0.75rem;
+        }
+        
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .table th,
+        .table td {
+            padding: 0.3rem;
+            white-space: nowrap;
+        }
+        
+        /* Stack status cards on mobile */
+        .row > div[class^="col-"] {
+            margin-bottom: 0.75rem;
+        }
+        
+        /* Adjust tab layout */
+        .nav-tabs {
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .nav-tabs .nav-item {
+            white-space: nowrap;
+        }
+        
+        /* Smaller dropdown */
+        .dropdown-menu {
+            font-size: 0.8rem;
+        }
     }
 </style>
 @endpush
 
 @section('content')
+<!-- Content remains exactly the same as your original -->
 <div class="container-fluid">
     <!-- Page Header -->
     <div class="row mb-4">
@@ -81,7 +180,7 @@
                                 </span>
                             </h5>
                         </div>
-                        <div class="flex-shrink-0">
+                        {{--<div class="flex-shrink-0">
                             @if(isset($pendingApplications) && $pendingApplications->isNotEmpty())
                                 <span class="badge bg-danger rounded-pill">
                                     {{ $pendingApplications->total() }} Pending
@@ -91,7 +190,7 @@
                                     No Pending
                                 </span>
                             @endif
-                        </div>
+                        </div>--}}
                     </div>
                 </div>
             </div>
@@ -146,7 +245,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h4 class="header-title">Approval Dashboard</h4>
-                        <div class="dropdown">
+                        {{--<div class="dropdown">
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="fas fa-filter"></i> Filter
                             </button>
@@ -155,7 +254,7 @@
                                 <li><a class="dropdown-item" href="#" data-filter="pending">Pending Approval</a></li>
                                 <li><a class="dropdown-item" href="#" data-filter="my">My Applications</a></li>
                             </ul>
-                        </div>
+                        </div>--}}
                     </div>
                     
                     <div class="card-body">
@@ -176,7 +275,7 @@
                             <!-- Pending Approvals Tab -->
                             <div class="tab-pane fade show active" id="pending-tab">
                                 @if(!isset($pendingApplications) || $pendingApplications->isEmpty())
-                                    <div class="alert alert-info">No applications pending your approval.</div>
+                                    <div class="alert alert-info py-2">No applications pending your approval.</div>
                                 @else
                                     <div class="table-responsive">
                                         <table class="table table-hover table-centered mb-0">
@@ -229,7 +328,7 @@
                             <!-- My Applications Tab -->
                             <div class="tab-pane fade" id="my-tab">
                                 @if(!isset($myApplications) || $myApplications->isEmpty())
-                                    <div class="alert alert-info">You haven't submitted or acted on any applications yet.</div>
+                                    <div class="alert alert-info py-2">You haven't submitted or acted on any applications yet.</div>
                                 @else
                                     <div class="table-responsive">
                                         <table class="table table-hover table-centered mb-0">
@@ -326,7 +425,7 @@
         <div class="row">
             <div class="col-md-6 col-xl-3">
                 <div class="card bg-primary text-white">
-                    <div class="card-body">
+                    <div class="card-body p-2">
                         <h5 class="card-title">Total Applications</h5>
                         <h2 class="mb-0">{{ $myApplications->total() }}</h2>
                     </div>
@@ -334,7 +433,7 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <div class="card bg-success text-white">
-                    <div class="card-body">
+                    <div class="card-body p-2">
                         <h5 class="card-title">Approved</h5>
                         <h2 class="mb-0">{{ $myApplications->where('status', 'approved')->count() }}</h2>
                     </div>
@@ -342,7 +441,7 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <div class="card bg-warning text-white">
-                    <div class="card-body">
+                    <div class="card-body p-2">
                         <h5 class="card-title">Pending</h5>
                         <h2 class="mb-0">{{ $myApplications->where('status', 'submitted')->count() }}</h2>
                     </div>
@@ -350,7 +449,7 @@
             </div>
             <div class="col-md-6 col-xl-3">
                 <div class="card bg-danger text-white">
-                    <div class="card-body">
+                    <div class="card-body p-2">
                         <h5 class="card-title">Rejected</h5>
                         <h2 class="mb-0">{{ $myApplications->where('status', 'rejected')->count() }}</h2>
                     </div>

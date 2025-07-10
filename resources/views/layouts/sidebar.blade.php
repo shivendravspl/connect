@@ -1,11 +1,11 @@
 <!-- ========== App Menu ========== -->
 <div class="app-menu navbar-menu">
     <!-- LOGO -->
-    <div class="navbar-brand-box">
+    <div class="navbar-brand-box" style="margin-top:10px;margin-bottom:6px;">
         <!-- Dark Logo-->
         <a href="index.html" class="logo logo-dark">
             <span class="logo-sm">
-                <img src="{{ asset('assets/images/logo-sm.png') }}" alt="" height="22">
+                <img src="{{ asset('assets/images/connect-icon.png') }}" alt="" height="22">
             </span>
             <span class="logo-lg">
                 <img src="{{ asset('assets/images/ojas_dark.png') }}" alt="" height="17">
@@ -14,10 +14,10 @@
         <!-- Light Logo-->
         <a href="/home" class="logo logo-light">
             <span class="logo-sm">
-                <img src="{{ asset('assets/images/logo-sm.png') }}" alt="" style="height:22px !important;">
+                <img src="{{ asset('assets/images/connect-icon.png') }}" alt="" style="height:22px !important;">
             </span>
             <span class="logo-lg">
-                <img src="{{ asset('assets/images/ojas.png') }}" alt="" style="height:50px !important;">
+                <img src="{{ asset('assets/images/connect-logo.png') }}" alt="" style="height:24px !important;">
             </span>
         </a>
         <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
@@ -40,7 +40,7 @@
     <div class="container-fluid">
         <div id="two-column-menu"></div>
         <ul class="navbar-nav" id="navbar-nav">
-            <li class="menu-title"><span data-key="t-menu">Menu</span></li>
+            <!--<li class="menu-title"><span data-key="t-menu">Menu</span></li>-->
             <li class="nav-item">
                 <a class="nav-link menu-link" href="#sidebarDashboards" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarDashboards">
                     <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboards</span>
@@ -253,7 +253,7 @@
                 <li class="nav-item">
                     <a class="nav-link menu-link {{ request()->routeIs('applications.*') ? 'active' : '' }}" 
                     href="{{ route('applications.index') }}">
-                        <i class="ri-file-list-3-line"></i> <span>Applications</span>
+                        <i class="ri-apps-line"></i> <span>Applications</span>
                     </a>
                 </li>
        @can('menu-builder')

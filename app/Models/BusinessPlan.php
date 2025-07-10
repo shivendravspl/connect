@@ -13,7 +13,7 @@ class BusinessPlan extends Model
 
     public function application()
     {
-        return $this->belongsTo(DistributorApplication::class, 'application_id', 'id');
+        return $this->belongsTo(Onboarding::class, 'application_id', 'id');
     }
     
 }

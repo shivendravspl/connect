@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DistributorApplication;
+use App\Models\DistributorOnboarding;
 use App\Models\EntityDetails;
 use App\Models\DistributionDetail;
 use App\Models\BankDetail;
@@ -24,7 +24,7 @@ use Illuminate\Support\Facades\Cache;
 use App\Models\Year;
 use Illuminate\Validation\Rule;
 
-class DistributorApplicationController extends Controller
+class DistributorOnboardingController extends Controller
 {
 
 
@@ -32,28 +32,30 @@ class DistributorApplicationController extends Controller
     {
         $empId = Auth::user()->emp_id;
 
-        $applications = DistributorApplication::where('created_by', $empId)
+        $applications = DistributorOnboarding::where('created_by', $empId)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
         return view('applications.index', compact('applications'));
     }
 
-     function getAssociatedBusinessUnitList($employeeId)
+    function getAssociatedBusinessUnitList($employeeId)
     {
         $user = Auth::user();
+
         if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management'])) {
             return DB::table('core_business_unit')
                 ->where('is_active', '1')
                 ->where('business_type', '1')
                 ->pluck('business_unit_name', 'id')
-                ->prepend('All BU', 'All')->toArray();;
+                ->prepend('All BU', 'All')->toArray();
         }
 
         $buId = DB::table('core_employee')
             ->where('id', $employeeId)
             ->where('zone', 0)
             ->value('bu');
+        //dd($employeeId);
 
         if ($buId > 0) {
             return DB::table('core_business_unit')
@@ -67,7 +69,7 @@ class DistributorApplicationController extends Controller
         return [];
     }
 
-    public function create()
+    public function create($application_id = null, $step = 1)
     {
         $user = Auth::user();
         $territory_list = [];
@@ -76,11 +78,51 @@ class DistributorApplicationController extends Controller
         $preselected = [];
         $bu_list = [];
 
+        $application = $application_id ? DistributorOnboarding::with([
+            'territoryDetail',
+            'regionDetail',
+            'zoneDetail',
+            'businessUnit',
+            'entityDetails',
+            'distributionDetail',
+            'businessPlan',
+            'financialInfo',
+            'existingDistributorships',
+            'bankDetail',
+            'declarations'
+        ])->findOrFail($application_id) : new DistributorOnboarding();
+
+        // Enforce step 1 for new applications
+        if (!$application_id && $step != 1) {
+            return redirect()->route('applications.create', ['step' => 1])
+                ->with('error', 'Please start from Basic Details.');
+        }
+
+        // Validate step progression
+        if ($application_id && $step > 1) {
+            $requiredSteps = [
+                2 => !$application->territory,
+                3 => !$application->entityDetails,
+                4 => !$application->distributionDetail,
+                5 => !$application->businessPlan,
+                6 => !$application->financialInfo,
+                7 => !$application->existingDistributorships->count(),
+                8 => !$application->bankDetail,
+                9 => !$application->declarations->count()
+            ];
+            for ($i = 2; $i <= $step; $i++) {
+                if (isset($requiredSteps[$i]) && $requiredSteps[$i]) {
+                    return redirect()->route('applications.create', ['step' => $i - 1, 'application_id' => $application_id])
+                        ->with('error', 'Please complete all previous steps.');
+                }
+            }
+        }
+
         if ($user->emp_id) {
             $employee = DB::table('core_employee')->where('id', $user->emp_id)->first();
 
             if ($employee) {
-                 $bu_list = $this->getAssociatedBusinessUnitList($user->emp_id);
+                $bu_list = $this->getAssociatedBusinessUnitList($user->emp_id);
                 // Preselect user's business unit
                 if ($employee->bu > 0) {
                     $preselected['bu'] = $employee->bu;
@@ -94,7 +136,6 @@ class DistributorApplicationController extends Controller
                 } else {
                     $crop_type = [];
                 }
-
                 // Case 1: territory = 0, region = 0, zone = 0, business unit > 0
                 if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
                     $mapping = DB::select("
@@ -236,13 +277,17 @@ class DistributorApplicationController extends Controller
                     $territoryData = $this->getTerritoryData($preselected['territory']);
                     $region_list = $territoryData['regions'] ?? [];
                     $zone_list = $territoryData['zones'] ?? [];
-
+                    $bu_list = $territoryData['businessUnits'] ?? [];
+                    //dd($bu_list); 
                     // Preselect first region/zone if available
                     if (!empty($region_list)) {
                         $preselected['region'] = array_key_first($region_list);
                     }
                     if (!empty($zone_list)) {
                         $preselected['zone'] = array_key_first($zone_list);
+                    }
+                    if (!empty($bu_list)) {
+                        $preselected['bu'] = array_key_first($bu_list);
                     }
                 }
             }
@@ -251,16 +296,20 @@ class DistributorApplicationController extends Controller
                 ->where('is_active', 1)
                 ->orderBy('state_name')
                 ->get();
-        }
 
+            $currentStep = $step;
+        }
+        //dd($zone_list);
         return view('applications.create', compact(
+            'application',
             'bu_list',
             'zone_list',
             'region_list',
             'territory_list',
             'preselected',
             'crop_type',
-            'states'
+            'states',
+            'currentStep'
         ));
     }
 
@@ -319,7 +368,7 @@ class DistributorApplicationController extends Controller
             $validated = $this->validateApplication($request);
 
             // Create main application
-            $application = DistributorApplication::create([
+            $application = Onboarding::create([
                 'application_code' => 'DIST-' . strtoupper(uniqid()),
                 'territory' => $validated['territory'],
                 'crop_vertical' => $validated['crop_vertical'],
@@ -351,9 +400,9 @@ class DistributorApplicationController extends Controller
         }
     }
 
-    public function show(DistributorApplication $application)
+    public function show(Onboarding $application)
     {
-       // $this->authorize('view', $application);
+        // $this->authorize('view', $application);
 
         $application->load([
             'entityDetails',
@@ -370,7 +419,7 @@ class DistributorApplicationController extends Controller
         return view('applications.show', compact('application'));
     }
 
-    public function edit(DistributorApplication $application)
+    public function edit(Onboarding $application, $step = 1)
     {
         $user = Auth::user();
         // Manual authorization: Check if user's emp_id matches application's created_by
@@ -560,7 +609,7 @@ class DistributorApplicationController extends Controller
                     if (!empty($zone_list)) {
                         $preselected['zone'] = $application->zone ?? array_key_first($zone_list);
                     }
-                     if (!empty($bu_list)) {
+                    if (!empty($bu_list)) {
                         $preselected['bu'] = $application->bu ?? array_key_first($bu_list);
                     }
                 }
@@ -575,7 +624,9 @@ class DistributorApplicationController extends Controller
             }
         }
         //dd($preselected);
-
+        if ($step == 9) {
+            return view('applications.review-submit', compact('application'));
+        }
         return view('applications.edit', compact(
             'application',
             'bu_list',
@@ -588,7 +639,7 @@ class DistributorApplicationController extends Controller
         ));
     }
 
-    public function update(Request $request, DistributorApplication $application)
+    public function update(Request $request, DistributorOnboarding $application)
     {
         // $this->authorize('update', $application);
 
@@ -1115,8 +1166,8 @@ class DistributorApplicationController extends Controller
                     return $this->saveStep7($request, $user, $application_id);
                 case 8:
                     return $this->saveStep8($request, $user, $application_id);
-                // case 9:
-                //     return $this->saveStep9($request, $user, $application_id);
+                case 9:
+                    return $this->saveStep9($request, $user, $application_id);
                 default:
                     return response()->json(['success' => false, 'error' => 'Invalid step number.'], 400);
             }
@@ -1216,585 +1267,628 @@ class DistributorApplicationController extends Controller
     }
 
     // Step 2: Entity Details
-        private function saveStep2(Request $request, $user, $application_id)
-{
-    if (!$application_id) {
-        return response()->json(['success' => false, 'error' => 'Application ID is missing.'], 400);
+    private function saveStep2(Request $request, $user, $application_id)
+    {
+        //dd($request->all());
+        if (!$application_id) {
+            return response()->json(['success' => false, 'error' => 'Application ID is missing.'], 400);
+        }
+
+        DB::beginTransaction();
+        try {
+            // Fetch existing entity details
+            $entityDetails = \App\Models\EntityDetails::where('application_id', $application_id)->first();
+            $existingDocuments = $entityDetails && $entityDetails->documents_data
+                ? json_decode($entityDetails->documents_data, true)
+                : [];
+
+            // Define validation rules
+            $rules = [
+                // Common fields
+                'establishment_name' => 'required|string|max:255',
+                'entity_type' => 'required|string|in:sole_proprietorship,partnership,llp,private_company,public_company,cooperative_society,trust',
+                'business_address' => 'required|string',
+                'house_no' => 'nullable|string|max:255',
+                'landmark' => 'nullable|string|max:255',
+                'city' => 'required|string|max:255',
+                'state_id' => 'required|exists:core_state,id',
+                'district_id' => 'required|exists:core_district,id',
+                'country_id' => 'required|exists:core_country,id',
+                'pincode' => 'required|string|max:10',
+                'mobile' => 'required|string|max:20',
+                'email' => 'required|email|max:255',
+                'pan_number' => 'required|string|max:20',
+                'pan_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_pan_file' => 'nullable|string',
+                'pan_verified' => 'nullable|boolean',
+                'gst_applicable' => 'required|in:yes,no',
+                'gst_number' => 'nullable|string|max:20',
+                'gst_validity' => 'nullable|date_format:Y-m-d',
+                'gst_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_gst_file' => 'nullable|string',
+                'seed_license' => 'required|string|max:255',
+                'seed_license_validity' => 'required|date_format:Y-m-d',
+                'seed_license_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_seed_license_file' => 'nullable|string',
+                'seed_license_verified' => 'nullable|boolean',
+                'bank_name' => 'required|string|max:255',
+                'account_holder' => 'required|string|max:255',
+                'account_number' => 'required|string|max:20',
+                'ifsc_code' => 'required|string|max:11',
+                'bank_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_bank_file' => 'nullable|string',
+                'tan_number' => 'nullable|string|max:20',
+
+                // Sole Proprietorship
+                'proprietor_name' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'proprietor_dob' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
+                'proprietor_father_name' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'proprietor_address' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string' : 'nullable|string',
+                'proprietor_pincode' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:10' : 'nullable|string|max:10',
+                'proprietor_country' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
+
+                // Partnership
+                'partner_name.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'partner_father_name.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'partner_contact.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:20' : 'nullable|string|max:20',
+                'partner_email.*' => $request->input('entity_type') === 'partnership' ? 'required|email|max:50' : 'nullable|email|max:50',
+                'partner_address.*' => $request->input('entity_type') === 'partnership' ? 'required|string' : 'nullable|string',
+
+                // LLP
+                'llpin_number' => $request->input('entity_type') === 'llp' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'llp_incorporation_date' => $request->input('entity_type') === 'llp' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
+                'llp_partner_name.*' => $request->input('entity_type') === 'llp' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'llp_partner_dpin.*' => $request->input('entity_type') === 'llp' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'llp_partner_contact.*' => $request->input('entity_type') === 'llp' ? 'required|string|max:20' : 'nullable|string|max:20',
+                'llp_partner_address.*' => $request->input('entity_type') === 'llp' ? 'required|string' : 'nullable|string',
+
+                // Company
+                'cin_number' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:255' : 'nullable|string|max:255',
+                'incorporation_date' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
+                'director_name.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:255' : 'nullable|string|max:255',
+                'director_din.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:255' : 'nullable|string|max:255',
+                'director_contact.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:20' : 'nullable|string|max:20',
+                'director_address.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string' : 'nullable|string',
+
+                // Cooperative
+                'cooperative_reg_number' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'cooperative_reg_date' => $request->input('entity_type') === 'cooperative_society' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
+                'committee_name.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'committee_designation.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'committee_contact.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:20' : 'nullable|string|max:20',
+                'committee_address.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string' : 'nullable|string',
+
+                // Trust
+                'trust_reg_number' => $request->input('entity_type') === 'trust' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'trust_reg_date' => $request->input('entity_type') === 'trust' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
+                'trustee_name.*' => $request->input('entity_type') === 'trust' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'trustee_designation.*' => $request->input('entity_type') === 'trust' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'trustee_contact.*' => $request->input('entity_type') === 'trust' ? 'required|string|max:20' : 'nullable|string|max:20',
+                'trustee_address.*' => $request->input('entity_type') === 'trust' ? 'required|string' : 'nullable|string',
+
+                // Authorized Persons
+                'auth_person_name.*' => 'nullable|string|max:255',
+                'auth_person_contact.*' => 'nullable|string|max:20',
+                'auth_person_email.*' => 'nullable|email|max:255',
+                'auth_person_address.*' => 'nullable|string',
+                'auth_person_relation.*' => 'nullable|string|max:255',
+                'auth_person_letter.*' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
+                'auth_person_aadhar.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_auth_person_letter.*' => 'nullable|string',
+                'existing_auth_person_aadhar.*' => 'nullable|string',
+            ];
+               // Get existing authorized persons data
+            $existingAuthPersons = $entityDetails && isset($entityDetails->additional_data['authorized_persons'])
+                ? $entityDetails->additional_data['authorized_persons']
+                : [];
+            // Custom validation for file fields and GST
+            $validator = Validator::make($request->all(), $rules);
+            $validator->after(function ($validator) use ($request, $existingDocuments) {
+                // Validate PAN file
+                if (!$request->hasFile('pan_file') && !$request->input('existing_pan_file') && !collect($existingDocuments)->firstWhere('type', 'pan')) {
+                    $validator->errors()->add('pan_file', 'The PAN file is required.');
+                }
+
+                // Validate PAN verification if a new file is uploaded
+                if ($request->hasFile('pan_file') && !$request->input('pan_verified')) {
+                    $validator->errors()->add('pan_verified', 'You must confirm that the PAN number matches the uploaded document.');
+                }
+
+                // Validate Seed License file
+                if (!$request->hasFile('seed_license_file') && !$request->input('existing_seed_license_file') && !collect($existingDocuments)->firstWhere('type', 'seed_license')) {
+                    $validator->errors()->add('seed_license_file', 'The seed license file is required.');
+                }
+
+                // Validate Seed License verification if a new file is uploaded
+                if ($request->hasFile('seed_license_file') && !$request->input('seed_license_verified')) {
+                    $validator->errors()->add('seed_license_verified', 'You must confirm that the seed license number matches the uploaded document.');
+                }
+
+                // Validate Bank file
+                if (!$request->hasFile('bank_file') && !$request->input('existing_bank_file') && !collect($existingDocuments)->firstWhere('type', 'bank')) {
+                    $validator->errors()->add('bank_file', 'The bank file is required.');
+                }
+
+                // Validate GST fields if applicable
+                if ($request->input('gst_applicable') === 'yes') {
+                    if (!$request->filled('gst_number')) {
+                        $validator->errors()->add('gst_number', 'The GST number is required when GST is applicable.');
+                    }
+                    if (!$request->filled('gst_validity')) {
+                        $validator->errors()->add('gst_validity', 'The GST validity date is required when GST is applicable.');
+                    }
+                    if (!$request->hasFile('gst_file') && !$request->input('existing_gst_file') && !collect($existingDocuments)->firstWhere('type', 'gst')) {
+                        $validator->errors()->add('gst_file', 'The GST document is required when GST is applicable.');
+                    }
+                }
+            });
+
+            // Custom validation for entity-specific fields
+            $entity_type = $request->input('entity_type');
+            if ($entity_type === 'sole_proprietorship') {
+                if (!$request->filled('proprietor_name')) {
+                    $validator->errors()->add('proprietor_name', 'The proprietor name is required for sole proprietorship.');
+                }
+                if (!$request->filled('proprietor_dob')) {
+                    $validator->errors()->add('proprietor_dob', 'The proprietor date of birth is required for sole proprietorship.');
+                }
+                if (!$request->filled('proprietor_father_name')) {
+                    $validator->errors()->add('proprietor_father_name', 'The proprietor father\'s name is required for sole proprietorship.');
+                }
+                if (!$request->filled('proprietor_address')) {
+                    $validator->errors()->add('proprietor_address', 'The proprietor address is required for sole proprietorship.');
+                }
+                if (!$request->filled('proprietor_pincode')) {
+                    $validator->errors()->add('proprietor_pincode', 'The proprietor pincode is required for sole proprietorship.');
+                }
+                if (!$request->filled('proprietor_country')) {
+                    $validator->errors()->add('proprietor_country', 'The proprietor country is required for sole proprietorship.');
+                }
+            } elseif ($entity_type === 'partnership') {
+                if (empty(array_filter($request->input('partner_name', [])))) {
+                    $validator->errors()->add('partner_name', 'At least one partner is required for partnership.');
+                } else {
+                    foreach ($request->input('partner_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            if (empty($request->input('partner_father_name', [])[$index])) {
+                                $validator->errors()->add("partner_father_name.$index", 'Father\'s name is required for each partner.');
+                            }
+                            if (empty($request->input('partner_contact', [])[$index])) {
+                                $validator->errors()->add("partner_contact.$index", 'Contact number is required for each partner.');
+                            }
+                            if (empty($request->input('partner_email', [])[$index])) {
+                                $validator->errors()->add("partner_email.$index", 'Email is required for each partner.');
+                            }
+                            if (empty($request->input('partner_address', [])[$index])) {
+                                $validator->errors()->add("partner_address.$index", 'Address is required for each partner.');
+                            }
+                        }
+                    }
+                }
+            } elseif ($entity_type === 'llp') {
+                if (!$request->filled('llpin_number')) {
+                    $validator->errors()->add('llpin_number', 'The LLPIN number is required for LLP.');
+                }
+                if (!$request->filled('llp_incorporation_date')) {
+                    $validator->errors()->add('llp_incorporation_date', 'The LLP incorporation date is required for LLP.');
+                }
+                if (empty(array_filter($request->input('llp_partner_name', [])))) {
+                    $validator->errors()->add('llp_partner_name', 'At least one designated partner is required for LLP.');
+                } else {
+                    foreach ($request->input('llp_partner_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            if (empty($request->input('llp_partner_dpin', [])[$index])) {
+                                $validator->errors()->add("llp_partner_dpin.$index", 'DPIN number is required for each partner.');
+                            }
+                            if (empty($request->input('llp_partner_contact', [])[$index])) {
+                                $validator->errors()->add("llp_partner_contact.$index", 'Contact number is required for each partner.');
+                            }
+                            if (empty($request->input('llp_partner_address', [])[$index])) {
+                                $validator->errors()->add("llp_partner_address.$index", 'Address is required for each partner.');
+                            }
+                        }
+                    }
+                }
+            } elseif (in_array($entity_type, ['private_company', 'public_company'])) {
+                if (!$request->filled('cin_number')) {
+                    $validator->errors()->add('cin_number', 'The CIN number is required for companies.');
+                }
+                if (!$request->filled('incorporation_date')) {
+                    $validator->errors()->add('incorporation_date', 'The incorporation date is required for companies.');
+                }
+                if (empty(array_filter($request->input('director_name', [])))) {
+                    $validator->errors()->add('director_name', 'At least one director is required for companies.');
+                } else {
+                    foreach ($request->input('director_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            if (empty($request->input('director_din', [])[$index])) {
+                                $validator->errors()->add("director_din.$index", 'DIN number is required for each director.');
+                            }
+                            if (empty($request->input('director_contact', [])[$index])) {
+                                $validator->errors()->add("director_contact.$index", 'Contact number is required for each director.');
+                            }
+                            if (empty($request->input('director_address', [])[$index])) {
+                                $validator->errors()->add("director_address.$index", 'Address is required for each director.');
+                            }
+                        }
+                    }
+                }
+            } elseif ($entity_type === 'cooperative_society') {
+                if (!$request->filled('cooperative_reg_number')) {
+                    $validator->errors()->add('cooperative_reg_number', 'The registration number is required for cooperative societies.');
+                }
+                if (!$request->filled('cooperative_reg_date')) {
+                    $validator->errors()->add('cooperative_reg_date', 'The registration date is required for cooperative societies.');
+                }
+                if (empty(array_filter($request->input('committee_name', [])))) {
+                    $validator->errors()->add('committee_name', 'At least one committee member is required for cooperative societies.');
+                } else {
+                    foreach ($request->input('committee_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            if (empty($request->input('committee_designation', [])[$index])) {
+                                $validator->errors()->add("committee_designation.$index", 'Designation is required for each committee member.');
+                            }
+                            if (empty($request->input('committee_contact', [])[$index])) {
+                                $validator->errors()->add("committee_contact.$index", 'Contact number is required for each committee member.');
+                            }
+                            if (empty($request->input('committee_address', [])[$index])) {
+                                $validator->errors()->add("committee_address.$index", 'Address is required for each committee member.');
+                            }
+                        }
+                    }
+                }
+            } elseif ($entity_type === 'trust') {
+                if (!$request->filled('trust_reg_number')) {
+                    $validator->errors()->add('trust_reg_number', 'The registration number is required for trusts.');
+                }
+                if (!$request->filled('trust_reg_date')) {
+                    $validator->errors()->add('trust_reg_date', 'The registration date is required for trusts.');
+                }
+                if (empty(array_filter($request->input('trustee_name', [])))) {
+                    $validator->errors()->add('trustee_name', 'At least one trustee is required for trusts.');
+                } else {
+                    foreach ($request->input('trustee_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            if (empty($request->input('trustee_designation', [])[$index])) {
+                                $validator->errors()->add("trustee_designation.$index", 'Designation is required for each trustee.');
+                            }
+                            if (empty($request->input('trustee_contact', [])[$index])) {
+                                $validator->errors()->add("trustee_contact.$index", 'Contact number is required for each trustee.');
+                            }
+                            if (empty($request->input('trustee_address', [])[$index])) {
+                                $validator->errors()->add("trustee_address.$index", 'Address is required for each trustee.');
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Validate authorized persons
+                 if ($request->has('auth_person_name') && !empty(array_filter($request->input('auth_person_name', [])))) {
+        foreach ($request->input('auth_person_name', []) as $index => $name) {
+            if (!empty($name)) {
+                // Check Letter of Authorization
+                $hasNewLetter = $request->hasFile("auth_person_letter.$index");
+                $hasExistingLetter = !empty($request->input("existing_auth_person_letter.$index")) || 
+                                    (isset($existingAuthPersons[$index]['letter']) && !empty($existingAuthPersons[$index]['letter']));
+                
+                if (!$hasNewLetter && !$hasExistingLetter) {
+                    $validator->errors()->add("auth_person_letter.$index", 'Either upload a new Letter of Authorization or keep the existing one');
+                }
+                
+                // Check Aadhar
+                $hasNewAadhar = $request->hasFile("auth_person_aadhar.$index");
+                $hasExistingAadhar = !empty($request->input("existing_auth_person_aadhar.$index")) || 
+                                     (isset($existingAuthPersons[$index]['aadhar']) && !empty($existingAuthPersons[$index]['aadhar']));
+                
+                if (!$hasNewAadhar && !$hasExistingAadhar) {
+                    $validator->errors()->add("auth_person_aadhar.$index", 'Either upload a new Aadhar document or keep the existing one');
+                }
+            }
+        }
     }
+         
 
-    DB::beginTransaction();
-    try {
-        // Fetch existing entity details
-        $entityDetails = \App\Models\EntityDetails::where('application_id', $application_id)->first();
-        $existingDocuments = $entityDetails && $entityDetails->documents_data
-            ? json_decode($entityDetails->documents_data, true)
-            : [];
-
-        // Define validation rules
-        $rules = [
-            // Common fields
-            'establishment_name' => 'required|string|max:255',
-            'entity_type' => 'required|string|in:sole_proprietorship,partnership,llp,private_company,public_company,cooperative_society,trust',
-            'business_address' => 'required|string',
-            'house_no' => 'nullable|string|max:255',
-            'landmark' => 'nullable|string|max:255',
-            'city' => 'required|string|max:255',
-            'state_id' => 'required|exists:core_state,id',
-            'district_id' => 'required|exists:core_district,id',
-            'country_id' => 'required|exists:core_country,id',
-            'pincode' => 'required|string|max:10',
-            'mobile' => 'required|string|max:20',
-            'email' => 'required|email|max:255',
-            'pan_number' => 'required|string|max:20',
-            'pan_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'existing_pan_file' => 'nullable|string',
-            'pan_verified' => 'nullable|boolean',
-            'gst_applicable' => 'required|in:yes,no',
-            'gst_number' => 'nullable|string|max:20',
-            'gst_validity' => 'nullable|date_format:Y-m-d',
-            'gst_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'existing_gst_file' => 'nullable|string',
-            'seed_license' => 'required|string|max:255',
-            'seed_license_validity' => 'required|date_format:Y-m-d',
-            'seed_license_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'existing_seed_license_file' => 'nullable|string',
-            'seed_license_verified' => 'nullable|boolean',
-            'bank_name' => 'required|string|max:255',
-            'account_holder' => 'required|string|max:255',
-            'account_number' => 'required|string|max:20',
-            'ifsc_code' => 'required|string|max:11',
-            'bank_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'existing_bank_file' => 'nullable|string',
-            'tan_number' => 'nullable|string|max:20',
-
-            // Sole Proprietorship
-            'proprietor_name' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'proprietor_dob' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
-            'proprietor_father_name' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'proprietor_address' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string' : 'nullable|string',
-            'proprietor_pincode' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:10' : 'nullable|string|max:10',
-            'proprietor_country' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
-
-            // Partnership
-            'partner_name.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'partner_father_name.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'partner_contact.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:20' : 'nullable|string|max:20',
-            'partner_email.*' => $request->input('entity_type') === 'partnership' ? 'required|email|max:50' : 'nullable|email|max:50',
-            'partner_address.*' => $request->input('entity_type') === 'partnership' ? 'required|string' : 'nullable|string',
-
-            // LLP
-            'llpin_number' => $request->input('entity_type') === 'llp' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'llp_incorporation_date' => $request->input('entity_type') === 'llp' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
-            'llp_partner_name.*' => $request->input('entity_type') === 'llp' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'llp_partner_dpin.*' => $request->input('entity_type') === 'llp' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'llp_partner_contact.*' => $request->input('entity_type') === 'llp' ? 'required|string|max:20' : 'nullable|string|max:20',
-            'llp_partner_address.*' => $request->input('entity_type') === 'llp' ? 'required|string' : 'nullable|string',
-
-            // Company
-            'cin_number' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:255' : 'nullable|string|max:255',
-            'incorporation_date' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
-            'director_name.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:255' : 'nullable|string|max:255',
-            'director_din.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:255' : 'nullable|string|max:255',
-            'director_contact.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string|max:20' : 'nullable|string|max:20',
-            'director_address.*' => in_array($request->input('entity_type'), ['private_company', 'public_company']) ? 'required|string' : 'nullable|string',
-
-            // Cooperative
-            'cooperative_reg_number' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'cooperative_reg_date' => $request->input('entity_type') === 'cooperative_society' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
-            'committee_name.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'committee_designation.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'committee_contact.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string|max:20' : 'nullable|string|max:20',
-            'committee_address.*' => $request->input('entity_type') === 'cooperative_society' ? 'required|string' : 'nullable|string',
-
-            // Trust
-            'trust_reg_number' => $request->input('entity_type') === 'trust' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'trust_reg_date' => $request->input('entity_type') === 'trust' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
-            'trustee_name.*' => $request->input('entity_type') === 'trust' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'trustee_designation.*' => $request->input('entity_type') === 'trust' ? 'required|string|max:255' : 'nullable|string|max:255',
-            'trustee_contact.*' => $request->input('entity_type') === 'trust' ? 'required|string|max:20' : 'nullable|string|max:20',
-            'trustee_address.*' => $request->input('entity_type') === 'trust' ? 'required|string' : 'nullable|string',
-
-            // Authorized Persons
-            'auth_person_name.*' => 'nullable|string|max:255',
-            'auth_person_contact.*' => 'nullable|string|max:20',
-            'auth_person_email.*' => 'nullable|email|max:255',
-            'auth_person_address.*' => 'nullable|string',
-            'auth_person_relation.*' => 'nullable|string|max:255',
-        ];
-
-        // Custom validation for file fields and GST
-        $validator = Validator::make($request->all(), $rules);
-        $validator->after(function ($validator) use ($request, $existingDocuments) {
-            // Validate PAN file
-            if (!$request->hasFile('pan_file') && !$request->input('existing_pan_file') && !collect($existingDocuments)->firstWhere('type', 'pan')) {
-                $validator->errors()->add('pan_file', 'The PAN file is required.');
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
             }
 
-            // Validate PAN verification if a new file is uploaded
-            if ($request->hasFile('pan_file') && !$request->input('pan_verified')) {
-                $validator->errors()->add('pan_verified', 'You must confirm that the PAN number matches the uploaded document.');
-            }
+            $data = $validator->validated();
+            $entity_type = $data['entity_type'];
 
-            // Validate Seed License file
-            if (!$request->hasFile('seed_license_file') && !$request->input('existing_seed_license_file') && !collect($existingDocuments)->firstWhere('type', 'seed_license')) {
-                $validator->errors()->add('seed_license_file', 'The seed license file is required.');
-            }
+            // Initialize documents_data with existing documents
+            $documents_data = $existingDocuments ?: []; // Ensure initialization
 
-            // Validate Seed License verification if a new file is uploaded
-            if ($request->hasFile('seed_license_file') && !$request->input('seed_license_verified')) {
-                $validator->errors()->add('seed_license_verified', 'You must confirm that the seed license number matches the uploaded document.');
-            }
-
-            // Validate Bank file
-            if (!$request->hasFile('bank_file') && !$request->input('existing_bank_file') && !collect($existingDocuments)->firstWhere('type', 'bank')) {
-                $validator->errors()->add('bank_file', 'The bank file is required.');
-            }
-
-            // Validate GST fields if applicable
-            if ($request->input('gst_applicable') === 'yes') {
-                if (!$request->filled('gst_number')) {
-                    $validator->errors()->add('gst_number', 'The GST number is required when GST is applicable.');
-                }
-                if (!$request->filled('gst_validity')) {
-                    $validator->errors()->add('gst_validity', 'The GST validity date is required when GST is applicable.');
-                }
-                if (!$request->hasFile('gst_file') && !$request->input('existing_gst_file') && !collect($existingDocuments)->firstWhere('type', 'gst')) {
-                    $validator->errors()->add('gst_file', 'The GST document is required when GST is applicable.');
-                }
-            }
-        });
-
-        // Custom validation for entity-specific fields
-        $entity_type = $request->input('entity_type');
-        if ($entity_type === 'sole_proprietorship') {
-            if (!$request->filled('proprietor_name')) {
-                $validator->errors()->add('proprietor_name', 'The proprietor name is required for sole proprietorship.');
-            }
-            if (!$request->filled('proprietor_dob')) {
-                $validator->errors()->add('proprietor_dob', 'The proprietor date of birth is required for sole proprietorship.');
-            }
-            if (!$request->filled('proprietor_father_name')) {
-                $validator->errors()->add('proprietor_father_name', 'The proprietor father\'s name is required for sole proprietorship.');
-            }
-            if (!$request->filled('proprietor_address')) {
-                $validator->errors()->add('proprietor_address', 'The proprietor address is required for sole proprietorship.');
-            }
-            if (!$request->filled('proprietor_pincode')) {
-                $validator->errors()->add('proprietor_pincode', 'The proprietor pincode is required for sole proprietorship.');
-            }
-            if (!$request->filled('proprietor_country')) {
-                $validator->errors()->add('proprietor_country', 'The proprietor country is required for sole proprietorship.');
-            }
-        } elseif ($entity_type === 'partnership') {
-            if (empty(array_filter($request->input('partner_name', [])))) {
-                $validator->errors()->add('partner_name', 'At least one partner is required for partnership.');
-            } else {
-                foreach ($request->input('partner_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        if (empty($request->input('partner_father_name', [])[$index])) {
-                            $validator->errors()->add("partner_father_name.$index", 'Father\'s name is required for each partner.');
-                        }
-                        if (empty($request->input('partner_contact', [])[$index])) {
-                            $validator->errors()->add("partner_contact.$index", 'Contact number is required for each partner.');
-                        }
-                        if (empty($request->input('partner_email', [])[$index])) {
-                            $validator->errors()->add("partner_email.$index", 'Email is required for each partner.');
-                        }
-                        if (empty($request->input('partner_address', [])[$index])) {
-                            $validator->errors()->add("partner_address.$index", 'Address is required for each partner.');
-                        }
-                    }
-                }
-            }
-        } elseif ($entity_type === 'llp') {
-            if (!$request->filled('llpin_number')) {
-                $validator->errors()->add('llpin_number', 'The LLPIN number is required for LLP.');
-            }
-            if (!$request->filled('llp_incorporation_date')) {
-                $validator->errors()->add('llp_incorporation_date', 'The LLP incorporation date is required for LLP.');
-            }
-            if (empty(array_filter($request->input('llp_partner_name', [])))) {
-                $validator->errors()->add('llp_partner_name', 'At least one designated partner is required for LLP.');
-            } else {
-                foreach ($request->input('llp_partner_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        if (empty($request->input('llp_partner_dpin', [])[$index])) {
-                            $validator->errors()->add("llp_partner_dpin.$index", 'DPIN number is required for each partner.');
-                        }
-                        if (empty($request->input('llp_partner_contact', [])[$index])) {
-                            $validator->errors()->add("llp_partner_contact.$index", 'Contact number is required for each partner.');
-                        }
-                        if (empty($request->input('llp_partner_address', [])[$index])) {
-                            $validator->errors()->add("llp_partner_address.$index", 'Address is required for each partner.');
-                        }
-                    }
-                }
-            }
-        } elseif (in_array($entity_type, ['private_company', 'public_company'])) {
-            if (!$request->filled('cin_number')) {
-                $validator->errors()->add('cin_number', 'The CIN number is required for companies.');
-            }
-            if (!$request->filled('incorporation_date')) {
-                $validator->errors()->add('incorporation_date', 'The incorporation date is required for companies.');
-            }
-            if (empty(array_filter($request->input('director_name', [])))) {
-                $validator->errors()->add('director_name', 'At least one director is required for companies.');
-            } else {
-                foreach ($request->input('director_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        if (empty($request->input('director_din', [])[$index])) {
-                            $validator->errors()->add("director_din.$index", 'DIN number is required for each director.');
-                        }
-                        if (empty($request->input('director_contact', [])[$index])) {
-                            $validator->errors()->add("director_contact.$index", 'Contact number is required for each director.');
-                        }
-                        if (empty($request->input('director_address', [])[$index])) {
-                            $validator->errors()->add("director_address.$index", 'Address is required for each director.');
-                        }
-                    }
-                }
-            }
-        } elseif ($entity_type === 'cooperative_society') {
-            if (!$request->filled('cooperative_reg_number')) {
-                $validator->errors()->add('cooperative_reg_number', 'The registration number is required for cooperative societies.');
-            }
-            if (!$request->filled('cooperative_reg_date')) {
-                $validator->errors()->add('cooperative_reg_date', 'The registration date is required for cooperative societies.');
-            }
-            if (empty(array_filter($request->input('committee_name', [])))) {
-                $validator->errors()->add('committee_name', 'At least one committee member is required for cooperative societies.');
-            } else {
-                foreach ($request->input('committee_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        if (empty($request->input('committee_designation', [])[$index])) {
-                            $validator->errors()->add("committee_designation.$index", 'Designation is required for each committee member.');
-                        }
-                        if (empty($request->input('committee_contact', [])[$index])) {
-                            $validator->errors()->add("committee_contact.$index", 'Contact number is required for each committee member.');
-                        }
-                        if (empty($request->input('committee_address', [])[$index])) {
-                            $validator->errors()->add("committee_address.$index", 'Address is required for each committee member.');
-                        }
-                    }
-                }
-            }
-        } elseif ($entity_type === 'trust') {
-            if (!$request->filled('trust_reg_number')) {
-                $validator->errors()->add('trust_reg_number', 'The registration number is required for trusts.');
-            }
-            if (!$request->filled('trust_reg_date')) {
-                $validator->errors()->add('trust_reg_date', 'The registration date is required for trusts.');
-            }
-            if (empty(array_filter($request->input('trustee_name', [])))) {
-                $validator->errors()->add('trustee_name', 'At least one trustee is required for trusts.');
-            } else {
-                foreach ($request->input('trustee_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        if (empty($request->input('trustee_designation', [])[$index])) {
-                            $validator->errors()->add("trustee_designation.$index", 'Designation is required for each trustee.');
-                        }
-                        if (empty($request->input('trustee_contact', [])[$index])) {
-                            $validator->errors()->add("trustee_contact.$index", 'Contact number is required for each trustee.');
-                        }
-                        if (empty($request->input('trustee_address', [])[$index])) {
-                            $validator->errors()->add("trustee_address.$index", 'Address is required for each trustee.');
-                        }
-                    }
-                }
-            }
-        }
-
-        // Validate authorized persons
-        if ($request->has('auth_person_name') && !empty(array_filter($request->input('auth_person_name', [])))) {
-            foreach ($request->input('auth_person_name', []) as $index => $name) {
-                if (!empty($name)) {
-                    if (empty($request->input('auth_person_contact', [])[$index])) {
-                        $validator->errors()->add("auth_person_contact.$index", 'Contact number is required for each authorized person.');
-                    }
-                    if (empty($request->input('auth_person_address', [])[$index])) {
-                        $validator->errors()->add("auth_person_address.$index", 'Address is required for each authorized person.');
-                    }
-                    if (empty($request->input('auth_person_relation', [])[$index])) {
-                        $validator->errors()->add("auth_person_relation.$index", 'Relation is required for each authorized person.');
-                    }
-                }
-            }
-        }
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
-
-        $data = $validator->validated();
-        $entity_type = $data['entity_type'];
-
-        // Initialize documents_data with existing documents
-        $documents_data = $existingDocuments ?: []; // Ensure initialization
-
-        // Process new or updated documents
-        $documentTypes = [
-            'pan' => [
-                'file_field' => 'pan_file',
-                'existing_field' => 'existing_pan_file',
-                'details' => ['pan_number' => $data['pan_number']],
-                'verified_field' => 'pan_verified',
-            ],
-            'seed_license' => [
-                'file_field' => 'seed_license_file',
-                'existing_field' => 'existing_seed_license_file',
-                'details' => [
-                    'seed_license_number' => $data['seed_license'],
-                    'seed_license_validity' => $data['seed_license_validity'],
+            // Process new or updated documents
+            $documentTypes = [
+                'pan' => [
+                    'file_field' => 'pan_file',
+                    'existing_field' => 'existing_pan_file',
+                    'details' => ['pan_number' => $data['pan_number']],
+                    'verified_field' => 'pan_verified',
                 ],
-                'verified_field' => 'seed_license_verified',
-            ],
-            'bank' => [
-                'file_field' => 'bank_file',
-                'existing_field' => 'existing_bank_file',
-                'details' => [
+                'seed_license' => [
+                    'file_field' => 'seed_license_file',
+                    'existing_field' => 'existing_seed_license_file',
+                    'details' => [
+                        'seed_license_number' => $data['seed_license'],
+                        'seed_license_validity' => $data['seed_license_validity'],
+                    ],
+                    'verified_field' => 'seed_license_verified',
+                ],
+                'bank' => [
+                    'file_field' => 'bank_file',
+                    'existing_field' => 'existing_bank_file',
+                    'details' => [
+                        'bank_name' => $data['bank_name'],
+                        'account_holder' => $data['account_holder'],
+                        'account_number' => $data['account_number'],
+                        'ifsc_code' => $data['ifsc_code'],
+                    ],
+                ],
+                'gst' => [
+                    'file_field' => 'gst_file',
+                    'existing_field' => 'existing_gst_file',
+                    'details' => [
+                        'gst_number' => $data['gst_applicable'] === 'yes' ? $data['gst_number'] : null,
+                        'gst_validity' => $data['gst_applicable'] === 'yes' ? $data['gst_validity'] : null,
+                    ],
+                    'condition' => $data['gst_applicable'] === 'yes',
+                ],
+            ];
+
+            foreach ($documentTypes as $type => $config) {
+                // Skip GST if not applicable
+                if ($type === 'gst' && !$config['condition']) {
+                    $documents_data = array_filter($documents_data, function ($doc) use ($type) {
+                        return $doc['type'] !== $type;
+                    });
+                    continue;
+                }
+
+                // If a new file is uploaded, replace or add the document
+                if ($request->hasFile($config['file_field'])) {
+                    $file = $request->file($config['file_field']);
+                    $path = $file->store('documents/' . $application_id, 'public');
+                    $documents_data = array_filter($documents_data, function ($doc) use ($type) {
+                        return $doc['type'] !== $type;
+                    });
+                    $documents_data[] = [
+                        'type' => $type,
+                        'path' => $path,
+                        'details' => array_filter($config['details'], fn($value) => !is_null($value)),
+                        'status' => 'pending',
+                        'remarks' => 'Uploaded on ' . now()->toDateString(),
+                        'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : false) : false,
+                    ];
+                } elseif ($request->input($config['existing_field'])) {
+                    // Keep existing document if provided
+                    $existingDoc = collect($existingDocuments)->firstWhere('type', $type);
+                    if ($existingDoc) {
+                        $documents_data = array_filter($documents_data, function ($doc) use ($type) {
+                            return $doc['type'] !== $type;
+                        });
+                        $documents_data[] = array_merge($existingDoc, [
+                            'details' => array_filter($config['details'], fn($value) => !is_null($value)),
+                            'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : ($existingDoc['verified'] ?? false)) : ($existingDoc['verified'] ?? false),
+                        ]);
+                    }
+                }
+            }
+
+            // Common entity details
+            $entityData = [
+                'application_id' => $application_id,
+                'establishment_name' => $data['establishment_name'],
+                'entity_type' => $entity_type,
+                'business_address' => $data['business_address'],
+                'house_no' => $data['house_no'],
+                'landmark' => $data['landmark'],
+                'city' => $data['city'],
+                'state_id' => $data['state_id'],
+                'district_id' => $data['district_id'],
+                'country_id' => $data['country_id'],
+                'pincode' => $data['pincode'],
+                'mobile' => $data['mobile'],
+                'email' => $data['email'],
+                'pan_number' => $data['pan_number'],
+                'gst_applicable' => $data['gst_applicable'],
+                'gst_number' => $data['gst_applicable'] === 'yes' ? $data['gst_number'] : null,
+                'seed_license' => $data['seed_license'],
+                'documents_data' => json_encode(array_values($documents_data)), // Ensure array is re-indexed
+                'additional_data' => [],
+                'updated_at' => now(),
+            ];
+
+            // Entity-specific and additional data
+            $additionalData = [
+                'tan_number' => $data['tan_number'] ?? null,
+                'gst_validity' => $data['gst_applicable'] === 'yes' ? $data['gst_validity'] : null,
+                'seed_license_validity' => $data['seed_license_validity'],
+                'bank_details' => [
                     'bank_name' => $data['bank_name'],
                     'account_holder' => $data['account_holder'],
                     'account_number' => $data['account_number'],
                     'ifsc_code' => $data['ifsc_code'],
                 ],
-            ],
-            'gst' => [
-                'file_field' => 'gst_file',
-                'existing_field' => 'existing_gst_file',
-                'details' => [
-                    'gst_number' => $data['gst_applicable'] === 'yes' ? $data['gst_number'] : null,
-                    'gst_validity' => $data['gst_applicable'] === 'yes' ? $data['gst_validity'] : null,
-                ],
-                'condition' => $data['gst_applicable'] === 'yes',
-            ],
-        ];
+                'partners' => [],
+                'authorized_persons' => [],
+            ];
 
-        foreach ($documentTypes as $type => $config) {
-            // Skip GST if not applicable
-            if ($type === 'gst' && !$config['condition']) {
-                $documents_data = array_filter($documents_data, function ($doc) use ($type) {
-                    return $doc['type'] !== $type;
-                });
-                continue;
-            }
-
-            // If a new file is uploaded, replace or add the document
-            if ($request->hasFile($config['file_field'])) {
-                $file = $request->file($config['file_field']);
-                $path = $file->store('documents/' . $application_id, 'public');
-                $documents_data = array_filter($documents_data, function ($doc) use ($type) {
-                    return $doc['type'] !== $type;
-                });
-                $documents_data[] = [
-                    'type' => $type,
-                    'path' => $path,
-                    'details' => array_filter($config['details'], fn($value) => !is_null($value)),
-                    'status' => 'pending',
-                    'remarks' => 'Uploaded on ' . now()->toDateString(),
-                    'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : false) : false,
+            // Process entity-specific data
+            if ($entity_type === 'sole_proprietorship') {
+                $additionalData['proprietor'] = [
+                    'name' => $data['proprietor_name'],
+                    'dob' => $data['proprietor_dob'],
+                    'father_name' => $data['proprietor_father_name'],
+                    'address' => $data['proprietor_address'],
+                    'pincode' => $data['proprietor_pincode'],
+                    'country' => $data['proprietor_country'],
                 ];
-            } elseif ($request->input($config['existing_field'])) {
-                // Keep existing document if provided
-                $existingDoc = collect($existingDocuments)->firstWhere('type', $type);
-                if ($existingDoc) {
-                    $documents_data = array_filter($documents_data, function ($doc) use ($type) {
-                        return $doc['type'] !== $type;
-                    });
-                    $documents_data[] = array_merge($existingDoc, [
-                        'details' => array_filter($config['details'], fn($value) => !is_null($value)),
-                        'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : ($existingDoc['verified'] ?? false)) : ($existingDoc['verified'] ?? false),
-                    ]);
+            } elseif ($entity_type === 'partnership') {
+                $partners = [];
+                if ($request->has('partner_name') && is_array($request->input('partner_name'))) {
+                    foreach ($request->input('partner_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $partners[] = [
+                                'name' => $name,
+                                'father_name' => $request->input('partner_father_name', [])[$index],
+                                'contact' => $request->input('partner_contact', [])[$index],
+                                'email' => $request->input('partner_email', [])[$index],
+                                'address' => $request->input('partner_address', [])[$index],
+                            ];
+                        }
+                    }
                 }
+                $additionalData['partners'] = $partners;
+            } elseif ($entity_type === 'llp') {
+                $additionalData['llp'] = [
+                    'llpin_number' => $data['llpin_number'],
+                    'incorporation_date' => $data['llp_incorporation_date'],
+                ];
+                $partners = [];
+                if ($request->has('llp_partner_name') && is_array($request->input('llp_partner_name'))) {
+                    foreach ($request->input('llp_partner_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $partners[] = [
+                                'name' => $name,
+                                'dpin_number' => $request->input('llp_partner_dpin', [])[$index],
+                                'contact' => $request->input('llp_partner_contact', [])[$index],
+                                'address' => $request->input('llp_partner_address', [])[$index],
+                            ];
+                        }
+                    }
+                }
+                $additionalData['partners'] = $partners;
+            } elseif (in_array($entity_type, ['private_company', 'public_company'])) {
+                $additionalData['company'] = [
+                    'cin_number' => $data['cin_number'],
+                    'incorporation_date' => $data['incorporation_date'],
+                ];
+                $partners = [];
+                if ($request->has('director_name') && is_array($request->input('director_name'))) {
+                    foreach ($request->input('director_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $partners[] = [
+                                'name' => $name,
+                                'din_number' => $request->input('director_din', [])[$index],
+                                'contact' => $request->input('director_contact', [])[$index],
+                                'address' => $request->input('director_address', [])[$index],
+                            ];
+                        }
+                    }
+                }
+                $additionalData['partners'] = $partners;
+            } elseif ($entity_type === 'cooperative_society') {
+                $additionalData['cooperative'] = [
+                    'reg_number' => $data['cooperative_reg_number'],
+                    'reg_date' => $data['cooperative_reg_date'],
+                ];
+                $partners = [];
+                if ($request->has('committee_name') && is_array($request->input('committee_name'))) {
+                    foreach ($request->input('committee_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $partners[] = [
+                                'name' => $name,
+                                'designation' => $request->input('committee_designation', [])[$index],
+                                'contact' => $request->input('committee_contact', [])[$index],
+                                'address' => $request->input('committee_address', [])[$index],
+                            ];
+                        }
+                    }
+                }
+                $additionalData['partners'] = $partners;
+            } elseif ($entity_type === 'trust') {
+                $additionalData['trust'] = [
+                    'reg_number' => $data['trust_reg_number'],
+                    'reg_date' => $data['trust_reg_date'],
+                ];
+                $partners = [];
+                if ($request->has('trustee_name') && is_array($request->input('trustee_name'))) {
+                    foreach ($request->input('trustee_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $partners[] = [
+                                'name' => $name,
+                                'designation' => $request->input('trustee_designation', [])[$index],
+                                'contact' => $request->input('trustee_contact', [])[$index],
+                                'address' => $request->input('trustee_address', [])[$index],
+                            ];
+                        }
+                    }
+                }
+                $additionalData['partners'] = $partners;
             }
-        }
 
-        // Common entity details
-        $entityData = [
-            'application_id' => $application_id,
-            'establishment_name' => $data['establishment_name'],
-            'entity_type' => $entity_type,
-            'business_address' => $data['business_address'],
-            'house_no' => $data['house_no'],
-            'landmark' => $data['landmark'],
-            'city' => $data['city'],
-            'state_id' => $data['state_id'],
-            'district_id' => $data['district_id'],
-            'country_id' => $data['country_id'],
-            'pincode' => $data['pincode'],
-            'mobile' => $data['mobile'],
-            'email' => $data['email'],
-            'pan_number' => $data['pan_number'],
-            'gst_applicable' => $data['gst_applicable'],
-            'gst_number' => $data['gst_applicable'] === 'yes' ? $data['gst_number'] : null,
-            'seed_license' => $data['seed_license'],
-            'documents_data' => json_encode(array_values($documents_data)), // Ensure array is re-indexed
-            'additional_data' => [],
-            'updated_at' => now(),
-        ];
-
-        // Entity-specific and additional data
-        $additionalData = [
-            'tan_number' => $data['tan_number'] ?? null,
-            'gst_validity' => $data['gst_applicable'] === 'yes' ? $data['gst_validity'] : null,
-            'seed_license_validity' => $data['seed_license_validity'],
-            'bank_details' => [
-                'bank_name' => $data['bank_name'],
-                'account_holder' => $data['account_holder'],
-                'account_number' => $data['account_number'],
-                'ifsc_code' => $data['ifsc_code'],
-            ],
-            'partners' => [],
-            'authorized_persons' => [],
-        ];
-
-        // Process entity-specific data
-        if ($entity_type === 'sole_proprietorship') {
-            $additionalData['proprietor'] = [
-                'name' => $data['proprietor_name'],
-                'dob' => $data['proprietor_dob'],
-                'father_name' => $data['proprietor_father_name'],
-                'address' => $data['proprietor_address'],
-                'pincode' => $data['proprietor_pincode'],
-                'country' => $data['proprietor_country'],
-            ];
-        } elseif ($entity_type === 'partnership') {
-            $partners = [];
-            if ($request->has('partner_name') && is_array($request->input('partner_name'))) {
-                foreach ($request->input('partner_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        $partners[] = [
-                            'name' => $name,
-                            'father_name' => $request->input('partner_father_name', [])[$index],
-                            'contact' => $request->input('partner_contact', [])[$index],
-                            'email' => $request->input('partner_email', [])[$index],
-                            'address' => $request->input('partner_address', [])[$index],
-                        ];
-                    }
-                }
-            }
-            $additionalData['partners'] = $partners;
-        } elseif ($entity_type === 'llp') {
-            $additionalData['llp'] = [
-                'llpin_number' => $data['llpin_number'],
-                'incorporation_date' => $data['llp_incorporation_date'],
-            ];
-            $partners = [];
-            if ($request->has('llp_partner_name') && is_array($request->input('llp_partner_name'))) {
-                foreach ($request->input('llp_partner_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        $partners[] = [
-                            'name' => $name,
-                            'dpin_number' => $request->input('llp_partner_dpin', [])[$index],
-                            'contact' => $request->input('llp_partner_contact', [])[$index],
-                            'address' => $request->input('llp_partner_address', [])[$index],
-                        ];
-                    }
-                }
-            }
-            $additionalData['partners'] = $partners;
-        } elseif (in_array($entity_type, ['private_company', 'public_company'])) {
-            $additionalData['company'] = [
-                'cin_number' => $data['cin_number'],
-                'incorporation_date' => $data['incorporation_date'],
-            ];
-            $partners = [];
-            if ($request->has('director_name') && is_array($request->input('director_name'))) {
-                foreach ($request->input('director_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        $partners[] = [
-                            'name' => $name,
-                            'din_number' => $request->input('director_din', [])[$index],
-                            'contact' => $request->input('director_contact', [])[$index],
-                            'address' => $request->input('director_address', [])[$index],
-                        ];
-                    }
-                }
-            }
-            $additionalData['partners'] = $partners;
-        } elseif ($entity_type === 'cooperative_society') {
-            $additionalData['cooperative'] = [
-                'reg_number' => $data['cooperative_reg_number'],
-                'reg_date' => $data['cooperative_reg_date'],
-            ];
-            $partners = [];
-            if ($request->has('committee_name') && is_array($request->input('committee_name'))) {
-                foreach ($request->input('committee_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        $partners[] = [
-                            'name' => $name,
-                            'designation' => $request->input('committee_designation', [])[$index],
-                            'contact' => $request->input('committee_contact', [])[$index],
-                            'address' => $request->input('committee_address', [])[$index],
-                        ];
-                    }
-                }
-            }
-            $additionalData['partners'] = $partners;
-        } elseif ($entity_type === 'trust') {
-            $additionalData['trust'] = [
-                'reg_number' => $data['trust_reg_number'],
-                'reg_date' => $data['trust_reg_date'],
-            ];
-            $partners = [];
-            if ($request->has('trustee_name') && is_array($request->input('trustee_name'))) {
-                foreach ($request->input('trustee_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        $partners[] = [
-                            'name' => $name,
-                            'designation' => $request->input('trustee_designation', [])[$index],
-                            'contact' => $request->input('trustee_contact', [])[$index],
-                            'address' => $request->input('trustee_address', [])[$index],
-                        ];
-                    }
-                }
-            }
-            $additionalData['partners'] = $partners;
-        }
-
-        // Process authorized persons
-        if ($request->has('auth_person_name') && is_array($request->input('auth_person_name'))) {
+            // Process authorized persons
             $authorizedPersons = [];
-            foreach ($request->input('auth_person_name', []) as $index => $name) {
-                if (!empty($name)) {
-                    $authorizedPersons[] = [
-                        'name' => $name,
-                        'contact' => $request->input('auth_person_contact', [])[$index],
-                        'email' => $request->input('auth_person_email', [])[$index] ?? null,
-                        'address' => $request->input('auth_person_address', [])[$index],
-                        'relation' => $request->input('auth_person_relation', [])[$index],
-                    ];
-                }
+if ($request->has('auth_person_name') && is_array($request->input('auth_person_name'))) {
+    foreach ($request->input('auth_person_name', []) as $index => $name) {
+        if (!empty($name)) {
+            $personData = [
+                'name' => $name,
+                'contact' => $request->input('auth_person_contact', [])[$index],
+                'email' => $request->input('auth_person_email', [])[$index] ?? null,
+                'address' => $request->input('auth_person_address', [])[$index],
+                'relation' => $request->input('auth_person_relation', [])[$index],
+            ];
+
+            // Handle Letter
+            if ($request->hasFile("auth_person_letter.$index")) {
+                $letterFile = $request->file("auth_person_letter.$index");
+                $letterPath = $letterFile->store('documents/' . $application_id . '/authorized_persons', 'public');
+                $personData['letter'] = $letterPath;
+            } elseif ($request->input("existing_auth_person_letter.$index")) {
+                $personData['letter'] = $request->input("existing_auth_person_letter.$index");
+            } elseif (isset($existingAuthPersons[$index]['letter'])) {
+                $personData['letter'] = $existingAuthPersons[$index]['letter'];
             }
-            $additionalData['authorized_persons'] = $authorizedPersons;
+
+            // Handle Aadhar
+            if ($request->hasFile("auth_person_aadhar.$index")) {
+                $aadharFile = $request->file("auth_person_aadhar.$index");
+                $aadharPath = $aadharFile->store('documents/' . $application_id . '/authorized_persons', 'public');
+                $personData['aadhar'] = $aadharPath;
+            } elseif ($request->input("existing_auth_person_aadhar.$index")) {
+                $personData['aadhar'] = $request->input("existing_auth_person_aadhar.$index");
+            } elseif (isset($existingAuthPersons[$index]['aadhar'])) {
+                $personData['aadhar'] = $existingAuthPersons[$index]['aadhar'];
+            }
+
+            $authorizedPersons[] = $personData;
         }
-
-        // Remove empty arrays or null values from additional_data
-        $additionalData = array_filter($additionalData, function ($value) {
-            if (is_array($value)) {
-                return !empty(array_filter($value, function ($subValue) {
-                    return !is_null($subValue) && !(is_array($subValue) && empty($subValue));
-                }));
-            }
-            return !is_null($value);
-        });
-
-        // Set additional_data in entityData
-        $entityData['additional_data'] = $additionalData;
-
-        // Update or create EntityDetails
-        \App\Models\EntityDetails::updateOrCreate(
-            ['application_id' => $application_id],
-            $entityData
-        );
-
-        DB::commit();
-        return response()->json(['success' => true, 'message' => 'Entity details and documents saved successfully']);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('Error saving entity details: ' . $e->getMessage());
-        return response()->json(['success' => false, 'error' => 'An error occurred while saving entity details and documents.'], 500);
     }
 }
+
+            // Add to additional_data
+            $additionalData['authorized_persons'] = $authorizedPersons;
+
+            // Remove empty arrays or null values from additional_data
+            $additionalData = array_filter($additionalData, function ($value) {
+                if (is_array($value)) {
+                    return !empty(array_filter($value, function ($subValue) {
+                        return !is_null($subValue) && !(is_array($subValue) && empty($subValue));
+                    }));
+                }
+                return !is_null($value);
+            });
+
+            // Set additional_data in entityData
+            $entityData['additional_data'] = $additionalData;
+           // dd($entityData);
+            // Update or create EntityDetails
+            \App\Models\EntityDetails::updateOrCreate(
+                ['application_id' => $application_id],
+                $entityData
+            );
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Entity details and documents saved successfully']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error saving entity details: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => 'An error occurred while saving entity details and documents.'], 500);
+        }
+    }
     // Step 3: Distribution Details
     private function saveStep3(Request $request, $user, $application_id)
     {
@@ -2368,41 +2462,47 @@ class DistributorApplicationController extends Controller
             // Insert new declarations
             DB::table('declarations')->insert($data);
 
-         // Get the current user from core_employee
-        $currentUser = Employee::where('id', $user->emp_id)->first();
-        if (!$currentUser) {
-            Log::error('saveStep8: Current user not found in core_employee.', ['user_id' => $user->id]);
-            return response()->json(['success' => false, 'error' => 'User not found.'], 404);
-        }
-        // Determine approval level and approver based on territory, region, zone, and bu
-         $approverData = $this->getApproverIdAndLevel($currentUser);
-        if (!$approverData) {
-            Log::error('saveStep8: Approver not found or invalid designation.', [
-                'user_id' => $user->id,
-                'emp_reporting' => $currentUser->emp_reporting
-            ]);
-            return response()->json(['success' => false, 'error' => 'Approver not assigned or invalid designation.'], 404);
-        }
+            // Get the current user from core_employee
+            // $currentUser = Employee::where('id', $user->emp_id)->first();
+            // if (!$currentUser) {
+            //     Log::error('saveStep8: Current user not found in core_employee.', ['user_id' => $user->id]);
+            //     return response()->json(['success' => false, 'error' => 'User not found.'], 404);
+            // }
+            // Determine approval level and approver based on territory, region, zone, and bu
+            //  $approverData = $this->getApproverIdAndLevel($currentUser);
+            // if (!$approverData) {
+            //     Log::error('saveStep8: Approver not found or invalid designation.', [
+            //         'user_id' => $user->id,
+            //         'emp_reporting' => $currentUser->emp_reporting
+            //     ]);
+            //     return response()->json(['success' => false, 'error' => 'Approver not assigned or invalid designation.'], 404);
+            // }
 
-        $approverId = $approverData['approverId'];
-        $approvalLevel = $approverData['approvalLevel'];
+            // $approverId = $approverData['approverId'];
+            // $approvalLevel = $approverData['approvalLevel'];
 
             //Update application status (uncomment if needed)
+            // DB::table('distributor_applications')
+            //     ->where('id', $application_id)
+            //     ->update([
+            //         'status' => 'submitted',
+            //         'current_approver_id' => $approverId,
+            //         'approval_level' => $approvalLevel,
+            //         'updated_at' => now()
+            //      ]);
+
             DB::table('distributor_applications')
                 ->where('id', $application_id)
                 ->update([
-                    'status' => 'submitted',
-                    'current_approver_id' => $approverId,
-                    'approval_level' => $approvalLevel,
                     'updated_at' => now()
-                 ]);
+                ]);
 
             DB::commit();
             //$this->sendNotification($application_id, $approverId, 'submitted');
             Log::info('saveStep8: Declarations saved successfully for application_id: ' . $application_id);
             return response()->json([
                 'success' => true,
-                'redirect' => route('applications.index'),
+                // 'redirect' => route('applications.index'),
                 'message' => 'Step 8 saved successfully!',
                 'application_id' => $application_id
             ]);
@@ -2413,63 +2513,164 @@ class DistributorApplicationController extends Controller
         }
     }
 
+    // public function submit(Request $request, $application_id)
+    // {
+    //     $user = Auth::user();
+    //     return $this->saveStep8($request, $user, $application_id);
+    // }
+
+
+    private function saveStep9(Request $request, $user, $application_id)
+    {
+        $application = DistributorOnboarding::with([
+            'territoryDetail',
+            'regionDetail',
+            'zoneDetail',
+            'businessUnit',
+            'entityDetails',
+            'distributionDetail',
+            'businessPlan',
+            'financialInfo',
+            'existingDistributorships',
+            'bankDetail',
+            'declarations'
+        ])->findOrFail($application_id);
+        dd($application);
+        // Verify ownership
+        if ($user->emp_id !== $application->created_by) {
+            return response()->json(['success' => false, 'error' => 'Unauthorized action.'], 403);
+        }
+
+        // Validate all required steps are completed
+        $requiredSteps = [
+            'territory' => !$application->territory,
+            'entityDetails' => !$application->entityDetails,
+            'distributionDetail' => !$application->distributionDetail,
+            'businessPlan' => !$application->businessPlan,
+            'financialInfo' => !$application->financialInfo,
+            'existingDistributorships' => !$application->existingDistributorships->count(),
+            'bankDetail' => !$application->bankDetail,
+            'declarations' => !$application->declarations->count()
+        ];
+
+        if (in_array(true, $requiredSteps)) {
+            $missingSteps = array_keys(array_filter($requiredSteps));
+            Log::warning('Submission blocked - missing steps:', ['missing_steps' => $missingSteps]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Please complete all steps before submitting.',
+                'missing_steps' => $missingSteps
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Get approver information
+            $currentUser = Employee::where('id', $user->emp_id)->first();
+            if (!$currentUser) {
+                Log::error('saveStep9: Current user not found in core_employee.', ['user_id' => $user->id]);
+                throw new \Exception('User not found.');
+            }
+
+            $approverData = $this->getApproverIdAndLevel($currentUser);
+            if (!$approverData) {
+                Log::error('saveStep9: Approver not found or invalid designation.', [
+                    'user_id' => $user->id,
+                    'emp_reporting' => $currentUser->emp_reporting
+                ]);
+                throw new \Exception('Approver not assigned or invalid designation.');
+            }
+
+            // Final submission updates
+            $application->status = 'submitted';
+            $application->current_approver_id = $approverData['approverId'];
+            $application->approval_level = $approverData['approvalLevel'];
+            $application->submitted_at = now();
+            $application->save();
+
+            DB::commit();
+
+            // Trigger notifications
+            $this->sendNotification($application_id, $approverData['approverId'], 'submitted');
+
+            Log::info('Application submitted successfully via saveStep9', ['application_id' => $application_id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Application submitted successfully!',
+                'redirect' => route('applications.show', $application_id)
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error in saveStep9: " . $e->getMessage(), [
+                'application_id' => $application_id,
+                'user_id' => $user->id
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to submit application. ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function getApproverIdAndLevel($employee)
-{
-    // Map designations to integer approval levels
-    $designationMap = [
-        'Regional Business Manager' => 'rbm',
-        'Zonal Business Manager' => 'zbm',
-        'General Manager' => 'gm'
-    ];
+    {
+        // Map designations to integer approval levels
+        $designationMap = [
+            'Regional Business Manager' => 'rbm',
+            'Zonal Business Manager' => 'zbm',
+            'General Manager' => 'gm'
+        ];
 
-    // Fetch the manager directly using emp_reporting
-    $approverId = $employee->emp_reporting;
-    if (!$approverId) {
-        Log::error('No manager found for employee.', ['employee_id' => $employee->id]);
-        return null;
+        // Fetch the manager directly using emp_reporting
+        $approverId = $employee->emp_reporting;
+        if (!$approverId) {
+            Log::error('No manager found for employee.', ['employee_id' => $employee->id]);
+            return null;
+        }
+
+        // Fetch the manager's details
+        $manager = Employee::where('id', $approverId)->first();
+        if (!$manager) {
+            Log::error('Manager not found in core_employee.', ['manager_id' => $approverId]);
+            return null;
+        }
+
+        // Determine approval level based on manager's designation
+        $approvalLevel = $designationMap[$manager->emp_designation] ?? null;
+        if (!$approvalLevel) {
+            Log::warning('Manager designation not mapped to an approval level.', [
+                'employee_id' => $employee->id,
+                'manager_id' => $manager->id,
+                'manager_designation' => $manager->emp_designation
+            ]);
+            return null;
+        }
+
+        return [
+            'approverId' => $approverId,
+            'approvalLevel' => $approvalLevel
+        ];
     }
 
-    // Fetch the manager's details
-    $manager = Employee::where('id', $approverId)->first();
-    if (!$manager) {
-        Log::error('Manager not found in core_employee.', ['manager_id' => $approverId]);
-        return null;
-    }
+    // private function sendNotification($application_id, $approver_id, $action)
+    // {
+    //     $application = DistributorOnboarding::find($application_id);
+    //     $recipient = Employee::find($approver_id);
 
-    // Determine approval level based on manager's designation
-    $approvalLevel = $designationMap[$manager->emp_designation] ?? null;
-    if (!$approvalLevel) {
-        Log::warning('Manager designation not mapped to an approval level.', [
-            'employee_id' => $employee->id,
-            'manager_id' => $manager->id,
-            'manager_designation' => $manager->emp_designation
-        ]);
-        return null;
-    }
+    //     if ($recipient) {
+    //         Mail::to($recipient->emp_email)->send(new ApplicationActionNotification($application, $action));
+    //     }
 
-    return [
-        'approverId' => $approverId,
-        'approvalLevel' => $approvalLevel
-    ];
-}
-
-// private function sendNotification($application_id, $approver_id, $action)
-// {
-//     $application = DistributorApplication::find($application_id);
-//     $recipient = Employee::find($approver_id);
-
-//     if ($recipient) {
-//         Mail::to($recipient->emp_email)->send(new ApplicationActionNotification($application, $action));
-//     }
-
-//     // CC Business Head for GM approval
-//     if ($application->approval_level === 3 && $action === 'submitted') {
-//         $businessHead = Employee::where('emp_designation', 'Business Head')->first();
-//         if ($businessHead) {
-//             Mail::to($businessHead->emp_email)->send(new ApplicationActionNotification($application, $action));
-//         }
-//     }
-// }
+    //     // CC Business Head for GM approval
+    //     if ($application->approval_level === 3 && $action === 'submitted') {
+    //         $businessHead = Employee::where('emp_designation', 'Business Head')->first();
+    //         if ($businessHead) {
+    //             Mail::to($businessHead->emp_email)->send(new ApplicationActionNotification($application, $action));
+    //         }
+    //     }
+    // }
 
 
     // private function saveStep9(Request $request, $user, $application_id)
@@ -2726,5 +2927,4 @@ class DistributorApplicationController extends Controller
             return response()->json(['success' => false, 'error' => 'Failed to remove document: ' . $e->getMessage()], 500);
         }
     }
-
 }

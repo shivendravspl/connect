@@ -10,8 +10,8 @@ $seedLicenseDoc = $documentsCollection->firstWhere('type', 'seed_license');
 $bankDoc = $documentsCollection->firstWhere('type', 'bank');
 $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 @endphp
-    <div id="entity-details" class="form-section p-2">
-    <h5 class="mb-2 fs-6">Entity Details</h5>
+<div id="entity-details" class="form-section">
+    <h5 class="mb-3">Entity Details</h5>
 
     <div class="row g-2">
         <div class="col-12 col-md-6">
@@ -21,10 +21,10 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     value="{{ old('establishment_name', isset($application->entityDetails) ? $application->entityDetails->establishment_name : '') }}" required>
             </div>
         </div>
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="entity_type" class="form-label small">Type/Nature of Establishment *</label>
-                <select class="form-control form-control-sm" id="entity_type" name="entity_type" required onchange="showRelevantFields()">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="entity_type" class="form-label">Type/Nature of Establishment *</label>
+                <select class="form-control" id="entity_type" name="entity_type" required onchange="showRelevantFields()">
                     <option value="">Select Type</option>
                     @foreach(['sole_proprietorship' => 'Sole Proprietorship', 'partnership' => 'Partnership', 'llp' => 'Limited Liability Partnership (LLP)', 'private_company' => 'Private Company', 'public_company' => 'Public Company', 'cooperative_society' => 'Cooperative Societies', 'trust' => 'Trust'] as $value => $label)
                     <option value="{{ $value }}"
@@ -39,53 +39,53 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <!-- Sole Proprietorship Fields -->
     <div id="sole_proprietorship_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2">
-                <h6 class="mb-0 fs-6">Proprietor Details</h6>
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h6 class="mb-0">Proprietor Details</h6>
             </div>
-            <div class="card-body p-2">
-                <div class="row g-2">
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label for="proprietor_name" class="form-label small">Name of Proprietor *</label>
-                            <input type="text" class="form-control form-control-sm" id="proprietor_name" name="proprietor_name"
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="proprietor_name" class="form-label">Name of Proprietor *</label>
+                            <input type="text" class="form-control" id="proprietor_name" name="proprietor_name"
                                 value="{{ old('proprietor_name', isset($application->entityDetails->additional_data['proprietor']['name']) ? $application->entityDetails->additional_data['proprietor']['name'] : '') }}" required>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label for="proprietor_dob" class="form-label small">Date of Birth *</label>
-                            <input type="date" class="form-control form-control-sm" id="proprietor_dob" name="proprietor_dob"
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="proprietor_dob" class="form-label">Date of Birth *</label>
+                            <input type="date" class="form-control" id="proprietor_dob" name="proprietor_dob"
                                 value="{{ old('proprietor_dob', isset($application->entityDetails->additional_data['proprietor']['dob']) ? $application->entityDetails->additional_data['proprietor']['dob'] : '') }}" required>
                         </div>
                     </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label for="proprietor_father_name" class="form-label small">Father's/Husband's Name *</label>
-                            <input type="text" class="form-control form-control-sm" id="proprietor_father_name" name="proprietor_father_name"
+                    <div class="col-md-4">
+                        <div class="form-group mb-3">
+                            <label for="proprietor_father_name" class="form-label">Father's/Husband's Name *</label>
+                            <input type="text" class="form-control" id="proprietor_father_name" name="proprietor_father_name"
                                 value="{{ old('proprietor_father_name', isset($application->entityDetails->additional_data['proprietor']['father_name']) ? $application->entityDetails->additional_data['proprietor']['father_name'] : '') }}" required>
                         </div>
                     </div>
                 </div>
-                <h6 class="mt-2 mb-2 fs-6">Permanent Address</h6>
-                <div class="row g-2">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label for="proprietor_address" class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" id="proprietor_address" name="proprietor_address" rows="2" required>{{ old('proprietor_address', isset($application->entityDetails->additional_data['proprietor']['address']) ? $application->entityDetails->additional_data['proprietor']['address'] : '') }}</textarea>
+                <h6 class="mt-4 mb-3">Permanent Address</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group mb-3">
+                            <label for="proprietor_address" class="form-label">Full Address *</label>
+                            <textarea class="form-control" id="proprietor_address" name="proprietor_address" rows="2" required>{{ old('proprietor_address', isset($application->entityDetails->additional_data['proprietor']['address']) ? $application->entityDetails->additional_data['proprietor']['address'] : '') }}</textarea>
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
-                        <div class="form-group mb-2">
-                            <label for="proprietor_pincode" class="form-label small">Pincode *</label>
-                            <input type="text" class="form-control form-control-sm" id="proprietor_pincode" name="proprietor_pincode"
+                    <div class="col-md-3">
+                        <div class="form-group mb-3">
+                            <label for="proprietor_pincode" class="form-label">Pincode *</label>
+                            <input type="text" class="form-control" id="proprietor_pincode" name="proprietor_pincode"
                                 value="{{ old('proprietor_pincode', isset($application->entityDetails->additional_data['proprietor']['pincode']) ? $application->entityDetails->additional_data['proprietor']['pincode'] : '') }}" required>
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
-                        <div class="form-group mb-2">
-                            <label for="proprietor_country" class="form-label small">Country *</label>
-                            <input type="text" class="form-control form-control-sm" id="proprietor_country" name="proprietor_country"
+                    <div class="col-md-3">
+                        <div class="form-group mb-3">
+                            <label for="proprietor_country" class="form-label">Country *</label>
+                            <input type="text" class="form-control" id="proprietor_country" name="proprietor_country"
                                 value="{{ old('proprietor_country', isset($application->entityDetails->additional_data['proprietor']['country']) ? $application->entityDetails->additional_data['proprietor']['country'] : 'India') }}" required>
                         </div>
                     </div>
@@ -96,12 +96,12 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <!-- Partnership Fields -->
     <div id="partnership_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Partners Details</h6>
-                <button type="button" class="btn btn-xs btn-primary" onclick="addPartner()">+ Add Partner</button>
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Partners Details</h6>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addPartner()">+ Add Partner</button>
             </div>
-            <div class="card-body p-2">
+            <div class="card-body">
                 <div id="partners_container">
                     @php
                     $partners = old('partner_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'partnership' ? $application->entityDetails->additional_data['partners'] : []);
@@ -110,42 +110,42 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($partners as $index => $partner)
-                    <div class="partner-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Partner Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="partner_name[]" value="{{ old("partner_name.$index", $partner['name'] ?? '') }}" required>
+                    <div class="partner-entry mb-4 border-bottom pb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Partner Name *</label>
+                                    <input type="text" class="form-control" name="partner_name[]" value="{{ old("partner_name.$index", $partner['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Father's/Husband's Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="partner_father_name[]" value="{{ old("partner_father_name.$index", $partner['father_name'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Father's/Husband's Name *</label>
+                                    <input type="text" class="form-control" name="partner_father_name[]" value="{{ old("partner_father_name.$index", $partner['father_name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="partner_contact[]" value="{{ old("partner_contact.$index", $partner['contact'] ?? '') }}" required>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-12 col-md-6">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Email Address *</label>
-                                    <input type="email" class="form-control form-control-sm" name="partner_email[]" value="{{ old("partner_email.$index", $partner['email'] ?? '') }}" required>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Full Address *</label>
-                                    <textarea class="form-control form-control-sm" name="partner_address[]" rows="2" required>{{ old("partner_address.$index", $partner['address'] ?? '') }}</textarea>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="partner_contact[]" value="{{ old("partner_contact.$index", $partner['contact'] ?? '') }}" required>
                                 </div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-xs btn-danger" onclick="removePartner(this)">Remove</button>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Email Address *</label>
+                                    <input type="email" class="form-control" name="partner_email[]" value="{{ old("partner_email.$index", $partner['email'] ?? '') }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Full Address *</label>
+                                    <textarea class="form-control" name="partner_address[]" rows="2" required>{{ old("partner_address.$index", $partner['address'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removePartner(this)">Remove</button>
                     </div>
                     @endforeach
                 </div>
@@ -155,12 +155,12 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <!-- LLP Fields -->
     <div id="llp_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Designated Partners Details</h6>
-                <button type="button" class="btn btn-xs btn-primary" onclick="addLLPPartner()">+ Add Partner</button>
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Designated Partners Details</h6>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addLLPPartner()">+ Add Partner</button>
             </div>
-            <div class="card-body p-2">
+            <div class="card-body">
                 <div id="llp_partners_container">
                     @php
                     $llpPartners = old('llp_partner_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'llp' ? $application->entityDetails->additional_data['partners'] : []);
@@ -169,49 +169,49 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($llpPartners as $index => $partner)
-                    <div class="llp-partner-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Partner Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="llp_partner_name[]" value="{{ old("llp_partner_name.$index", $partner['name'] ?? '') }}" required>
+                    <div class="llp-partner-entry mb-4 border-bottom pb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Partner Name *</label>
+                                    <input type="text" class="form-control" name="llp_partner_name[]" value="{{ old("llp_partner_name.$index", $partner['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">DPIN Number *</label>
-                                    <input type="text" class="form-control form-control-sm" name="llp_partner_dpin[]" value="{{ old("llp_partner_dpin.$index", $partner['dpin_number'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">DPIN Number *</label>
+                                    <input type="text" class="form-control" name="llp_partner_dpin[]" value="{{ old("llp_partner_dpin.$index", $partner['dpin_number'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="llp_partner_contact[]" value="{{ old("llp_partner_contact.$index", $partner['contact'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="llp_partner_contact[]" value="{{ old("llp_partner_contact.$index", $partner['contact'] ?? '') }}" required>
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" name="llp_partner_address[]" rows="2" required>{{ old("llp_partner_address.$index", $partner['address'] ?? '') }}</textarea>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Full Address *</label>
+                            <textarea class="form-control" name="llp_partner_address[]" rows="2" required>{{ old("llp_partner_address.$index", $partner['address'] ?? '') }}</textarea>
                         </div>
-                        <button type="button" class="btn btn-xs btn-danger" onclick="removeLLPPartner(this)">Remove</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeLLPPartner(this)">Remove</button>
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="llpin_number" class="form-label small">LLPIN Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="llpin_number" name="llpin_number"
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="llpin_number" class="form-label">LLPIN Number *</label>
+                    <input type="text" class="form-control" id="llpin_number" name="llpin_number"
                         value="{{ old('llpin_number', isset($application->entityDetails->additional_data['llp']['llpin_number']) ? $application->entityDetails->additional_data['llp']['llpin_number'] : '') }}" required>
                 </div>
             </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="llp_incorporation_date" class="form-label small">Date of Incorporation *</label>
-                    <input type="date" class="form-control form-control-sm" id="llp_incorporation_date" name="llp_incorporation_date"
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="llp_incorporation_date" class="form-label">Date of Incorporation *</label>
+                    <input type="date" class="form-control" id="llp_incorporation_date" name="llp_incorporation_date"
                         value="{{ old('llp_incorporation_date', isset($application->entityDetails->additional_data['llp']['incorporation_date']) ? $application->entityDetails->additional_data['llp']['incorporation_date'] : '') }}" required>
                 </div>
             </div>
@@ -220,12 +220,12 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <!-- Company Fields -->
     <div id="company_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Directors Details</h6>
-                <button type="button" class="btn btn-xs btn-primary" onclick="addDirector()">+ Add Director</button>
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Directors Details</h6>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addDirector()">+ Add Director</button>
             </div>
-            <div class="card-body p-2">
+            <div class="card-body">
                 <div id="directors_container">
                     @php
                     $directors = old('director_name', isset($application->entityDetails->additional_data['partners']) && in_array($application->entityDetails->entity_type, ['private_company', 'public_company']) ? $application->entityDetails->additional_data['partners'] : []);
@@ -234,49 +234,49 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($directors as $index => $director)
-                    <div class="director-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Director Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="director_name[]" value="{{ old("director_name.$index", $director['name'] ?? '') }}" required>
+                    <div class="director-entry mb-4 border-bottom pb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Director Name *</label>
+                                    <input type="text" class="form-control" name="director_name[]" value="{{ old("director_name.$index", $director['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">DIN Number *</label>
-                                    <input type="text" class="form-control form-control-sm" name="director_din[]" value="{{ old("director_din.$index", $director['din_number'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">DIN Number *</label>
+                                    <input type="text" class="form-control" name="director_din[]" value="{{ old("director_din.$index", $director['din_number'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="director_contact[]" value="{{ old("director_contact.$index", $director['contact'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="director_contact[]" value="{{ old("director_contact.$index", $director['contact'] ?? '') }}" required>
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" name="director_address[]" rows="2" required>{{ old("director_address.$index", $director['address'] ?? '') }}</textarea>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Full Address *</label>
+                            <textarea class="form-control" name="director_address[]" rows="2" required>{{ old("director_address.$index", $director['address'] ?? '') }}</textarea>
                         </div>
-                        <button type="button" class="btn btn-xs btn-danger" onclick="removeDirector(this)">Remove</button>
+                        <button type="button" class="btn btnsm btnWI danger" onclick="removeDirector(this)">Remove</button>
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="cin_number" class="form-label small">CIN Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="cin_number" name="cin_number"
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="cin_number" class="form-label">CIN Number *</label>
+                    <input type="text" class="form-control" id="cin_number" name="cin_number"
                         value="{{ old('cin_number', isset($application->entityDetails->additional_data['company']['cin_number']) ? $application->entityDetails->additional_data['company']['cin_number'] : '') }}" required>
                 </div>
             </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="incorporation_date" class="form-label small">Date of Incorporation *</label>
-                    <input type="date" class="form-control form-control-sm" id="incorporation_date" name="incorporation_date"
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="incorporation_date" class="form-label">Date of Incorporation *</label>
+                    <input type="date" class="form-control" id="incorporation_date" name="incorporation_date"
                         value="{{ old('incorporation_date', isset($application->entityDetails->additional_data['company']['incorporation_date']) ? $application->entityDetails->additional_data['company']['incorporation_date'] : '') }}" required>
                 </div>
             </div>
@@ -285,12 +285,12 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <!-- Cooperative Society Fields -->
     <div id="cooperative_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Committee Members Details</h6>
-                <button type="button" class="btn btn-xs btn-primary" onclick="addCommitteeMember()">+ Add Member</button>
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Committee Members Details</h6>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addCommitteeMember()">+ Add Member</button>
             </div>
-            <div class="card-body p-2">
+            <div class="card-body">
                 <div id="committee_container">
                     @php
                     $committeeMembers = old('committee_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'cooperative_society' ? $application->entityDetails->additional_data['partners'] : []);
@@ -299,49 +299,49 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($committeeMembers as $index => $member)
-                    <div class="committee-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Member Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="committee_name[]" value="{{ old("committee_name.$index", $member['name'] ?? '') }}" required>
+                    <div class="committee-entry mb-4 border-bottom pb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Member Name *</label>
+                                    <input type="text" class="form-control" name="committee_name[]" value="{{ old("committee_name.$index", $member['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Designation *</label>
-                                    <input type="text" class="form-control form-control-sm" name="committee_designation[]" value="{{ old("committee_designation.$index", $member['designation'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Designation *</label>
+                                    <input type="text" class="form-control" name="committee_designation[]" value="{{ old("committee_designation.$index", $member['designation'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="committee_contact[]" value="{{ old("committee_contact.$index", $member['contact'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="committee_contact[]" value="{{ old("committee_contact.$index", $member['contact'] ?? '') }}" required>
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" name="committee_address[]" rows="2" required>{{ old("committee_address.$index", $member['address'] ?? '') }}</textarea>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Full Address *</label>
+                            <textarea class="form-control" name="committee_address[]" rows="2" required>{{ old("committee_address.$index", $member['address'] ?? '') }}</textarea>
                         </div>
-                        <button type="button" class="btn btn-xs btn-danger" onclick="removeCommitteeMember(this)">Remove</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeCommitteeMember(this)">Remove</button>
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="cooperative_reg_number" class="form-label small">Registration Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="cooperative_reg_number" name="cooperative_reg_number"
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="cooperative_reg_number" class="form-label">Registration Number *</label>
+                    <input type="text" class="form-control" id="cooperative_reg_number" name="cooperative_reg_number"
                         value="{{ old('cooperative_reg_number', isset($application->entityDetails->additional_data['cooperative']['reg_number']) ? $application->entityDetails->additional_data['cooperative']['reg_number'] : '') }}" required>
                 </div>
             </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="cooperative_reg_date" class="form-label small">Registration Date *</label>
-                    <input type="date" class="form-control form-control-sm" id="cooperative_reg_date" name="cooperative_reg_date"
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="cooperative_reg_date" class="form-label">Registration Date *</label>
+                    <input type="date" class="form-control" id="cooperative_reg_date" name="cooperative_reg_date"
                         value="{{ old('cooperative_reg_date', isset($application->entityDetails->additional_data['cooperative']['reg_date']) ? $application->entityDetails->additional_data['cooperative']['reg_date'] : '') }}" required>
                 </div>
             </div>
@@ -350,12 +350,12 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <!-- Trust Fields -->
     <div id="trust_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Trustees Details</h6>
-                <button type="button" class="btn btn-xs btn-primary" onclick="addTrustee()">+ Add Trustee</button>
+        <div class="card mb-4">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">Trustees Details</h6>
+                <button type="button" class="btn btn-sm btn-primary" onclick="addTrustee()">+ Add Trustee</button>
             </div>
-            <div class="card-body p-2">
+            <div class="card-body">
                 <div id="trustees_container">
                     @php
                     $trustees = old('trustee_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'trust' ? $application->entityDetails->additional_data['partners'] : []);
@@ -364,49 +364,49 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($trustees as $index => $trustee)
-                    <div class="trustee-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Trustee Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="trustee_name[]" value="{{ old("trustee_name.$index", $trustee['name'] ?? '') }}" required>
+                    <div class="trustee-entry mb-4 border-bottom pb-3">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Trustee Name *</label>
+                                    <input type="text" class="form-control" name="trustee_name[]" value="{{ old("trustee_name.$index", $trustee['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Designation *</label>
-                                    <input type="text" class="form-control form-control-sm" name="trustee_designation[]" value="{{ old("trustee_designation.$index", $trustee['designation'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Designation *</label>
+                                    <input type="text" class="form-control" name="trustee_designation[]" value="{{ old("trustee_designation.$index", $trustee['designation'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="trustee_contact[]" value="{{ old("trustee_contact.$index", $trustee['contact'] ?? '') }}" required>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="trustee_contact[]" value="{{ old("trustee_contact.$index", $trustee['contact'] ?? '') }}" required>
                                 </div>
                             </div>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" name="trustee_address[]" rows="2" required>{{ old("trustee_address.$index", $trustee['address'] ?? '') }}</textarea>
+                        <div class="form-group mb-3">
+                            <label class="form-label">Full Address *</label>
+                            <textarea class="form-control" name="trustee_address[]" rows="2" required>{{ old("trustee_address.$index", $trustee['address'] ?? '') }}</textarea>
                         </div>
-                        <button type="button" class="btn btn-xs btn-danger" onclick="removeTrustee(this)">Remove</button>
+                        <button type="button" class="btn btn-sm btn-danger" onclick="removeTrustee(this)">Remove</button>
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="trust_reg_number" class="form-label small">Registration Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="trust_reg_number" name="trust_reg_number"
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="trust_reg_number" class="form-label">Registration Number *</label>
+                    <input type="text" class="form-control" id="trust_reg_number" name="trust_reg_number"
                         value="{{ old('trust_reg_number', isset($application->entityDetails->additional_data['trust']['reg_number']) ? $application->entityDetails->additional_data['trust']['reg_number'] : '') }}" required>
                 </div>
             </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="trust_reg_date" class="form-label small">Registration Date *</label>
-                    <input type="date" class="form-control form-control-sm" id="trust_reg_date" name="trust_reg_date"
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="trust_reg_date" class="form-label">Registration Date *</label>
+                    <input type="date" class="form-control" id="trust_reg_date" name="trust_reg_date"
                         value="{{ old('trust_reg_date', isset($application->entityDetails->additional_data['trust']['reg_date']) ? $application->entityDetails->additional_data['trust']['reg_date'] : '') }}" required>
                 </div>
             </div>
@@ -414,40 +414,42 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
     </div>
 
     <!-- Common Fields -->
-    <div class="row g-2">
-        <div class="col-12 col-md-4">
-            <div class="form-group mb-2">
-                <label for="business_address" class="form-label small">Business Place/Shop Address *</label>
-                <textarea class="form-control form-control-sm" id="business_address" name="business_address" rows="2" required>{{ old('business_address', isset($application->entityDetails) ? $application->entityDetails->business_address : '') }}</textarea>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group mb-3">
+                <label for="business_address" class="form-label">Business Place/Shop Address *</label>
+                <textarea class="form-control" id="business_address" name="business_address" rows="2" required>{{ old('business_address', isset($application->entityDetails) ? $application->entityDetails->business_address : '') }}</textarea>
             </div>
         </div>
-        <div class="col-12 col-md-4">
-            <div class="form-group mb-2">
-                <label for="house_no" class="form-label small">House No. / Building</label>
-                <input type="text" class="form-control form-control-sm" id="house_no" name="house_no"
+        <div class="col-md-4">
+            <div class="form-group mb-3">
+                <label for="house_no" class="form-label">House No. / Building</label>
+                <input type="text" class="form-control" id="house_no" name="house_no"
                     value="{{ old('house_no', isset($application->entityDetails) ? $application->entityDetails->house_no : '') }}">
             </div>
         </div>
-        <div class="col-12 col-md-4">
-            <div class="form-group mb-2">
-                <label for="landmark" class="form-label small">Landmark</label>
-                <input type="text" class="form-control form-control-sm" id="landmark" name="landmark"
+        <div class="col-md-4">
+            <div class="form-group mb-3">
+                <label for="landmark" class="form-label">Landmark</label>
+                <input type="text" class="form-control" id="landmark" name="landmark"
                     value="{{ old('landmark', isset($application->entityDetails) ? $application->entityDetails->landmark : '') }}">
             </div>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-2">
-            <div class="form-group mb-2">
-                <label for="city" class="form-label small">City *</label>
-                <input type="text" class="form-control form-control-sm" id="city" name="city"
+    <div class="row">
+        <!-- City -->
+        <div class="col-md-2">
+            <div class="form-group mb-3">
+                <label for="city" class="form-label">City *</label>
+                <input type="text" class="form-control" id="city" name="city"
                     value="{{ old('city', isset($application->entityDetails) ? $application->entityDetails->city : '') }}" required>
             </div>
         </div>
-        <div class="col-12 col-md-3">
-            <div class="form-group mb-2">
-                <label for="state_id" class="form-label small">State *</label>
-                <select class="form-select form-select-sm" id="state_id" name="state_id" required>
+        <!-- State -->
+        <div class="col-md-3">
+            <div class="form-group mb-3">
+                <label for="state_id" class="form-label">State *</label>
+                <select class="form-select" id="state_id" name="state_id" required>
                     <option value="">-- Select State --</option>
                     @foreach($states as $state)
                     <option value="{{ $state->id }}"
@@ -458,10 +460,11 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </select>
             </div>
         </div>
-        <div class="col-12 col-md-3">
-            <div class="form-group mb-2">
-                <label for="district_id" class="form-label small">District *</label>
-                <select class="form-select form-select-sm" id="district_id" name="district_id" required>
+        <!-- District -->
+        <div class="col-md-3">
+            <div class="form-group mb-3">
+                <label for="district_id" class="form-label">District *</label>
+                <select class="form-select" id="district_id" name="district_id" required>
                     <option value="">Select District</option>
                     @if(isset($application->entityDetails) && $application->entityDetails->district_id)
                     @php
@@ -474,104 +477,107 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </select>
             </div>
         </div>
-        <div class="col-12 col-md-2">
-            <div class="form-group mb-2">
-                <label for="pincode" class="form-label small">Pincode *</label>
-                <input type="text" class="form-control form-control-sm" id="pincode" name="pincode"
+        <!-- Pincode -->
+        <div class="col-md-2">
+            <div class="form-group mb-3">
+                <label for="pincode" class="form-label">Pincode *</label>
+                <input type="text" class="form-control" id="pincode" name="pincode"
                     value="{{ old('pincode', isset($application->entityDetails) ? $application->entityDetails->pincode : '') }}" required>
             </div>
         </div>
-        <div class="col-12 col-md-2">
-            <div class="form-group mb-2">
-                <label for="country" class="form-label small">Country *</label>
-                <input type="text" class="form-control form-control-sm" id="country" name="country"
+        <!-- Country -->
+        <div class="col-md-2">
+            <div class="form-group mb-3">
+                <label for="country" class="form-label">Country *</label>
+                <input type="text" class="form-control" id="country" name="country"
                     value="India" readonly>
                 <input type="hidden" name="country_id" value="1">
             </div>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="mobile" class="form-label small">Mobile Number *</label>
-                <input type="tel" class="form-control form-control-sm" id="mobile" name="mobile"
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="mobile" class="form-label">Mobile Number *</label>
+                <input type="tel" class="form-control" id="mobile" name="mobile"
                     value="{{ old('mobile', isset($application->entityDetails) ? $application->entityDetails->mobile : '') }}" required>
             </div>
         </div>
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="email" class="form-label small">Email Address *</label>
-                <input type="email" class="form-control form-control-sm" id="email" name="email"
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="email" class="form-label">Email Address *</label>
+                <input type="email" class="form-control" id="email" name="email"
                     value="{{ old('edit', isset($application->entityDetails) ? $application->entityDetails->email : '') }}" required>
             </div>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="pan_number" class="form-label small">PAN Number *</label>
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number"
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="pan_number" class="form-label">PAN Number *</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="pan_number" name="pan_number"
                         value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}"
                         required>
-                    <input type="file" class="form-control form-control-sm d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="pan_upload_btn">Upload</button>
+                    <input type="file" class="form-control d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-outline-secondary" id="pan_upload_btn">Upload</button>
                 </div>
-                <div class="form-check mt-1">
+                <div class="form-check mt-2">
                     <input class="form-check-input" type="checkbox" id="pan_verified" name="pan_verified"
                         {{ old('pan_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
-                    <label class="form-check-label small" for="pan_verified">
+                    <label class="form-check-label" for="pan_verified">
                         I confirm the PAN number matches the uploaded document
                     </label>
                 </div>
                 <div id="pan_file_name" class="small text-muted mt-1 {{ $panDoc ? '' : 'd-none' }}">
                     @if($panDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View PAN Document</a> (Uploaded
+                    <a href="{{ asset('storage/' . $panDoc['path']) }}" target="_blank">View PAN Document</a> (Uploaded
                     on {{ $panDoc['remarks'] }})
                     <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
                     @endif
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="gst_applicable" class="form-label small">GST Applicable *</label>
-                <select class="form-control form-control-sm" id="gst_applicable" name="gst_applicable" required onchange="toggleGSTFields()">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="gst_applicable" class="form-label">GST Applicable *</label>
+                <select class="form-control" id="gst_applicable" name="gst_applicable" required onchange="toggleGSTFields()">
                     <option value="" disabled {{ old('gst_applicable', isset($application->entityDetails) ? '' : 'selected') }}>-- Select --</option>
                     <option value="yes" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'yes' ? 'selected' : '') }}>Yes</option>
                     <option value="no" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'no' ? 'selected' : '') }}>No</option>
                 </select>
             </div>
         </div>
+
     </div>
     <div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="gst_number" class="form-label small">GST Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number"
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="gst_number" class="form-label">GST Number *</label>
+                    <input type="text" class="form-control" id="gst_number" name="gst_number"
                         value="{{ old('gst_number', $gstDoc['details']['gst_number'] ?? ($application->entityDetails->gst_number ?? '')) }}">
                 </div>
             </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="gst_validity" class="form-label small">GST Validity Date *</label>
-                    <input type="date" class="form-control form-control-sm" id="gst_validity" name="gst_validity"
+            <div class="col-md-6">
+                <div class="form-group mb-3">
+                    <label for="gst_validity" class="form-label">GST Validity Date *</label>
+                    <input type="date" class="form-control" id="gst_validity" name="gst_validity"
                         value="{{ old('gst_validity', $gstDoc['details']['gst_validity'] ?? ($application->entityDetails->additional_data['gst_validity'] ?? '')) }}">
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12">
-                <div class="form-group mb-2">
-                    <label for="gst_file" class="form-label small">Upload GST Document *</label>
-                    <div class="input-group input-group-sm">
-                        <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
-                        <button type="button" class="btn btn-xs btn-outline-secondary" id="gst_upload_btn">Upload</button>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="form-group mb-3">
+                    <label for="gst_file" class="form-label">Upload GST Document *</label>
+                    <div class="input-group">
+                        <input type="file" class="form-control d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
+                        <button type="button" class="btn btn-outline-secondary" id="gst_upload_btn">Upload</button>
                     </div>
                     <div id="gst_file_name" class="small text-muted mt-1 {{ $gstDoc ? '' : 'd-none' }}">
                         @if($gstDoc)
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $gstDoc['path']) }}">View GST Document</a> (Uploaded on {{ $gstDoc['remarks'] }})
+                        <a href="{{ asset('storage/'.$gstDoc['path']) }}" target="_blank">View GST Document</a> (Uploaded on {{ $gstDoc['remarks'] }})
                         <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
                         @endif
                     </div>
@@ -579,98 +585,98 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="seed_license" class="form-label small">Seed License Number *</label>
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license"
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="seed_license" class="form-label">Seed License Number *</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" id="seed_license" name="seed_license"
                         value="{{ old('seed_license', $seedLicenseDoc['details']['seed_license_number'] ?? ($application->entityDetails->seed_license ?? '')) }}" required>
-                    <input type="file" class="form-control form-control-sm d-none" id="seed_license_file" name="seed_license_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="seed_license_upload_btn">Upload</button>
+                    <input type="file" class="form-control d-none" id="seed_license_file" name="seed_license_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-outline-secondary" id="seed_license_upload_btn">Upload</button>
                 </div>
-                <div class="form-check mt-1">
+                <div class="form-check mt-2">
                     <input class="form-check-input" type="checkbox" id="seed_license_verified" name="seed_license_verified"
                         {{ old('seed_license_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
-                    <label class="form-check-label small" for="seed_license_verified">
+                    <label class="form-check-label" for="seed_license_verified">
                         I confirm the Seed License number matches the uploaded document
                     </label>
                 </div>
                 <div id="seed_license_file_name" class="small text-muted mt-1 {{ $seedLicenseDoc ? '' : 'd-none' }}">
                     @if($seedLicenseDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $seedLicenseDoc['path']) }}">View Seed License Document</a> (Uploaded on {{ $seedLicenseDoc['remarks'] }})
+                    <a href="{{ asset('storage/'.$seedLicenseDoc['path']) }}" target="_blank">View Seed License Document</a> (Uploaded on {{ $seedLicenseDoc['remarks'] }})
                     <input type="hidden" name="existing_seed_license_file" value="{{ $seedLicenseDoc['path'] }}">
                     @endif
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="seed_license_validity" class="form-label small">Seed License Validity Date *</label>
-                <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity"
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="seed_license_validity" class="form-label">Seed License Validity Date *</label>
+                <input type="date" class="form-control" id="seed_license_validity" name="seed_license_validity"
                     value="{{ old('seed_license_validity', $seedLicenseDoc['details']['seed_license_validity'] ?? ($application->entityDetails->additional_data['seed_license_validity'] ?? '')) }}" required>
             </div>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="tan_number" class="form-label small">TAN Number (if any)</label>
-                <input type="text" class="form-control form-control-sm" id="tan_number" name="tan_number"
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="tan_number" class="form-label">TAN Number (if any)</label>
+                <input type="text" class="form-control" id="tan_number" name="tan_number"
                     value="{{ old('tan_number', isset($application->entityDetails->additional_data['tan_number']) ? $application->entityDetails->additional_data['tan_number'] : '') }}">
             </div>
         </div>
     </div>
 
     <!-- Bank Details -->
-    <div class="row g-2">
-        <div class="col-12">
-            <h4 class="fs-6">Bank Details</h4>
+    <div class="row">
+        <div class="col-md-12">
+            <h4>Bank Details</h4>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="bank_name" class="form-label small">Name of the Bank *</label>
-                <input type="text" class="form-control form-control-sm" id="bank_name" name="bank_name"
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="bank_name" class="form-label">Name of the Bank *</label>
+                <input type="text" class="form-control" id="bank_name" name="bank_name"
                     value="{{ old('bank_name', $bankDoc['details']['bank_name'] ?? ($application->entityDetails->additional_data['bank_details']['bank_name'] ?? '')) }}" required>
             </div>
         </div>
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="account_holder" class="form-label small">Name of Bank Account Holder *</label>
-                <input type="text" class="form-control form-control-sm" id="account_holder" name="account_holder"
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="account_holder" class="form-label">Name of Bank Account Holder *</label>
+                <input type="text" class="form-control" id="account_holder" name="account_holder"
                     value="{{ old('account_holder', $bankDoc['details']['account_holder'] ?? ($application->entityDetails->additional_data['bank_details']['account_holder'] ?? '')) }}" required>
             </div>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="account_number" class="form-label small">Account Number *</label>
-                <input type="text" class="form-control form-control-sm" id="account_number" name="account_number"
+    <div class="row">
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="account_number" class="form-label">Account Number *</label>
+                <input type="text" class="form-control" id="account_number" name="account_number"
                     value="{{ old('account_number', $bankDoc['details']['account_number'] ?? ($application->entityDetails->additional_data['bank_details']['account_number'] ?? '')) }}" required>
             </div>
         </div>
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="ifsc_code" class="form-label small">IFSC Code of Bank *</label>
-                <input type="text" class="form-control form-control-sm" id="ifsc_code" name="ifsc_code"
+        <div class="col-md-6">
+            <div class="form-group mb-3">
+                <label for="ifsc_code" class="form-label">IFSC Code of Bank *</label>
+                <input type="text" class="form-control" id="ifsc_code" name="ifsc_code"
                     value="{{ old('ifsc_code', $bankDoc['details']['ifsc_code'] ?? ($application->entityDetails->additional_data['bank_details']['ifsc_code'] ?? '')) }}" required>
             </div>
         </div>
     </div>
-    <div class="row g-2">
-        <div class="col-12">
-            <div class="form-group mb-2">
-                <label class="form-label small">Upload Bank Document (Passbook/Cancelled Cheque) *</label>
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="bank_upload_btn">Upload</button>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="form-group mb-3">
+                <label class="form-label">Upload Bank Document (Passbook/Cancelled Cheque) *</label>
+                <div class="input-group">
+                    <input type="file" class="form-control d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-outline-secondary" id="bank_upload_btn">Upload</button>
                 </div>
                 <div id="bank_file_name" class="small text-muted mt-1 {{ $bankDoc ? '' : 'd-none' }}">
                     @if($bankDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $bankDoc['path']) }}">View Bank Document</a> (Uploaded on {{ $bankDoc['remarks'] }})
+                    <a href="{{ asset('storage/'.$bankDoc['path']) }}" target="_blank">View Bank Document</a> (Uploaded on {{ $bankDoc['remarks'] }})
                     <input type="hidden" name="existing_bank_file" value="{{ $bankDoc['path'] }}">
                     @endif
                 </div>
@@ -679,24 +685,24 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
     </div>
 
     <!-- Authorized Persons Section -->
-    <div class="card mb-2">
-        <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 fs-6">Authorized Persons Details (if any)</h6>
-            <button type="button" class="btn btn-xs btn-primary" onclick="addAuthorizedPerson()">+ Add</button>
+    <div class="card mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Authorized Persons Details (if any)</h6>
+            <button type="button" class="btn btn-sm btn-primary" onclick="addAuthorizedPerson()">+ Add</button>
         </div>
-        <div class="card-body p-2">
+        <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="authorized_persons_table">
                     <thead>
                         <tr>
-                            <th class="small">Name *</th>
-                            <th class="small">Contact Number *</th>
-                            <th class="small">Email Address</th>
-                            <th class="small">Full Address *</th>
-                            <th class="small">Relation *</th>
-                            <th class="small">Letter of Authorisation *</th>
-                            <th class="small">Aadhar *</th>
-                            <th class="small">Action</th>
+                            <th>Name *</th>
+                            <th>Contact Number *</th>
+                            <th>Email Address</th>
+                            <th>Full Address *</th>
+                            <th>Relation *</th>
+                            <th>Letter of Authorisation *</th>
+                            <th>Aadhar *</th>
+                            <th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="authorized_persons_container">
@@ -709,47 +715,47 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                         @foreach($authPersons as $index => $person)
                         <tr class="authorized-person-entry">
                             <td data-label="Name">
-                                <input type="text" class="form-control form-control-sm" name="auth_person_name[]" value="{{ old("auth_person_name.$index", $person['name'] ?? '') }}" required>
+                                <input type="text" class="form-control" name="auth_person_name[]" value="{{ old("auth_person_name.$index", $person['name'] ?? '') }}" required>
                                 <div class="invalid-feedback"></div>
                             </td>
                             <td data-label="Contact Number">
-                                <input type="tel" class="form-control form-control-sm" name="auth_person_contact[]" value="{{ old("auth_person_contact.$index", $person['contact'] ?? '') }}" required>
+                                <input type="tel" class="form-control" name="auth_person_contact[]" value="{{ old("auth_person_contact.$index", $person['contact'] ?? '') }}" required>
                                 <div class="invalid-feedback"></div>
                             </td>
                             <td data-label="Email Address">
-                                <input type="email" class="form-control form-control-sm" name="auth_person_email[]" value="{{ old("auth_person_email.$index", $person['email'] ?? '') }}">
+                                <input type="email" class="form-control" name="auth_person_email[]" value="{{ old("auth_person_email.$index", $person['email'] ?? '') }}">
                                 <div class="invalid-feedback"></div>
                             </td>
                             <td data-label="Full Address">
-                                <textarea class="form-control form-control-sm" name="auth_person_address[]" rows="2" required>{{ old("auth_person_address.$index", $person['address'] ?? '') }}</textarea>
+                                <textarea class="form-control" name="auth_person_address[]" rows="2" required>{{ old("auth_person_address.$index", $person['address'] ?? '') }}</textarea>
                                 <div class="invalid-feedback"></div>
                             </td>
                             <td data-label="Relation">
-                                <input type="text" class="form-control form-control-sm" name="auth_person_relation[]" value="{{ old("auth_person_relation.$index", $person['relation'] ?? '') }}" required>
+                                <input type="text" class="form-control" name="auth_person_relation[]" value="{{ old("auth_person_relation.$index", $person['relation'] ?? '') }}" required>
                                 <div class="invalid-feedback"></div>
                             </td>
-                            <td data-label="Letter of Authorisation">
-                                <input type="file" class="form-control form-control-sm" name="auth_person_letter[]" accept=".pdf,.doc,.docx">
+                                <td data-label="Letter of Authorisation">
+                                <input type="file" class="form-control" name="auth_person_letter[]" accept=".pdf,.doc,.docx">
                                 <div class="invalid-feedback"></div>
                                 <div id="auth_person_letter_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['letter']) ? '' : 'd-none' }}">
                                     @if(isset($person['letter']) && $person['letter'])
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['letter']) }}">View Letter</a>
+                                        <a href="{{ asset('storage/' . $person['letter']) }}" target="_blank">View Letter</a>
                                         <input type="hidden" name="existing_auth_person_letter[]" value="{{ $person['letter'] }}">
                                     @endif
                                 </div>
                             </td>
                             <td data-label="Aadhar">
-                                <input type="file" class="form-control form-control-sm" name="auth_person_aadhar[]" accept=".pdf,.jpg,.jpeg,.png">
+                                <input type="file" class="form-control" name="auth_person_aadhar[]" accept=".pdf,.jpg,.jpeg,.png">
                                 <div class="invalid-feedback"></div>
                                 <div id="auth_person_aadhar_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['aadhar']) ? '' : 'd-none' }}">
                                     @if(isset($person['aadhar']) && $person['aadhar'])
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['aadhar']) }}">View Aadhar</a>
+                                        <a href="{{ asset('storage/' . $person['aadhar']) }}" target="_blank">View Aadhar</a>
                                         <input type="hidden" name="existing_auth_person_aadhar[]" value="{{ $person['aadhar'] }}">
                                     @endif
                                 </div>
                             </td>
                             <td data-label="Action">
-                                <button type="button" class="btn btn-xs btn-danger" onclick="removeAuthorizedPerson(this)">Remove</button>
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)">Remove</button>
                             </td>
                         </tr>
                         @endforeach
@@ -759,87 +765,56 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
     </div>
 
-    <!-- Document Modal -->
-    <div class="modal fade" id="documentModal" tabindex="-1" aria-labelledby="documentModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title fs-6" id="documentModalLabel">Document Preview</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <iframe id="documentFrame" src="" style="width:100%;height:500px;border:none;"></iframe>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-xs btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <input type="hidden" name="original_entity_type" value="{{ old('entity_type', isset($application->entityDetails) ? $application->entityDetails->entity_type : '') }}">
-</div>
+
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-    var documentModal = document.getElementById('documentModal');
-    documentModal.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        var src = button.getAttribute('data-src');
-        var iframe = documentModal.querySelector('#documentFrame');
-        iframe.src = src;
-    });
-    documentModal.addEventListener('hidden.bs.modal', function () {
-        var iframe = documentModal.querySelector('#documentFrame');
-        iframe.src = ''; // Clear iframe src when modal closes
-    });
-});
         function showRelevantFields() {
-    const entityType = document.getElementById('entity_type').value;
-    const specificFields = document.querySelectorAll('.entity-specific-fields');
+            const entityType = document.getElementById('entity_type').value;
+            const originalEntityType = document.querySelector('input[name="original_entity_type"]').value;
+            const specificFields = document.querySelectorAll('.entity-specific-fields');
 
-    // First hide all entity-specific fields
-    specificFields.forEach(el => {
-        el.style.display = 'none';
-        el.querySelectorAll('input, textarea, select').forEach(input => {
-            input.disabled = true;
-            input.required = false;
-        });
-    });
+            // Hide all entity-specific fields and disable their inputs
+            specificFields.forEach(el => {
+                el.style.display = 'none';
+                el.querySelectorAll('input, textarea, select').forEach(input => input.disabled = true);
+            });
 
-    // Show the relevant field based on entity type
-    let targetField = null;
-    switch (entityType) {
-        case 'sole_proprietorship':
-            targetField = document.getElementById('sole_proprietorship_fields');
-            break;
-        case 'partnership':
-            targetField = document.getElementById('partnership_fields');
-            break;
-        case 'llp':
-            targetField = document.getElementById('llp_fields');
-            break;
-        case 'private_company':
-        case 'public_company':
-            targetField = document.getElementById('company_fields');
-            break;
-        case 'cooperative_society':
-            targetField = document.getElementById('cooperative_fields');
-            break;
-        case 'trust':
-            targetField = document.getElementById('trust_fields');
-            break;
-    }
-
-    if (targetField) {
-        targetField.style.display = 'block';
-        targetField.querySelectorAll('input, textarea, select').forEach(input => {
-            input.disabled = false;
-            if (input.hasAttribute('data-required')) {
-                input.required = true;
+            // Only clear inapplicable fields if entity_type has changed
+            if (entityType !== originalEntityType) {
+                clearInapplicableFields(entityType);
+                // Update original_entity_type
+                document.querySelector('input[name="original_entity_type"]').value = entityType;
             }
-        });
-    }
-}
+
+            // Show and enable relevant fields
+            let targetField = null;
+            switch (entityType) {
+                case 'sole_proprietorship':
+                    targetField = document.getElementById('sole_proprietorship_fields');
+                    break;
+                case 'partnership':
+                    targetField = document.getElementById('partnership_fields');
+                    break;
+                case 'llp':
+                    targetField = document.getElementById('llp_fields');
+                    break;
+                case 'private_company':
+                case 'public_company':
+                    targetField = document.getElementById('company_fields');
+                    break;
+                case 'cooperative_society':
+                    targetField = document.getElementById('cooperative_fields');
+                    break;
+                case 'trust':
+                    targetField = document.getElementById('trust_fields');
+                    break;
+            }
+
+            if (targetField) {
+                targetField.style.display = 'block';
+                targetField.querySelectorAll('input, textarea, select').forEach(input => input.disabled = false);
+            }
+        }
 
         function toggleGSTFields() {
             const gstApplicable = document.getElementById('gst_applicable').value;
@@ -1211,29 +1186,26 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
         // Initialize event listeners
         document.addEventListener('DOMContentLoaded', function() {
-    // Initialize fields immediately
-    showRelevantFields();
-    toggleGSTFields();
-    
-    // Set up change handlers
-    const entityDetails = document.getElementById('entity-details');
-    if (entityDetails) {
-        entityDetails.addEventListener('change', function(e) {
-            if (e.target.id === 'entity_type') {
+            const entityDetails = document.getElementById('entity-details');
+            if (entityDetails) {
+                entityDetails.addEventListener('change', function(e) {
+                    if (e.target.id === 'entity_type') {
+                        showRelevantFields();
+                    } else if (e.target.id === 'gst_applicable') {
+                        toggleGSTFields();
+                    }
+                });
+            }
+
+            // Call showRelevantFields and toggleGSTFields if Step 2 is active
+            const step2 = document.querySelector('.step-content[data-step="2"]');
+            if (step2 && step2.style.display !== 'none') {
                 showRelevantFields();
-            } else if (e.target.id === 'gst_applicable') {
                 toggleGSTFields();
             }
         });
-    }
-});
-
-// Also run immediately if DOM is already loaded
-if (document.readyState === 'complete') {
-    showRelevantFields();
-    toggleGSTFields();
-}
     </script>
+</div>
 @push('scripts')
 <script>
     // Load districts based on state

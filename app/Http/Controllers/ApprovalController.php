@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DistributorApplication;
+use App\Models\Onboarding;
 use App\Models\ApprovalLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,7 +11,7 @@ use App\Models\Employee;
 class ApprovalController extends Controller
 {
    
-    public function show(DistributorApplication $application)
+    public function show(Onboarding $application)
     {
         $user = Auth::user();
         // Authorization check - only approver or creator can view
@@ -22,7 +22,7 @@ class ApprovalController extends Controller
         $application->load([
             'entityDetails',
             'distributionDetail',
-            'businessPlan',
+            'businessPlans',
             'financialInfo',
             'existingDistributorships',
             'bankDetail',
@@ -33,7 +33,7 @@ class ApprovalController extends Controller
         return view('approvals.show', compact('application'));
     }
 
-    public function approve(Request $request, DistributorApplication $application)
+    public function approve(Request $request, Onboarding $application)
     {
         // Authorization check
         $user = Auth::user();
@@ -75,7 +75,7 @@ class ApprovalController extends Controller
             ->with('success', 'Application approved successfully');
     }
 
-    public function reject(Request $request, DistributorApplication $application)
+    public function reject(Request $request, Onboarding $application)
     {   
         // Authorization check
         $user = Auth::user();
@@ -107,7 +107,7 @@ class ApprovalController extends Controller
             ->with('success', 'Application rejected successfully');
     }
 
-    public function revert(Request $request, DistributorApplication $application)
+    public function revert(Request $request, Onboarding $application)
     {
         // Authorization check
         $user = Auth::user();
@@ -140,7 +140,7 @@ class ApprovalController extends Controller
             ->with('success', 'Application reverted successfully');
     }
 
-    public function hold(Request $request, DistributorApplication $application)
+    public function hold(Request $request, Onboarding $application)
     {
         // Authorization check
         $user = Auth::user();

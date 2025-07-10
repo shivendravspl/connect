@@ -12,6 +12,6 @@ class SecurityCheque extends Model
     
     public function application()
     {
-        return $this->belongsTo(DistributorApplication::class);
+        return $this->belongsTo(Onboarding::class);
     }
 }

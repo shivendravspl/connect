@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class DistributorApplication extends Model
+class Onboarding extends Model
 {
     use HasFactory;
 
@@ -18,6 +18,7 @@ class DistributorApplication extends Model
         'district',
         'state',
         'status',
+        'current_progress_step',
         'created_by',
         'current_approver_id',
         'approval_level',        
@@ -84,7 +85,7 @@ class DistributorApplication extends Model
         return $this->hasOne(BankDetail::class, 'application_id', 'id');
     }
 
-    public function businessPlan()
+    public function businessPlans()
     {
         return $this->hasMany(BusinessPlan::class, 'application_id', 'id');
     }

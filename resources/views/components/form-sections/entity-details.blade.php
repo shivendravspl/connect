@@ -10,7 +10,7 @@ $seedLicenseDoc = $documentsCollection->firstWhere('type', 'seed_license');
 $bankDoc = $documentsCollection->firstWhere('type', 'bank');
 $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 @endphp
-    <div id="entity-details" class="form-section p-2">
+<div id="entity-details" class="form-section p-2">
     <h5 class="mb-2 fs-6">Entity Details</h5>
 
     <div class="row g-2">
@@ -507,16 +507,24 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
     </div>
     <div class="row g-2">
+        <!-- PAN Number -->
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
-                <label for="pan_number" class="form-label small">PAN Number *</label>
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number"
-                        value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}"
-                        required>
+                <label for="pan_file" class="form-label small">Upload PAN Document *</label>
+                <div class="input-group input-group-sm mb-2">
                     <input type="file" class="form-control form-control-sm d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="pan_upload_btn">Upload</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="pan_upload_btn">Upload PAN</button>
                 </div>
+                <div id="pan_file_name" class="small text-muted mb-2 {{ $panDoc ? '' : 'd-none' }}">
+                    @if($panDoc)
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View PAN Document</a> (Uploaded on {{ $panDoc['remarks'] }})
+                    <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
+                    @endif
+                </div>
+                <label for="pan_number" class="form-label small">PAN Number *</label>
+                <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number"
+                    value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}"
+                    required>
                 <div class="form-check mt-1">
                     <input class="form-check-input" type="checkbox" id="pan_verified" name="pan_verified"
                         {{ old('pan_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
@@ -524,15 +532,9 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                         I confirm the PAN number matches the uploaded document
                     </label>
                 </div>
-                <div id="pan_file_name" class="small text-muted mt-1 {{ $panDoc ? '' : 'd-none' }}">
-                    @if($panDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View PAN Document</a> (Uploaded
-                    on {{ $panDoc['remarks'] }})
-                    <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
-                    @endif
-                </div>
             </div>
         </div>
+        <!-- GST Applicable -->
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
                 <label for="gst_applicable" class="form-label small">GST Applicable *</label>
@@ -544,7 +546,26 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     </div>
+
+    <!-- GST Fields -->
     <div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
+        <div class="row g-2">
+            <div class="col-12">
+                <div class="form-group mb-2">
+                    <label for="gst_file" class="form-label small">Upload GST Document *</label>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="gst_upload_btn">Upload GST</button>
+                    </div>
+                    <div id="gst_file_name" class="small text-muted mb-2 {{ $gstDoc ? '' : 'd-none' }}">
+                        @if($gstDoc)
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $gstDoc['path']) }}">View GST Document</a> (Uploaded on {{ $gstDoc['remarks'] }})
+                        <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="row g-2">
             <div class="col-12 col-md-6">
                 <div class="form-group mb-2">
@@ -561,15 +582,60 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="row g-2">
+        <!-- PAN Number -->
+        <div class="col-12 col-md-6">
+            <div class="form-group mb-2">
+                <label for="pan_file" class="form-label small">Upload PAN Document *</label>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="file" class="form-control form-control-sm d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="pan_upload_btn">Upload PAN</button>
+                </div>
+                <div id="pan_file_name" class="small text-muted mb-2 {{ $panDoc ? '' : 'd-none' }}">
+                    @if($panDoc)
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View PAN Document</a> (Uploaded on {{ $panDoc['remarks'] }})
+                    <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
+                    @endif
+                </div>
+                <label for="pan_number" class="form-label small">PAN Number *</label>
+                <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number"
+                    value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}"
+                    required>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="pan_verified" name="pan_verified"
+                        {{ old('pan_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label small" for="pan_verified">
+                        I confirm the PAN number matches the uploaded document
+                    </label>
+                </div>
+            </div>
+        </div>
+        <!-- GST Applicable -->
+        <div class="col-12 col-md-6">
+            <div class="form-group mb-2">
+                <label for="gst_applicable" class="form-label small">GST Applicable *</label>
+                <select class="form-control form-control-sm" id="gst_applicable" name="gst_applicable" required onchange="toggleGSTFields()">
+                    <option value="" disabled {{ old('gst_applicable', isset($application->entityDetails) ? '' : 'selected') }}>-- Select --</option>
+                    <option value="yes" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'yes' ? 'selected' : '') }}>Yes</option>
+                    <option value="no" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'no' ? 'selected' : '') }}>No</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- GST Fields -->
+    <div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
         <div class="row g-2">
             <div class="col-12">
                 <div class="form-group mb-2">
                     <label for="gst_file" class="form-label small">Upload GST Document *</label>
-                    <div class="input-group input-group-sm">
+                    <div class="input-group input-group-sm mb-2">
                         <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
-                        <button type="button" class="btn btn-xs btn-outline-secondary" id="gst_upload_btn">Upload</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="gst_upload_btn">Upload GST</button>
                     </div>
-                    <div id="gst_file_name" class="small text-muted mt-1 {{ $gstDoc ? '' : 'd-none' }}">
+                    <div id="gst_file_name" class="small text-muted mb-2 {{ $gstDoc ? '' : 'd-none' }}">
                         @if($gstDoc)
                         <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $gstDoc['path']) }}">View GST Document</a> (Uploaded on {{ $gstDoc['remarks'] }})
                         <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
@@ -578,29 +644,48 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </div>
             </div>
         </div>
+        <div class="row g-2">
+            <div class="col-12 col-md-6">
+                <div class="form-group mb-2">
+                    <label for="gst_number" class="form-label small">GST Number *</label>
+                    <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number"
+                        value="{{ old('gst_number', $gstDoc['details']['gst_number'] ?? ($application->entityDetails->gst_number ?? '')) }}">
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="form-group mb-2">
+                    <label for="gst_validity" class="form-label small">GST Validity Date *</label>
+                    <input type="date" class="form-control form-control-sm" id="gst_validity" name="gst_validity"
+                        value="{{ old('gst_validity', $gstDoc['details']['gst_validity'] ?? ($application->entityDetails->additional_data['gst_validity'] ?? '')) }}">
+                </div>
+            </div>
+        </div>
     </div>
+
+    <!-- Seed License -->
     <div class="row g-2">
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
-                <label for="seed_license" class="form-label small">Seed License Number *</label>
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license"
-                        value="{{ old('seed_license', $seedLicenseDoc['details']['seed_license_number'] ?? ($application->entityDetails->seed_license ?? '')) }}" required>
+                <label for="seed_license_file" class="form-label small">Upload Seed License Document *</label>
+                <div class="input-group input-group-sm mb-2">
                     <input type="file" class="form-control form-control-sm d-none" id="seed_license_file" name="seed_license_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="seed_license_upload_btn">Upload</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="seed_license_upload_btn">Upload Seed License</button>
                 </div>
-                <div class="form-check mt-1">
-                    <input class="form-check-input" type="checkbox" id="seed_license_verified" name="seed_license_verified"
-                        {{ old('seed_license_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
-                    <label class="form-check-label small" for="seed_license_verified">
-                        I confirm the Seed License number matches the uploaded document
-                    </label>
-                </div>
-                <div id="seed_license_file_name" class="small text-muted mt-1 {{ $seedLicenseDoc ? '' : 'd-none' }}">
+                <div id="seed_license_file_name" class="small text-muted mb-2 {{ $seedLicenseDoc ? '' : 'd-none' }}">
                     @if($seedLicenseDoc)
                     <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $seedLicenseDoc['path']) }}">View Seed License Document</a> (Uploaded on {{ $seedLicenseDoc['remarks'] }})
                     <input type="hidden" name="existing_seed_license_file" value="{{ $seedLicenseDoc['path'] }}">
                     @endif
+                </div>
+                <label for="seed_license" class="form-label small">Seed License Number *</label>
+                <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license"
+                    value="{{ old('seed_license', $seedLicenseDoc['details']['seed_license_number'] ?? ($application->entityDetails->seed_license ?? '')) }}" required>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="seed_license_verified" name="seed_license_verified"
+                        {{ old('seed_license_verified', $seedLicenseDoc['verified'] ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label small" for="seed_license_verified">
+                        I confirm the Seed License number matches the uploaded document
+                    </label>
                 </div>
             </div>
         </div>
@@ -612,6 +697,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     </div>
+
     <div class="row g-2">
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
@@ -623,9 +709,27 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
     </div>
 
     <!-- Bank Details -->
+    <!-- Bank Details -->
     <div class="row g-2">
         <div class="col-12">
             <h4 class="fs-6">Bank Details</h4>
+        </div>
+    </div>
+    <div class="row g-2">
+        <div class="col-12">
+            <div class="form-group mb-2">
+                <label for="bank_file" class="form-label small">Upload Bank Document (Passbook/Cancelled Cheque) *</label>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="file" class="form-control form-control-sm d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="bank_upload_btn">Upload Bank Document</button>
+                </div>
+                <div id="bank_file_name" class="small text-muted mb-2 {{ $bankDoc ? '' : 'd-none' }}">
+                    @if($bankDoc)
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $bankDoc['path']) }}">View Bank Document</a> (Uploaded on {{ $bankDoc['remarks'] }})
+                    <input type="hidden" name="existing_bank_file" value="{{ $bankDoc['path'] }}">
+                    @endif
+                </div>
+            </div>
         </div>
     </div>
     <div class="row g-2">
@@ -657,23 +761,6 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 <label for="ifsc_code" class="form-label small">IFSC Code of Bank *</label>
                 <input type="text" class="form-control form-control-sm" id="ifsc_code" name="ifsc_code"
                     value="{{ old('ifsc_code', $bankDoc['details']['ifsc_code'] ?? ($application->entityDetails->additional_data['bank_details']['ifsc_code'] ?? '')) }}" required>
-            </div>
-        </div>
-    </div>
-    <div class="row g-2">
-        <div class="col-12">
-            <div class="form-group mb-2">
-                <label class="form-label small">Upload Bank Document (Passbook/Cancelled Cheque) *</label>
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-xs btn-outline-secondary" id="bank_upload_btn">Upload</button>
-                </div>
-                <div id="bank_file_name" class="small text-muted mt-1 {{ $bankDoc ? '' : 'd-none' }}">
-                    @if($bankDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $bankDoc['path']) }}">View Bank Document</a> (Uploaded on {{ $bankDoc['remarks'] }})
-                    <input type="hidden" name="existing_bank_file" value="{{ $bankDoc['path'] }}">
-                    @endif
-                </div>
             </div>
         </div>
     </div>
@@ -733,8 +820,8 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                                 <div class="invalid-feedback"></div>
                                 <div id="auth_person_letter_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['letter']) ? '' : 'd-none' }}">
                                     @if(isset($person['letter']) && $person['letter'])
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['letter']) }}">View Letter</a>
-                                        <input type="hidden" name="existing_auth_person_letter[]" value="{{ $person['letter'] }}">
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['letter']) }}">View Letter</a>
+                                    <input type="hidden" name="existing_auth_person_letter[]" value="{{ $person['letter'] }}">
                                     @endif
                                 </div>
                             </td>
@@ -743,8 +830,8 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                                 <div class="invalid-feedback"></div>
                                 <div id="auth_person_aadhar_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['aadhar']) ? '' : 'd-none' }}">
                                     @if(isset($person['aadhar']) && $person['aadhar'])
-                                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['aadhar']) }}">View Aadhar</a>
-                                        <input type="hidden" name="existing_auth_person_aadhar[]" value="{{ $person['aadhar'] }}">
+                                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['aadhar']) }}">View Aadhar</a>
+                                    <input type="hidden" name="existing_auth_person_aadhar[]" value="{{ $person['aadhar'] }}">
                                     @endif
                                 </div>
                             </td>
@@ -779,144 +866,145 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <input type="hidden" name="original_entity_type" value="{{ old('entity_type', isset($application->entityDetails) ? $application->entityDetails->entity_type : '') }}">
 </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-    var documentModal = document.getElementById('documentModal');
-    documentModal.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        var src = button.getAttribute('data-src');
-        var iframe = documentModal.querySelector('#documentFrame');
-        iframe.src = src;
-    });
-    documentModal.addEventListener('hidden.bs.modal', function () {
-        var iframe = documentModal.querySelector('#documentFrame');
-        iframe.src = ''; // Clear iframe src when modal closes
-    });
-});
-        function showRelevantFields() {
-    const entityType = document.getElementById('entity_type').value;
-    const specificFields = document.querySelectorAll('.entity-specific-fields');
-
-    // First hide all entity-specific fields
-    specificFields.forEach(el => {
-        el.style.display = 'none';
-        el.querySelectorAll('input, textarea, select').forEach(input => {
-            input.disabled = true;
-            input.required = false;
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var documentModal = document.getElementById('documentModal');
+        documentModal.addEventListener('show.bs.modal', function(event) {
+            var button = event.relatedTarget;
+            var src = button.getAttribute('data-src');
+            var iframe = documentModal.querySelector('#documentFrame');
+            iframe.src = src;
+        });
+        documentModal.addEventListener('hidden.bs.modal', function() {
+            var iframe = documentModal.querySelector('#documentFrame');
+            iframe.src = ''; // Clear iframe src when modal closes
         });
     });
 
-    // Show the relevant field based on entity type
-    let targetField = null;
-    switch (entityType) {
-        case 'sole_proprietorship':
-            targetField = document.getElementById('sole_proprietorship_fields');
-            break;
-        case 'partnership':
-            targetField = document.getElementById('partnership_fields');
-            break;
-        case 'llp':
-            targetField = document.getElementById('llp_fields');
-            break;
-        case 'private_company':
-        case 'public_company':
-            targetField = document.getElementById('company_fields');
-            break;
-        case 'cooperative_society':
-            targetField = document.getElementById('cooperative_fields');
-            break;
-        case 'trust':
-            targetField = document.getElementById('trust_fields');
-            break;
-    }
+    function showRelevantFields() {
+        const entityType = document.getElementById('entity_type').value;
+        const specificFields = document.querySelectorAll('.entity-specific-fields');
 
-    if (targetField) {
-        targetField.style.display = 'block';
-        targetField.querySelectorAll('input, textarea, select').forEach(input => {
-            input.disabled = false;
-            if (input.hasAttribute('data-required')) {
-                input.required = true;
-            }
+        // First hide all entity-specific fields
+        specificFields.forEach(el => {
+            el.style.display = 'none';
+            el.querySelectorAll('input, textarea, select').forEach(input => {
+                input.disabled = true;
+                input.required = false;
+            });
         });
-    }
-}
 
-        function toggleGSTFields() {
-            const gstApplicable = document.getElementById('gst_applicable').value;
-            const gstFields = document.getElementById('gst_fields');
-            if (gstApplicable === 'yes') {
-                gstFields.style.display = 'block';
-                gstFields.querySelectorAll('input, textarea').forEach(input => input.disabled = false);
-                document.getElementById('gst_number').required = true;
-                document.getElementById('gst_validity').required = true;
-                document.getElementById('gst_file').required = true;
-            } else {
-                gstFields.style.display = 'none';
-                gstFields.querySelectorAll('input, textarea').forEach(input => {
-                    input.disabled = true;
-                    input.value = '';
-                });
-                document.getElementById('gst_file').value = '';
-                document.getElementById('gst_file_name').classList.add('d-none');
-                document.getElementById('gst_number').required = false;
-                document.getElementById('gst_validity').required = false;
-                document.getElementById('gst_file').required = false;
-            }
+        // Show the relevant field based on entity type
+        let targetField = null;
+        switch (entityType) {
+            case 'sole_proprietorship':
+                targetField = document.getElementById('sole_proprietorship_fields');
+                break;
+            case 'partnership':
+                targetField = document.getElementById('partnership_fields');
+                break;
+            case 'llp':
+                targetField = document.getElementById('llp_fields');
+                break;
+            case 'private_company':
+            case 'public_company':
+                targetField = document.getElementById('company_fields');
+                break;
+            case 'cooperative_society':
+                targetField = document.getElementById('cooperative_fields');
+                break;
+            case 'trust':
+                targetField = document.getElementById('trust_fields');
+                break;
         }
 
-        function clearInapplicableFields(entityType) {
-            const containers = {
-                'sole_proprietorship': ['proprietor_name', 'proprietor_dob', 'proprietor_father_name', 'proprietor_address', 'proprietor_pincode', 'proprietor_country'],
-                'partnership': ['partners_container'],
-                'llp': ['llp_partners_container', 'llpin_number', 'llp_incorporation_date'],
-                'private_company': ['directors_container', 'cin_number', 'incorporation_date'],
-                'public_company': ['directors_container', 'cin_number', 'incorporation_date'],
-                'cooperative_society': ['committee_container', 'cooperative_reg_number', 'cooperative_reg_date'],
-                'trust': ['trustees_container', 'trust_reg_number', 'trust_reg_date']
-            };
-
-            // Clear scalar fields
-            Object.keys(containers).forEach(type => {
-                if (type !== entityType) {
-                    containers[type].forEach(field => {
-                        const input = document.getElementById(field) || document.querySelector(`[name="${field}"]`);
-                        if (input && (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA')) {
-                            input.value = '';
-                        }
-                    });
+        if (targetField) {
+            targetField.style.display = 'block';
+            targetField.querySelectorAll('input, textarea, select').forEach(input => {
+                input.disabled = false;
+                if (input.hasAttribute('data-required')) {
+                    input.required = true;
                 }
             });
+        }
+    }
 
-            // Clear dynamic containers only if they have no filled inputs
-            const dynamicContainers = ['partners_container', 'llp_partners_container', 'directors_container', 'committee_container', 'trustees_container'];
-            dynamicContainers.forEach(containerId => {
-                if (!containers[entityType].includes(containerId)) {
-                    const container = document.getElementById(containerId);
-                    if (container && !container.querySelectorAll('input[value]:not([value=""]), textarea:not(:empty)').length) {
-                        container.innerHTML = '';
+    function toggleGSTFields() {
+        const gstApplicable = document.getElementById('gst_applicable').value;
+        const gstFields = document.getElementById('gst_fields');
+        if (gstApplicable === 'yes') {
+            gstFields.style.display = 'block';
+            gstFields.querySelectorAll('input, textarea').forEach(input => input.disabled = false);
+            document.getElementById('gst_number').required = true;
+            document.getElementById('gst_validity').required = true;
+            document.getElementById('gst_file').required = true;
+        } else {
+            gstFields.style.display = 'none';
+            gstFields.querySelectorAll('input, textarea').forEach(input => {
+                input.disabled = true;
+                input.value = '';
+            });
+            document.getElementById('gst_file').value = '';
+            document.getElementById('gst_file_name').classList.add('d-none');
+            document.getElementById('gst_number').required = false;
+            document.getElementById('gst_validity').required = false;
+            document.getElementById('gst_file').required = false;
+        }
+    }
+
+    function clearInapplicableFields(entityType) {
+        const containers = {
+            'sole_proprietorship': ['proprietor_name', 'proprietor_dob', 'proprietor_father_name', 'proprietor_address', 'proprietor_pincode', 'proprietor_country'],
+            'partnership': ['partners_container'],
+            'llp': ['llp_partners_container', 'llpin_number', 'llp_incorporation_date'],
+            'private_company': ['directors_container', 'cin_number', 'incorporation_date'],
+            'public_company': ['directors_container', 'cin_number', 'incorporation_date'],
+            'cooperative_society': ['committee_container', 'cooperative_reg_number', 'cooperative_reg_date'],
+            'trust': ['trustees_container', 'trust_reg_number', 'trust_reg_date']
+        };
+
+        // Clear scalar fields
+        Object.keys(containers).forEach(type => {
+            if (type !== entityType) {
+                containers[type].forEach(field => {
+                    const input = document.getElementById(field) || document.querySelector(`[name="${field}"]`);
+                    if (input && (input.tagName === 'INPUT' || input.tagName === 'TEXTAREA')) {
+                        input.value = '';
                     }
-                }
-            });
-
-            // Initialize default entry if container is empty
-            if (entityType === 'partnership' && document.getElementById('partners_container').children.length === 0) {
-                addPartner();
-            } else if (entityType === 'llp' && document.getElementById('llp_partners_container').children.length === 0) {
-                addLLPPartner();
-            } else if (['private_company', 'public_company'].includes(entityType) && document.getElementById('directors_container').children.length === 0) {
-                addDirector();
-            } else if (entityType === 'cooperative_society' && document.getElementById('committee_container').children.length === 0) {
-                addCommitteeMember();
-            } else if (entityType === 'trust' && document.getElementById('trustees_container').children.length === 0) {
-                addTrustee();
+                });
             }
-        }
+        });
 
-        function addPartner() {
-            const container = document.getElementById('partners_container');
-            const newEntry = document.createElement('div');
-            newEntry.className = 'partner-entry mb-4 border-bottom pb-3';
-            newEntry.innerHTML = `
+        // Clear dynamic containers only if they have no filled inputs
+        const dynamicContainers = ['partners_container', 'llp_partners_container', 'directors_container', 'committee_container', 'trustees_container'];
+        dynamicContainers.forEach(containerId => {
+            if (!containers[entityType].includes(containerId)) {
+                const container = document.getElementById(containerId);
+                if (container && !container.querySelectorAll('input[value]:not([value=""]), textarea:not(:empty)').length) {
+                    container.innerHTML = '';
+                }
+            }
+        });
+
+        // Initialize default entry if container is empty
+        if (entityType === 'partnership' && document.getElementById('partners_container').children.length === 0) {
+            addPartner();
+        } else if (entityType === 'llp' && document.getElementById('llp_partners_container').children.length === 0) {
+            addLLPPartner();
+        } else if (['private_company', 'public_company'].includes(entityType) && document.getElementById('directors_container').children.length === 0) {
+            addDirector();
+        } else if (entityType === 'cooperative_society' && document.getElementById('committee_container').children.length === 0) {
+            addCommitteeMember();
+        } else if (entityType === 'trust' && document.getElementById('trustees_container').children.length === 0) {
+            addTrustee();
+        }
+    }
+
+    function addPartner() {
+        const container = document.getElementById('partners_container');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'partner-entry mb-4 border-bottom pb-3';
+        newEntry.innerHTML = `
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
@@ -953,23 +1041,23 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removePartner(this)">Remove</button>
             `;
-            container.appendChild(newEntry);
-        }
+        container.appendChild(newEntry);
+    }
 
-        function removePartner(button) {
-            const entries = document.querySelectorAll('.partner-entry');
-            if (entries.length > 1) {
-                button.closest('.partner-entry').remove();
-            } else {
-                alert('At least one partner is required.');
-            }
+    function removePartner(button) {
+        const entries = document.querySelectorAll('.partner-entry');
+        if (entries.length > 1) {
+            button.closest('.partner-entry').remove();
+        } else {
+            alert('At least one partner is required.');
         }
+    }
 
-        function addLLPPartner() {
-            const container = document.getElementById('llp_partners_container');
-            const newEntry = document.createElement('div');
-            newEntry.className = 'llp-partner-entry mb-4 border-bottom pb-3';
-            newEntry.innerHTML = `
+    function addLLPPartner() {
+        const container = document.getElementById('llp_partners_container');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'llp-partner-entry mb-4 border-bottom pb-3';
+        newEntry.innerHTML = `
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
@@ -996,23 +1084,23 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeLLPPartner(this)">Remove</button>
             `;
-            container.appendChild(newEntry);
-        }
+        container.appendChild(newEntry);
+    }
 
-        function removeLLPPartner(button) {
-            const entries = document.querySelectorAll('.llp-partner-entry');
-            if (entries.length > 1) {
-                button.closest('.llp-partner-entry').remove();
-            } else {
-                alert('At least one designated partner is required.');
-            }
+    function removeLLPPartner(button) {
+        const entries = document.querySelectorAll('.llp-partner-entry');
+        if (entries.length > 1) {
+            button.closest('.llp-partner-entry').remove();
+        } else {
+            alert('At least one designated partner is required.');
         }
+    }
 
-        function addDirector() {
-            const container = document.getElementById('directors_container');
-            const newEntry = document.createElement('div');
-            newEntry.className = 'director-entry mb-4 border-bottom pb-3';
-            newEntry.innerHTML = `
+    function addDirector() {
+        const container = document.getElementById('directors_container');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'director-entry mb-4 border-bottom pb-3';
+        newEntry.innerHTML = `
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
@@ -1039,23 +1127,23 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeDirector(this)">Remove</button>
             `;
-            container.appendChild(newEntry);
-        }
+        container.appendChild(newEntry);
+    }
 
-        function removeDirector(button) {
-            const entries = document.querySelectorAll('.director-entry');
-            if (entries.length > 1) {
-                button.closest('.director-entry').remove();
-            } else {
-                alert('At least one director is required.');
-            }
+    function removeDirector(button) {
+        const entries = document.querySelectorAll('.director-entry');
+        if (entries.length > 1) {
+            button.closest('.director-entry').remove();
+        } else {
+            alert('At least one director is required.');
         }
+    }
 
-        function addCommitteeMember() {
-            const container = document.getElementById('committee_container');
-            const newEntry = document.createElement('div');
-            newEntry.className = 'committee-entry mb-4 border-bottom pb-3';
-            newEntry.innerHTML = `
+    function addCommitteeMember() {
+        const container = document.getElementById('committee_container');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'committee-entry mb-4 border-bottom pb-3';
+        newEntry.innerHTML = `
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
@@ -1082,23 +1170,23 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeCommitteeMember(this)">Remove</button>
             `;
-            container.appendChild(newEntry);
-        }
+        container.appendChild(newEntry);
+    }
 
-        function removeCommitteeMember(button) {
-            const entries = document.querySelectorAll('.committee-entry');
-            if (entries.length > 1) {
-                button.closest('.committee-entry').remove();
-            } else {
-                alert('At least one committee member is required.');
-            }
+    function removeCommitteeMember(button) {
+        const entries = document.querySelectorAll('.committee-entry');
+        if (entries.length > 1) {
+            button.closest('.committee-entry').remove();
+        } else {
+            alert('At least one committee member is required.');
         }
+    }
 
-        function addTrustee() {
-            const container = document.getElementById('trustees_container');
-            const newEntry = document.createElement('div');
-            newEntry.className = 'trustee-entry mb-4 border-bottom pb-3';
-            newEntry.innerHTML = `
+    function addTrustee() {
+        const container = document.getElementById('trustees_container');
+        const newEntry = document.createElement('div');
+        newEntry.className = 'trustee-entry mb-4 border-bottom pb-3';
+        newEntry.innerHTML = `
                 <div class="row">
                     <div class="col-md-4">
                         <div class="form-group mb-3">
@@ -1125,33 +1213,33 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                 </div>
                 <button type="button" class="btn btn-sm btn-danger" onclick="removeTrustee(this)">Remove</button>
             `;
-            container.appendChild(newEntry);
+        container.appendChild(newEntry);
+    }
+
+    function removeTrustee(button) {
+        const entries = document.querySelectorAll('.trustee-entry');
+        if (entries.length > 1) {
+            button.closest('.trustee-entry').remove();
+        } else {
+            alert('At least one trustee is required.');
         }
+    }
 
-        function removeTrustee(button) {
-            const entries = document.querySelectorAll('.trustee-entry');
-            if (entries.length > 1) {
-                button.closest('.trustee-entry').remove();
-            } else {
-                alert('At least one trustee is required.');
-            }
+    function handleFileChange(input, index, type) {
+        const fileNameDiv = document.getElementById(`auth_person_${type}_${index}_name`);
+        if (input.files.length > 0) {
+            fileNameDiv.classList.add('d-none');
+        } else {
+            fileNameDiv.classList.remove('d-none');
         }
-
-        function handleFileChange(input, index, type) {
-            const fileNameDiv = document.getElementById(`auth_person_${type}_${index}_name`);
-            if (input.files.length > 0) {
-                fileNameDiv.classList.add('d-none');
-            } else {
-                fileNameDiv.classList.remove('d-none');
-            }
-        }
+    }
 
 
-        function addAuthorizedPerson() {
-            const container = document.getElementById('authorized_persons_container');
-            const newRow = document.createElement('tr');
-            newRow.className = 'authorized-person-entry';
-            newRow.innerHTML = `
+    function addAuthorizedPerson() {
+        const container = document.getElementById('authorized_persons_container');
+        const newRow = document.createElement('tr');
+        newRow.className = 'authorized-person-entry';
+        newRow.innerHTML = `
         <td data-label="Name">
             <input type="text" class="form-control" name="auth_person_name[]" required>
             <div class="invalid-feedback"></div>
@@ -1184,56 +1272,56 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)">Remove</button>
         </td>
     `;
-            container.appendChild(newRow);
+        container.appendChild(newRow);
 
-            const index = document.querySelectorAll('.authorized-person-entry').length - 1;
-            const letterInput = newRow.querySelector('input[name="auth_person_letter[]"]');
-            const aadharInput = newRow.querySelector('input[name="auth_person_aadhar[]"]');
-            
-            letterInput.addEventListener('change', () => handleFileChange(letterInput, index, 'letter'));
-            aadharInput.addEventListener('change', () => handleFileChange(aadharInput, index, 'aadhar'));
-        }
+        const index = document.querySelectorAll('.authorized-person-entry').length - 1;
+        const letterInput = newRow.querySelector('input[name="auth_person_letter[]"]');
+        const aadharInput = newRow.querySelector('input[name="auth_person_aadhar[]"]');
 
-        function removeAuthorizedPerson(button) {
-            const entries = document.querySelectorAll('.authorized-person-entry');
-            const row = button.closest('.authorized-person-entry');
-            const inputs = row.querySelectorAll('input:not([type="file"]), textarea');
-            const isEmpty = Array.from(inputs).every(input => input.value.trim() === '');
-            const fileInputs = row.querySelectorAll('input[type="file"]');
-            const filesEmpty = Array.from(fileInputs).every(input => !input.files.length);
-
-            if (entries.length > 1 || (isEmpty && filesEmpty)) {
-                row.remove();
-            } else {
-                alert('At least one authorized person entry is required if any field is filled.');
-            }
-        }
-
-        // Initialize event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-    // Initialize fields immediately
-    showRelevantFields();
-    toggleGSTFields();
-    
-    // Set up change handlers
-    const entityDetails = document.getElementById('entity-details');
-    if (entityDetails) {
-        entityDetails.addEventListener('change', function(e) {
-            if (e.target.id === 'entity_type') {
-                showRelevantFields();
-            } else if (e.target.id === 'gst_applicable') {
-                toggleGSTFields();
-            }
-        });
+        letterInput.addEventListener('change', () => handleFileChange(letterInput, index, 'letter'));
+        aadharInput.addEventListener('change', () => handleFileChange(aadharInput, index, 'aadhar'));
     }
-});
 
-// Also run immediately if DOM is already loaded
-if (document.readyState === 'complete') {
-    showRelevantFields();
-    toggleGSTFields();
-}
-    </script>
+    function removeAuthorizedPerson(button) {
+        const entries = document.querySelectorAll('.authorized-person-entry');
+        const row = button.closest('.authorized-person-entry');
+        const inputs = row.querySelectorAll('input:not([type="file"]), textarea');
+        const isEmpty = Array.from(inputs).every(input => input.value.trim() === '');
+        const fileInputs = row.querySelectorAll('input[type="file"]');
+        const filesEmpty = Array.from(fileInputs).every(input => !input.files.length);
+
+        if (entries.length > 1 || (isEmpty && filesEmpty)) {
+            row.remove();
+        } else {
+            alert('At least one authorized person entry is required if any field is filled.');
+        }
+    }
+
+    // Initialize event listeners
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize fields immediately
+        showRelevantFields();
+        toggleGSTFields();
+
+        // Set up change handlers
+        const entityDetails = document.getElementById('entity-details');
+        if (entityDetails) {
+            entityDetails.addEventListener('change', function(e) {
+                if (e.target.id === 'entity_type') {
+                    showRelevantFields();
+                } else if (e.target.id === 'gst_applicable') {
+                    toggleGSTFields();
+                }
+            });
+        }
+    });
+
+    // Also run immediately if DOM is already loaded
+    if (document.readyState === 'complete') {
+        showRelevantFields();
+        toggleGSTFields();
+    }
+</script>
 @push('scripts')
 <script>
     // Load districts based on state

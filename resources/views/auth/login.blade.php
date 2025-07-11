@@ -372,14 +372,7 @@
 
         <div class="left-panel">
             <div class="brand-section">
-                <div class="connect-logo">Connect</div>
-                <p class="brand-tagline">Empowering Financial Decisions</p>
-                <ul class="feature-list">
-                    <li>Secure Authentication</li>
-                    <li>Real-time Analytics</li>
-                    <li>Advanced Reporting</li>
-                    <li>24/7 Support</li>
-                </ul>
+                <div class="connect-logo">Connect</div>             
             </div>
         </div>
 
@@ -476,7 +469,7 @@
         </div>
     </div>
 
-    @include('layouts.footer')
+    {{--@include('layouts.footer') --}}
 
     <script>
         // Password visibility toggle

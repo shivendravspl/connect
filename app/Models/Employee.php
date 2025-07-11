@@ -12,12 +12,29 @@ class Employee extends Model
     protected $table = 'core_employee'; // Specify the table name if different
 
     protected $fillable = [
-       'emp_code', 'title', 'emp_name', 'emp_email', 'emp_contact',
-        'emp_desig_id', 'emp_designation', 'emp_desig_code',
-        'emp_dept_id', 'emp_department', 'emp_department_code',
-        'emp_company_id', 'emp_company', 'emp_company_code',
-        'emp_reporting', 'status', 'emp_vertical', 'emp_vertical_name',
-        'focus_department', 'territory', 'region', 'zone', 'bu'
+        'emp_code',
+        'title',
+        'emp_name',
+        'emp_email',
+        'emp_contact',
+        'emp_desig_id',
+        'emp_designation',
+        'emp_desig_code',
+        'emp_dept_id',
+        'emp_department',
+        'emp_department_code',
+        'emp_company_id',
+        'emp_company',
+        'emp_company_code',
+        'emp_reporting',
+        'status',
+        'emp_vertical',
+        'emp_vertical_name',
+        'focus_department',
+        'territory',
+        'region',
+        'zone',
+        'bu'
     ];
 
     /**
@@ -66,5 +83,25 @@ class Employee extends Model
     public function subordinates()
     {
         return $this->hasMany(Employee::class, 'emp_reporting');
+    }
+
+    public function reportingManager()
+    {
+        return $this->belongsTo(Employee::class, 'emp_reporting');
+    }
+
+    public function isGeneralManager()
+    {
+        return str_contains($this->emp_designation, 'General Manager');
+    }
+
+    public function isZonalManager()
+    {
+        return str_contains($this->emp_designation, 'Zonal Business Manager');
+    }
+
+    public function isRegionalManager()
+    {
+        return str_contains($this->emp_designation, 'Regional Business Manager');
     }
 }

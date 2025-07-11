@@ -30,7 +30,7 @@ class HomeController extends Controller
 
         // Fetch pending applications (where the current user is the approver)
         $pendingApplications = Onboarding::where('current_approver_id', $user->emp_id)
-                                ->whereIn('status', ['submitted', 'on_hold'])
+                                ->whereIn('status', ['submitted', 'on_hold','under_review'])
                                 ->with(['territoryDetail', 'regionDetail', 'zoneDetail', 'businessUnit'])
                                 ->orderByRaw("CASE WHEN status = 'on_hold' THEN 0 ELSE 1 END")
                                 ->orderBy('created_at', 'desc')

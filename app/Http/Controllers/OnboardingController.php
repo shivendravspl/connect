@@ -1704,7 +1704,7 @@ class OnboardingController extends Controller
                 ['application_id' => $application_id],
                 $data
             );
-             // Process existing distributorships if present
+            // Process existing distributorships if present
             if ($request->has('existing_distributorships')) {
                 $submittedCompanies = $request->input('existing_distributorships', []);
                 $validCompanies = array_filter($submittedCompanies, function ($company) {
@@ -2147,32 +2147,28 @@ class OnboardingController extends Controller
 
         try {
             // Get approver information
-            $currentUser = Employee::where('id', $user->emp_id)->first();
-            if (!$currentUser) {
-                Log::error('saveStep8: Current user not found in core_employee.', ['user_id' => $user->id]);
-                throw new \Exception('User not found.');
+            $creator = Employee::findOrFail($user->emp_id);
+
+            // Get first approver (creator's reporting manager)
+            $firstApprover = $creator->reportingManager;
+
+            if (!$firstApprover) {
+                throw new \Exception('No reporting manager assigned for this employee.');
             }
 
-            $approverData = $this->getApproverIdAndLevel($currentUser);
-            if (!$approverData) {
-                Log::error('saveStep8: Approver not found or invalid designation.', [
-                    'user_id' => $user->id,
-                    'emp_reporting' => $currentUser->emp_reporting
-                ]);
-                throw new \Exception('Approver not assigned or invalid designation.');
-            }
+            // Set initial approval level based on first approver's designation
+            $approvalLevel = $this->getApprovalLevelFromDesignation($firstApprover->emp_designation);
 
-            // Final submission updates
-            $application->status = 'submitted';
-            $application->current_approver_id = $approverData['approverId'];
-            $application->approval_level = $approverData['approvalLevel'];
-            $application->updated_at = now();
-            $application->save();
+            $application->update([
+                'status' => 'submitted',
+                'current_approver_id' => $firstApprover->id,
+                'approval_level' => $approvalLevel,
+                'updated_at' => now()
+            ]);
 
             DB::commit();
 
-            Log::info('Application submitted successfully via saveStep8', ['application_id' => $application_id]);
-
+            // TODO: Send notification to first approver
             return [
                 'success' => true,
                 'message' => 'Application submitted successfully!',
@@ -2193,45 +2189,18 @@ class OnboardingController extends Controller
         }
     }
 
-    private function getApproverIdAndLevel($employee)
+    private function getApprovalLevelFromDesignation(string $designation): string
     {
-        // Map designations to integer approval levels
-        $designationMap = [
-            'Regional Business Manager' => 'rbm',
-            'Zonal Business Manager' => 'zbm',
-            'General Manager' => 'gm'
-        ];
+        $designation = strtolower($designation);
 
-        // Fetch the manager directly using emp_reporting
-        $approverId = $employee->emp_reporting;
-        if (!$approverId) {
-            Log::error('No manager found for employee.', ['employee_id' => $employee->id]);
-            return null;
-        }
+        if (str_contains($designation, 'regional')) return 'rbm';
+        if (str_contains($designation, 'zonal')) return 'zbm';
+        if (str_contains($designation, 'general')) return 'gm';
 
-        // Fetch the manager's details
-        $manager = Employee::where('id', $approverId)->first();
-        if (!$manager) {
-            Log::error('Manager not found in core_employee.', ['manager_id' => $approverId]);
-            return null;
-        }
-
-        // Determine approval level based on manager's designation
-        $approvalLevel = $designationMap[$manager->emp_designation] ?? null;
-        if (!$approvalLevel) {
-            Log::warning('Manager designation not mapped to an approval level.', [
-                'employee_id' => $employee->id,
-                'manager_id' => $manager->id,
-                'manager_designation' => $manager->emp_designation
-            ]);
-            return null;
-        }
-
-        return [
-            'approverId' => $approverId,
-            'approvalLevel' => $approvalLevel
-        ];
+        return 'unknown';
     }
+
+
 
     // private function sendNotification($application_id, $approver_id, $action)
     // {
@@ -2320,152 +2289,237 @@ class OnboardingController extends Controller
     }
 
     public function preview($id)
-{
-    try {
-        // Load application with all necessary columns
-        $application = Onboarding::select([
-            'id', 'application_code', 'territory', 'crop_vertical', 
-            'region', 'zone', 'district', 'state', 'status', 'business_unit'
-        ])->with([
-            'businessUnit:id,business_unit_name',
-            'zoneDetail:id,zone_name',
-            'regionDetail:id,region_name',
-            'territoryDetail:id,territory_name',
-            'entityDetails' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'establishment_name', 'entity_type',
-                    'business_address', 'house_no', 'landmark', 'city',
-                    'state_id', 'district_id', 'country_id', 'pincode',
-                    'mobile', 'email', 'pan_number', 'gst_applicable',
-                    'gst_number', 'seed_license', 'additional_data', 'documents_data'
-                ]);
-            },
-            'distributionDetail' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'area_covered', 'appointment_type',
-                    'replacement_reason', 'outstanding_recovery', 'previous_firm_name',
-                    'previous_firm_code', 'earlier_distributor'
-                ]);
-            },
-            'bankDetail' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'financial_status', 'retailer_count',
-                    'bank_name', 'account_holder', 'account_number', 'ifsc_code',
-                    'account_type', 'relationship_duration', 'od_limit', 'od_security'
-                ]);
-            },
-            'financialInfo' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'net_worth', 'shop_ownership',
-                    'godown_area', 'years_in_business', 'annual_turnover'
-                ]);
-            },
-            'businessPlans' => function ($query) {
-                $query->select('id', 'application_id', 'crop', 'yearly_targets')->limit(5);
-            },
-            'existingDistributorships' => function ($query) {
-                $query->select('id', 'application_id', 'company_name');
-            },
-            'declarations' => function ($query) {
-                $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
-            }
-        ])->findOrFail($id);
+    {
+        try {
+            // Load application with all necessary columns
+            $application = Onboarding::select([
+                'id',
+                'application_code',
+                'territory',
+                'crop_vertical',
+                'region',
+                'zone',
+                'district',
+                'state',
+                'status',
+                'business_unit'
+            ])->with([
+                'businessUnit:id,business_unit_name',
+                'zoneDetail:id,zone_name',
+                'regionDetail:id,region_name',
+                'territoryDetail:id,territory_name',
+                'entityDetails' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'establishment_name',
+                        'entity_type',
+                        'business_address',
+                        'house_no',
+                        'landmark',
+                        'city',
+                        'state_id',
+                        'district_id',
+                        'country_id',
+                        'pincode',
+                        'mobile',
+                        'email',
+                        'pan_number',
+                        'gst_applicable',
+                        'gst_number',
+                        'seed_license',
+                        'additional_data',
+                        'documents_data'
+                    ]);
+                },
+                'distributionDetail' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'area_covered',
+                        'appointment_type',
+                        'replacement_reason',
+                        'outstanding_recovery',
+                        'previous_firm_name',
+                        'previous_firm_code',
+                        'earlier_distributor'
+                    ]);
+                },
+                'bankDetail' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'financial_status',
+                        'retailer_count',
+                        'bank_name',
+                        'account_holder',
+                        'account_number',
+                        'ifsc_code',
+                        'account_type',
+                        'relationship_duration',
+                        'od_limit',
+                        'od_security'
+                    ]);
+                },
+                'financialInfo' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'net_worth',
+                        'shop_ownership',
+                        'godown_area',
+                        'years_in_business',
+                        'annual_turnover'
+                    ]);
+                },
+                'businessPlans' => function ($query) {
+                    $query->select('id', 'application_id', 'crop', 'yearly_targets')->limit(5);
+                },
+                'existingDistributorships' => function ($query) {
+                    $query->select('id', 'application_id', 'company_name');
+                },
+                'declarations' => function ($query) {
+                    $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
+                }
+            ])->findOrFail($id);
 
-        // Pre-fetch lookup data
-        $states = DB::table('core_state')->select('id', 'state_name')->get()->keyBy('id');
-        $districts = DB::table('core_district')->select('id', 'district_name')->get()->keyBy('id');
-        $countries = DB::table('core_country')->select('id', 'country_name')->get()->keyBy('id');
-        $years = Year::select('id', 'period')->get()->keyBy('id');
+            // Pre-fetch lookup data
+            $states = DB::table('core_state')->select('id', 'state_name')->get()->keyBy('id');
+            $districts = DB::table('core_district')->select('id', 'district_name')->get()->keyBy('id');
+            $countries = DB::table('core_country')->select('id', 'country_name')->get()->keyBy('id');
+            $years = Year::select('id', 'period')->get()->keyBy('id');
 
-        // Log for debugging
-        Log::info("Preview Application ID: {$id}", [
-            'application' => $application->toArray(),
-            'business_unit' => $application->business_unit,
-            'businessUnit' => $application->businessUnit ? $application->businessUnit->toArray() : null
-        ]);
+            // Log for debugging
+            Log::info("Preview Application ID: {$id}", [
+                'application' => $application->toArray(),
+                'business_unit' => $application->business_unit,
+                'businessUnit' => $application->businessUnit ? $application->businessUnit->toArray() : null
+            ]);
 
-        return response()->view('components.form-sections.preview-pdf', [
-            'application' => $application,
-            'years' => $years,
-            'states' => $states,
-            'districts' => $districts,
-            'countries' => $countries
-        ])->header('Content-Security-Policy', "frame-ancestors 'self'");
-
-    } catch (\Exception $e) {
-        Log::error("Preview Error: {$e->getMessage()}", ['id' => $id, 'trace' => $e->getTraceAsString()]);
-        return response("Error generating preview", 500);
+            return response()->view('components.form-sections.preview-pdf', [
+                'application' => $application,
+                'years' => $years,
+                'states' => $states,
+                'districts' => $districts,
+                'countries' => $countries
+            ])->header('Content-Security-Policy', "frame-ancestors 'self'");
+        } catch (\Exception $e) {
+            Log::error("Preview Error: {$e->getMessage()}", ['id' => $id, 'trace' => $e->getTraceAsString()]);
+            return response("Error generating preview", 500);
+        }
     }
-}
 
-        public function downloadApplicationPdf($id)
-{
-    try {
-        $application = Onboarding::select([
-            'id', 'application_code', 'territory', 'crop_vertical', 
-            'region', 'zone', 'district', 'state', 'status', 'business_unit'
-        ])->with([
-            'businessUnit:id,business_unit_name',
-            'zoneDetail:id,zone_name',
-            'regionDetail:id,region_name',
-            'territoryDetail:id,territory_name',
-            'entityDetails' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'establishment_name', 'entity_type',
-                    'business_address', 'house_no', 'landmark', 'city',
-                    'state_id', 'district_id', 'country_id', 'pincode',
-                    'mobile', 'email', 'pan_number', 'gst_applicable',
-                    'gst_number', 'seed_license', 'additional_data', 'documents_data'
-                ]);
-            },
-            'distributionDetail' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'area_covered', 'appointment_type',
-                    'replacement_reason', 'outstanding_recovery', 'previous_firm_name',
-                    'previous_firm_code', 'earlier_distributor'
-                ]);
-            },
-            'bankDetail' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'financial_status', 'retailer_count',
-                    'bank_name', 'account_holder', 'account_number', 'ifsc_code',
-                    'account_type', 'relationship_duration', 'od_limit', 'od_security'
-                ]);
-            },
-            'financialInfo' => function ($query) {
-                $query->select([
-                    'id', 'application_id', 'net_worth', 'shop_ownership',
-                    'godown_area', 'years_in_business', 'annual_turnover'
-                ]);
-            },
-            'businessPlans' => function ($query) {
-                $query->select('id', 'application_id', 'crop', 'yearly_targets')->limit(5);
-            },
-            'existingDistributorships' => function ($query) {
-                $query->select('id', 'application_id', 'company_name');
-            },
-            'declarations' => function ($query) {
-                $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
-            }
-        ])->findOrFail($id);
+    public function downloadApplicationPdf($id)
+    {
+        try {
+            $application = Onboarding::select([
+                'id',
+                'application_code',
+                'territory',
+                'crop_vertical',
+                'region',
+                'zone',
+                'district',
+                'state',
+                'status',
+                'business_unit'
+            ])->with([
+                'businessUnit:id,business_unit_name',
+                'zoneDetail:id,zone_name',
+                'regionDetail:id,region_name',
+                'territoryDetail:id,territory_name',
+                'entityDetails' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'establishment_name',
+                        'entity_type',
+                        'business_address',
+                        'house_no',
+                        'landmark',
+                        'city',
+                        'state_id',
+                        'district_id',
+                        'country_id',
+                        'pincode',
+                        'mobile',
+                        'email',
+                        'pan_number',
+                        'gst_applicable',
+                        'gst_number',
+                        'seed_license',
+                        'additional_data',
+                        'documents_data'
+                    ]);
+                },
+                'distributionDetail' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'area_covered',
+                        'appointment_type',
+                        'replacement_reason',
+                        'outstanding_recovery',
+                        'previous_firm_name',
+                        'previous_firm_code',
+                        'earlier_distributor'
+                    ]);
+                },
+                'bankDetail' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'financial_status',
+                        'retailer_count',
+                        'bank_name',
+                        'account_holder',
+                        'account_number',
+                        'ifsc_code',
+                        'account_type',
+                        'relationship_duration',
+                        'od_limit',
+                        'od_security'
+                    ]);
+                },
+                'financialInfo' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'net_worth',
+                        'shop_ownership',
+                        'godown_area',
+                        'years_in_business',
+                        'annual_turnover'
+                    ]);
+                },
+                'businessPlans' => function ($query) {
+                    $query->select('id', 'application_id', 'crop', 'yearly_targets')->limit(5);
+                },
+                'existingDistributorships' => function ($query) {
+                    $query->select('id', 'application_id', 'company_name');
+                },
+                'declarations' => function ($query) {
+                    $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
+                }
+            ])->findOrFail($id);
 
-        $states = DB::table('core_state')->select('id', 'state_name')->get()->keyBy('id');
-        $districts = DB::table('core_district')->select('id', 'district_name')->get()->keyBy('id');
-        $countries = DB::table('core_country')->select('id', 'country_name')->get()->keyBy('id');
-        $years = Year::select('id', 'period')->get()->keyBy('id');
+            $states = DB::table('core_state')->select('id', 'state_name')->get()->keyBy('id');
+            $districts = DB::table('core_district')->select('id', 'district_name')->get()->keyBy('id');
+            $countries = DB::table('core_country')->select('id', 'country_name')->get()->keyBy('id');
+            $years = Year::select('id', 'period')->get()->keyBy('id');
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('components.form-sections.preview-pdf', [
-            'application' => $application,
-            'years' => $years,
-            'states' => $states,
-            'districts' => $districts,
-            'countries' => $countries
-        ])->setPaper('a4', 'portrait');
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('components.form-sections.preview-pdf', [
+                'application' => $application,
+                'years' => $years,
+                'states' => $states,
+                'districts' => $districts,
+                'countries' => $countries
+            ])->setPaper('a4', 'portrait');
 
-        return $pdf->download("Distributor_Application_{$application->application_code}.pdf");
-    } catch (\Exception $e) {
-        Log::error("PDF Download Error: {$e->getMessage()}", ['id' => $id, 'trace' => $e->getTraceAsString()]);
-        return response("Error generating PDF", 500);
+            return $pdf->download("Distributor_Application_{$application->application_code}.pdf");
+        } catch (\Exception $e) {
+            Log::error("PDF Download Error: {$e->getMessage()}", ['id' => $id, 'trace' => $e->getTraceAsString()]);
+            return response("Error generating PDF", 500);
+        }
     }
-}
 }

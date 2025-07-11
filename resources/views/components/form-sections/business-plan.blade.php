@@ -124,7 +124,7 @@
                     <select class="form-control" name="business_plans[${businessPlanIndex}][crop]" required>
                         <option value="">Select Crop</option>
                         @foreach($crops as $crop)
-                            <option value="{{ $crop->id }}">{{ $crop->crop_name }}</option>
+                            <option value="{{ $crop->crop_name }}">{{ $crop->crop_name }}</option>
                         @endforeach
                     </select>
                 </td>

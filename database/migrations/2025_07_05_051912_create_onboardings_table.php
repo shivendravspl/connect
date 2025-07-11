@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('status')->default('draft');
             $table->unsignedTinyInteger('current_progress_step')->nullable()->default(1);
             $table->unsignedBigInteger('current_approver_id')->nullable();
+            $table->unsignedBigInteger('final_approver_id')->nullable();
             $table->string('approval_level')->nullable();
             $table->foreignId('created_by');
             $table->timestamps();

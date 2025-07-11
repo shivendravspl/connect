@@ -26,7 +26,8 @@ use App\Http\Controllers\FormController;
 use App\Http\Controllers\OnboardingController;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ApprovalController;
-
+use App\Mail\TestEmail;
+use Illuminate\Support\Facades\Mail;
 
 
 Route::get('/', function () {
@@ -233,6 +234,11 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{application}/revert', [ApprovalController::class, 'revert'])->name('approvals.revert');
         Route::post('/{application}/hold', [ApprovalController::class, 'hold'])->name('approvals.hold');
     });
+
+    // Route::get('/test-email', function() {
+    //     Mail::to('vnrit156t@gmail.com')->send(new \App\Mail\TestEmail());
+    //     return "Email sent!";
+    // });
     // Document management
     Route::post('applications/{application}/documents', [DocumentController::class, 'store'])->name('documents.store');
     Route::post('documents/{document}/verify', [DocumentController::class, 'verify'])->name('documents.verify');
@@ -242,5 +248,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('agreements/{agreement}/finalize', [AgreementController::class, 'finalize'])->name('agreements.finalize');
 
     Route::get('/get-territory-data', [CoreTerritoryController::class, 'getMappingData']);
+
 
 });

@@ -42,7 +42,7 @@ $(document).ready(function() {
     const notificationSidebar = $('#notification-sidebar');
 
     let removedDocuments = {}; // To track removed files if needed for backend processing
-
+    let applicationId = $('#application_id').val() || '';
 
     // --- Initialization on Load ---
     showStep(currentStep);
@@ -50,11 +50,11 @@ $(document).ready(function() {
     updateStepper(currentStep);
 
 
+    console.log('Initial application_id:', applicationId);
     // --- Event Listener for Stepper Clicks ---
     $(document).on('click', '.step', function() {
         const stepNumber = parseInt($(this).data('step'));
         console.log('Clicked step:', stepNumber, 'Current step:', currentStep);
-
         // Only attempt navigation if the clicked step is different from the currently active step
         if (stepNumber !== currentStep) {
             if (stepNumber < currentStep || $(this).hasClass('completed')) {
@@ -80,6 +80,15 @@ $(document).ready(function() {
             // Save the current step's data via AJAX
             saveStep(currentStep)
                 .then((response) => {
+                    if (response.application_id) {
+                        applicationId = response.application_id; // Update global applicationId
+                        if (!$('#application_id').length) {
+                            form.append(`<input type="hidden" id="application_id" name="application_id" value="${response.application_id}">`);
+                        } else {
+                            $('#application_id').val(response.application_id);
+                        }
+                        console.log('Updated application_id:', applicationId);
+                    }
                     currentStep = response.current_step;
                     showStep(currentStep);
                     updateButtons();
@@ -193,10 +202,7 @@ $(document).ready(function() {
 
             // Always append the current step number and application ID
             formData.append('current_step', step);
-            formData.append('application_id', $('#application_id').val() || ''); // Ensure application_id is sent
-            formData.append('is_final_submission', isFinalSubmission ? '1' : '0');
-
-            // Disable the relevant button and show a spinner during AJAX request
+            formData.append('application_id', applicationId || $('#application_id').val() || '');
             const button = isFinalSubmission ? submitBtn : nextBtn;
             button.prop('disabled', true).html(
                 `<i class="fas fa-spinner fa-spin"></i> ${isFinalSubmission ? 'Submitting...' : 'Saving...'}`

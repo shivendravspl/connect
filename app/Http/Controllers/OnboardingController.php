@@ -666,9 +666,9 @@ class OnboardingController extends Controller
             $result = ['success' => false, 'error' => 'Invalid step number.']; // Initialize result
 
             $application = null; // Initialize $application to null
-
+//dd( $stepNumber);
             // Load the application ONLY if an application_id is provided (i.e., not step 1 on first save)
-            if ($application_id) {
+            if ($application_id && $stepNumber != 1) {
                 $application = Onboarding::find($application_id);
                 if (!$application) {
                     return response()->json(['success' => false, 'error' => 'Application not found.'], 404);

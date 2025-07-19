@@ -83,7 +83,7 @@
                                         <a href="{{ route('users.index') }}" class="nav-link {{ request()->is('users*') ? 'active' : '' }}" data-key="t-main-calender">User</a>
                                     </li>
                                     <li class="nav-item">
-                                        <a href="{{ route('roles.index') }}" class="nav-link {{ request()->is('roles*') ? 'active' : '' }}" data-key="t-month-grid">Roles & Permission</a>
+                                        <a href="{{ route('roles.index') }}" class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}" data-key="t-month-grid">Roles & Permission</a>
                                     </li>
                                 </ul>
                             </div>

@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ApprovalController;
 use App\Mail\TestEmail;
 use Illuminate\Support\Facades\Mail;
+use App\Http\Controllers\MISProcessingController;
+
 
 
 Route::get('/', function () {
@@ -190,6 +192,9 @@ Route::middleware('auth')->group(function () {
         Route::post('get_zone_by_bu', [CoreZoneController::class, 'get_zone_by_bu'])->name('get_zone_by_bu');
          Route::post('get_region_by_zone', [CoreRegionController::class, 'get_region_by_zone'])->name('get_region_by_zone');
          Route::post('get_territory_by_region', [CoreTerritoryController::class, 'get_territory_by_region'])->name('get_territory_by_region');
+
+         Route::get('get-regions-by-zone', [App\Http\Controllers\HomeController::class, 'getRegionsByZone'])->name('get.regions.by.zone');
+         Route::get('get-territories-by-region', [App\Http\Controllers\HomeController::class, 'getTerritoriesByRegion'])->name('get.territories.by.region');
 });
 
 // Password Reset Routes (public)
@@ -217,8 +222,7 @@ Route::view('view_distributor', 'page_builder.distributor1')->name('view_distrib
 
 Route::middleware(['auth'])->group(function () {
   // Application routes
-    Route::resource('applications', OnboardingController::class)
-        ->except(['destroy']);
+    Route::resource('applications', OnboardingController::class);
     Route::post('/applications/save-step/{stepNumber}', [OnboardingController::class, 'saveStep'])->name('applications.save-step');
     Route::post('/applications/remove-document/{application_id}', [OnboardingController::class, 'removeDocument'])->name('applications.remove-document');
     
@@ -227,7 +231,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/application/{id}/download', [OnboardingController::class, 'downloadApplicationPdf'])->name('application.download');
       // Approval routes
     Route::prefix('approvals')->group(function () {
-        Route::get('/dashboard', [ApprovalController::class, 'dashboard'])->name('approvals.dashboard');
+        // Route::get('/dashboard', [ApprovalController::class, 'dashboard'])->name('approvals.dashboard');
         Route::get('/{application}', [ApprovalController::class, 'show'])->name('approvals.show');
         Route::post('/{application}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
         Route::post('/{application}/reject', [ApprovalController::class, 'reject'])->name('approvals.reject');
@@ -235,19 +239,20 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{application}/hold', [ApprovalController::class, 'hold'])->name('approvals.hold');
     });
 
+     // MIS processing routes
+    Route::prefix('mis')->group(function () {
+    Route::get('/{application}/verify-documents', [MISProcessingController::class, 'showDocumentVerification'])->name('approvals.verify-documents');
+    Route::post('/{application}/verify-documents', [MISProcessingController::class, 'verifyDocuments'])->name('approvals.submit-verification');
+    Route::get('/{application}/upload-agreement', [MISProcessingController::class, 'showAgreementUpload'])->name('approvals.upload-agreement');
+    Route::post('/{application}/generate-agreement', [MISProcessingController::class, 'generateAgreement'])->name('approvals.generate-agreement');
+    Route::get('/{application}/track-documents', [MISProcessingController::class, 'showPhysicalDocumentTracking'])->name('approvals.track-documents');
+    Route::post('/{application}/track-documents', [MISProcessingController::class, 'trackPhysicalDocuments'])->name('approvals.submit-documents');
+});
+
     // Route::get('/test-email', function() {
     //     Mail::to('vnrit156t@gmail.com')->send(new \App\Mail\TestEmail());
     //     return "Email sent!";
     // });
-    // Document management
-    Route::post('applications/{application}/documents', [DocumentController::class, 'store'])->name('documents.store');
-    Route::post('documents/{document}/verify', [DocumentController::class, 'verify'])->name('documents.verify');
-    
-    // Agreement management
-    Route::post('applications/{application}/agreement', [AgreementController::class, 'store'])->name('agreements.store');
-    Route::post('agreements/{agreement}/finalize', [AgreementController::class, 'finalize'])->name('agreements.finalize');
-
     Route::get('/get-territory-data', [CoreTerritoryController::class, 'getMappingData']);
-
-
+    Route::get('/dashboard/dynamic-data', [App\Http\Controllers\HomeController::class, 'dynamicData'])->name('dashboard.dynamic-data');
 });

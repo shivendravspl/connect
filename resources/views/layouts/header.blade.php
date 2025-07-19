@@ -1,4 +1,10 @@
 <head>
+    <script>
+        (function() {
+            var storedTheme = sessionStorage.getItem("data-bs-theme") || "light";
+            document.documentElement.setAttribute("data-bs-theme", storedTheme);
+        })();
+    </script>
     <meta charset="utf-8" />
     <title>Connect | Admin & Dashboard</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

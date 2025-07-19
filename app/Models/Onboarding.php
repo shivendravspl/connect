@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Log;
 
 class Onboarding extends Model
 {
@@ -19,9 +20,10 @@ class Onboarding extends Model
         'state',
         'status',
         'current_progress_step',
-        'created_by',
         'current_approver_id',
-        'approval_level',        
+        'final_approver_id',
+        'approval_level',  
+        'created_by',
     ];
 
     protected $casts = [
@@ -31,42 +33,70 @@ class Onboarding extends Model
 
 
      // Add these properties
-    protected $appends = ['status_badge', 'status_label'];
     
-    // Status to badge color mapping
-    const STATUS_BADGES = [
-        'draft' => 'secondary',
-        'submitted' => 'primary',
-        'on_hold' => 'warning',
-        'reverted' => 'info',
-        'approved' => 'success',
-        'rejected' => 'danger',
-    ];
-    
-    // Status to human-readable labels
-    const STATUS_LABELS = [
-        'draft' => 'Draft',
-        'submitted' => 'Submitted',
-        'on_hold' => 'On Hold',
-        'reverted' => 'Reverted',
-        'approved' => 'Approved',
-        'rejected' => 'Rejected',
-    ];
-
+  
     /**
      * Get the badge class for the current status
      */
-    public function getStatusBadgeAttribute()
+       public function getStatusBadgeAttribute()
     {
-        return self::STATUS_BADGES[strtolower($this->status)] ?? 'secondary';
+        return match ($this->status) {
+            'initiated' => 'primary',
+            'under_review' => 'info',
+            'on_hold' => 'warning',
+            'approved' => 'success',
+            'rejected' => 'danger',
+            'reverted' => 'secondary',
+            'mis_processing' => 'info',
+            'document_verified' => 'primary',
+            'agreement_created' => 'info',
+            'documents_received' => 'warning',
+            'distributorship_created' => 'success',
+            default => 'secondary', // A default color for unknown statuses
+        };
     }
 
-    /**
-     * Get the human-readable status label
-     */
-    public function getStatusLabelAttribute()
+
+     protected static function boot()
     {
-        return self::STATUS_LABELS[strtolower($this->status)] ?? ucfirst($this->status);
+        parent::boot();
+
+        static::deleting(function ($application) {
+            $deletedRecords = [];
+
+            // Delete related records and log which ones exist
+            if ($application->entityDetails) {
+                $application->entityDetails()->delete();
+                $deletedRecords[] = 'entity_details';
+            }
+            if ($application->distributionDetail) {
+                $application->distributionDetail()->delete();
+                $deletedRecords[] = 'distribution_details';
+            }
+            if ($application->businessPlans()->exists()) {
+                $application->businessPlans()->delete();
+                $deletedRecords[] = 'business_plans';
+            }
+            if ($application->financialInfo) {
+                $application->financialInfo()->delete();
+                $deletedRecords[] = 'financial_info';
+            }
+            if ($application->existingDistributorships()->exists()) {
+                $application->existingDistributorships()->delete();
+                $deletedRecords[] = 'existing_distributorships';
+            }
+            if ($application->bankDetail) {
+                $application->bankDetail()->delete();
+                $deletedRecords[] = 'bank_details';
+            }
+            if ($application->declarations) {
+                $application->declarations()->delete();
+                $deletedRecords[] = 'declarations';
+            }
+            Log::info("Deleted related records for application_id: {$application->id}", [
+                'deleted_tables' => $deletedRecords ?: ['none'],
+            ]);
+        });
     }
 
     // Relationships
@@ -122,7 +152,7 @@ class Onboarding extends Model
     }
 
 
-    public function creator()
+    public function createdBy()
     {
         return $this->belongsTo(Employee::class, 'created_by', 'id');
     }
@@ -132,6 +162,11 @@ class Onboarding extends Model
     public function currentApprover()
     {
         return $this->belongsTo(User::class, 'current_approver_id', 'emp_id');
+    }
+
+    public function finalApprover() 
+    { 
+        return $this->belongsTo(Employee::class, 'final_approver_id', 'id'); 
     }
 
     /**
@@ -161,4 +196,25 @@ class Onboarding extends Model
     {
         return $this->belongsTo(CoreBusinessUnit::class, 'business_unit');
     }
+
+    public function documentVerifications()
+    {
+         return $this->hasMany(DocumentVerification::class, 'application_id'); 
+    }
+
+    public function physicalDocuments() 
+    { 
+        return $this->hasMany(PhysicalDocument::class, 'application_id'); 
+    }
+
+    public function distributorAgreements()
+    {
+        return $this->hasMany(DistributorAgreement::class, 'application_id');
+    }
+
+    public function distributorMaster()
+    {
+        return $this->hasOne(DistributorMaster::class, 'application_id');
+    }
+
 }

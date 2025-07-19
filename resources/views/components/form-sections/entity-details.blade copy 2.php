@@ -34,9 +34,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     </div>
-
     
-
     <!-- Individual Person Fields -->
     <div id="individual_person_fields" class="entity-specific-fields" style="display:none;">
         <div class="card mb-2">
@@ -52,28 +50,28 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                                 value="{{ old('individual_name', isset($application->entityDetails->additional_data['individual']['name']) ? $application->entityDetails->additional_data['individual']['name'] : '') }}" required>
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
+                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
                             <label for="individual_father_name" class="form-label small">Father’s / Spouse’s Name *</label>
                             <input type="text" class="form-control form-control-sm" id="individual_father_name" name="individual_father_name"
                                 value="{{ old('individual_father_name', isset($application->entityDetails->additional_data['individual']['father_name']) ? $application->entityDetails->additional_data['individual']['father_name'] : '') }}" required>
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
+                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
                             <label for="individual_dob" class="form-label small">Date of Birth *</label>
                             <input type="date" class="form-control form-control-sm dob-input" id="individual_dob" name="individual_dob"
                                 value="{{ old('individual_dob', isset($application->entityDetails->additional_data['individual']['dob']) ? $application->entityDetails->additional_data['individual']['dob'] : '') }}" required>
-                            <div class="invalid-feedback dob-error"></div>
+                                <div class="invalid-feedback dob-error"></div>
                         </div>
-                    </div>
-                    <div class="col-12 col-md-3">
+                    </div>  
+                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
                             <label for="individual_age" class="form-label small">Age</label>
                             <input type="number" class="form-control form-control-sm age-display" id="individual_age" name="individual_age"
                                 value="{{ old('individual_age', isset($application->entityDetails->additional_data['individual']['age']) ? $application->entityDetails->additional_data['individual']['age'] : '') }}" readonly>
                         </div>
-                    </div>
+                    </div>              
                 </div>
             </div>
         </div>
@@ -94,7 +92,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                                 value="{{ old('proprietor_name', isset($application->entityDetails->additional_data['proprietor']['name']) ? $application->entityDetails->additional_data['proprietor']['name'] : '') }}" required>
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
+                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
                             <label for="proprietor_father_name" class="form-label small">Father's/Spouse's Name *</label>
                             <input type="text" class="form-control form-control-sm" id="proprietor_father_name" name="proprietor_father_name"
@@ -106,125 +104,125 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                             <label for="proprietor_dob" class="form-label small">Date of Birth *</label>
                             <input type="date" class="form-control form-control-sm dob-input" id="proprietor_dob" name="proprietor_dob"
                                 value="{{ old('proprietor_dob', isset($application->entityDetails->additional_data['proprietor']['dob']) ? $application->entityDetails->additional_data['proprietor']['dob'] : '') }}" required>
-                            <div class="invalid-feedback dob-error"></div>
+                                <div class="invalid-feedback dob-error"></div>
                         </div>
                     </div>
-                    <div class="col-12 col-md-3">
+                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
                             <label for="proprietor_age" class="form-label small">Age</label>
                             <input type="number" class="form-control form-control-sm age-display" id="proprietor_age" name="proprietor_age"
                                 value="{{ old('proprietor_age', isset($application->entityDetails->additional_data['proprietor']['age']) ? $application->entityDetails->additional_data['proprietor']['age'] : '') }}" readonly>
                         </div>
                     </div>
-
+                   
                 </div>
-
+               
             </div>
         </div>
     </div>
 
     <!-- Partnership Fields -->
-    <div id="partnership_fields" class="entity-specific-fields" style="display:none;">
-        <!-- Partner Details -->
-        <div class="card mb-4">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Partner Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addPartner()">+</button>
-            </div>
-            <div class="card-body">
-                <div id="partners_container">
-                    @php
+<div id="partnership_fields" class="entity-specific-fields" style="display:none;">
+    <!-- Partner Details -->
+    <div class="card mb-4">
+        <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Partner Details</h6>
+            <button type="button" class="btn btn-sm btn-primary" onclick="addPartner()">+</button>
+        </div>
+        <div class="card-body">
+            <div id="partners_container">
+                @php
                     $partners = old('partner_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'partnership' ? $application->entityDetails->additional_data['partners'] : []);
                     if (empty($partners)) {
-                    $partners[] = ['name' => '', 'pan' => '', 'contact' => ''];
+                        $partners[] = ['name' => '', 'pan' => '', 'contact' => ''];
                     }
-                    @endphp
-                    @foreach($partners as $index => $partner)
-                    <div class="partner-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Partner Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="partner_name[]" value="{{ old("partner_name.$index", $partner['name'] ?? '') }}" required>
-                                    <div class="invalid-feedback"></div>
-                                </div>
+                @endphp
+                @foreach($partners as $index => $partner)
+                <div class="partner-entry mb-2 border-bottom pb-2">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-4">
+                            <div class="form-group mb-2">
+                                <label class="form-label small">Partner Name *</label>
+                                <input type="text" class="form-control form-control-sm" name="partner_name[]" value="{{ old("partner_name.$index", $partner['name'] ?? '') }}" required>
+                                <div class="invalid-feedback"></div>
                             </div>
-                            <div class="col-12 col-md-3">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">PAN *</label>
-                                    <input type="text" class="form-control form-control-sm" name="partner_pan[]" value="{{ old("partner_pan.$index", $partner['pan'] ?? '') }}" required>
-                                    <div class="invalid-feedback"></div>
-                                </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="form-group mb-2">
+                                <label class="form-label small">PAN *</label>
+                                <input type="text" class="form-control form-control-sm" name="partner_pan[]" value="{{ old("partner_pan.$index", $partner['pan'] ?? '') }}" required>
+                                <div class="invalid-feedback"></div>
                             </div>
-                            <div class="col-12 col-md-3">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="partner_contact[]" value="{{ old("partner_contact.$index", $partner['contact'] ?? '') }}" required>
-                                    <div class="invalid-feedback"></div>
-                                </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="form-group mb-2">
+                                <label class="form-label small">Contact Number *</label>
+                                <input type="tel" class="form-control form-control-sm" name="partner_contact[]" value="{{ old("partner_contact.$index", $partner['contact'] ?? '') }}" required>
+                                <div class="invalid-feedback"></div>
                             </div>
-                            <div class="col-12 col-md-2 d-flex align-items-end">
-                                <div class="form-group mb-2 w-100">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removePartner(this)">-</button>
-                                </div>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex align-items-end">
+                            <div class="form-group mb-2 w-100">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removePartner(this)">-</button>
                             </div>
                         </div>
                     </div>
-                    @endforeach
                 </div>
-            </div>
-        </div>
-
-        <!-- Signatory Details -->
-        <div class="card mb-4">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Signatory Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addSignatory()">+</button>
-            </div>
-            <div class="card-body">
-                <div id="signatories_container">
-                    @php
-                    $signatories = old('signatory_name', isset($application->entityDetails->additional_data['signatories']) && $application->entityDetails->entity_type === 'partnership' ? $application->entityDetails->additional_data['signatories'] : []);
-                    if (empty($signatories)) {
-                    $signatories[] = ['name' => '', 'designation' => '', 'contact' => ''];
-                    }
-                    @endphp
-                    @foreach($signatories as $index => $signatory)
-                    <div class="signatory-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Signatory Name</label>
-                                    <input type="text" class="form-control form-control-sm" name="signatory_name[]" value="{{ old("signatory_name.$index", $signatory['name'] ?? '') }}">
-                                    <div class="invalid-feedback"></div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-3">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Designation *</label>
-                                    <input type="text" class="form-control form-control-sm" name="signatory_designation[]" value="{{ old("signatory_designation.$index", $signatory['designation'] ?? '') }}" required>
-                                    <div class="invalid-feedback"></div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-3">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="signatory_contact[]" value="{{ old("signatory_contact.$index", $signatory['contact'] ?? '') }}" required>
-                                    <div class="invalid-feedback"></div>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-2 d-flex align-items-end">
-                                <div class="form-group mb-2 w-100">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeSignatory(this)">-</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    @endforeach
-                </div>
+                @endforeach
             </div>
         </div>
     </div>
+
+    <!-- Signatory Details -->
+    <div class="card mb-4">
+        <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
+            <h6 class="mb-0">Signatory Details</h6>
+            <button type="button" class="btn btn-sm btn-primary" onclick="addSignatory()">+</button>
+        </div>
+        <div class="card-body">
+            <div id="signatories_container">
+                @php
+                    $signatories = old('signatory_name', isset($application->entityDetails->additional_data['signatories']) && $application->entityDetails->entity_type === 'partnership' ? $application->entityDetails->additional_data['signatories'] : []);
+                    if (empty($signatories)) {
+                        $signatories[] = ['name' => '', 'designation' => '', 'contact' => ''];
+                    }
+                @endphp
+                @foreach($signatories as $index => $signatory)
+                <div class="signatory-entry mb-2 border-bottom pb-2">
+                    <div class="row g-2">
+                        <div class="col-12 col-md-4">
+                            <div class="form-group mb-2">
+                                <label class="form-label small">Signatory Name</label>
+                                <input type="text" class="form-control form-control-sm" name="signatory_name[]" value="{{ old("signatory_name.$index", $signatory['name'] ?? '') }}">
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="form-group mb-2">
+                                <label class="form-label small">Designation *</label>
+                                <input type="text" class="form-control form-control-sm" name="signatory_designation[]" value="{{ old("signatory_designation.$index", $signatory['designation'] ?? '') }}" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-3">
+                            <div class="form-group mb-2">
+                                <label class="form-label small">Contact Number *</label>
+                                <input type="tel" class="form-control form-control-sm" name="signatory_contact[]" value="{{ old("signatory_contact.$index", $signatory['contact'] ?? '') }}" required>
+                                <div class="invalid-feedback"></div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-2 d-flex align-items-end">
+                            <div class="form-group mb-2 w-100">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeSignatory(this)">-</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+</div>
 
     <!-- LLP Fields -->
     <div id="llp_fields" class="entity-specific-fields" style="display:none;">
@@ -262,18 +260,18 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                                     <input type="tel" class="form-control form-control-sm" name="llp_partner_contact[]" value="{{ old("llp_partner_contact.$index", $partner['contact'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-3">
-                                <label class="form-label small">Full Address *</label>
-                                <input type="text" class="form-control form-control-sm" name="llp_partner_address[]" value="{{ old("llp_partner_address.$index", $partner['address'] ?? '') }}" required>
+                             <div class="col-12 col-md-3">
+                                    <label class="form-label small">Full Address *</label>
+                                    <input type="text" class="form-control form-control-sm" name="llp_partner_address[]" value="{{ old("llp_partner_address.$index", $partner['address'] ?? '') }}" required>
                             </div>
                             <div class="col-12 col-md-1 d-flex align-items-end">
-                                <div class="form-group mb-2 w-100">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeLLPPartner(this)">-</button>
-                                </div>
+                            <div class="form-group mb-2 w-100">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeLLPPartner(this)">-</button>
                             </div>
-
                         </div>
 
+                        </div>
+                                              
                     </div>
                     @endforeach
                 </div>
@@ -573,9 +571,9 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
                 <label for="mobile" class="form-label small">Mobile Number *</label>
-                <input type="tel" class="form-control form-control-sm" id="mobile" name="mobile"
-                    value="{{ old('mobile', isset($application->entityDetails) ? $application->entityDetails->mobile : '') }}"
-                    maxlength="10" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+            <input type="tel" class="form-control form-control-sm" id="mobile" name="mobile"
+                value="{{ old('mobile', isset($application->entityDetails) ? $application->entityDetails->mobile : '') }}"
+                maxlength="10" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
             </div>
         </div>
         <div class="col-12 col-md-6">
@@ -586,32 +584,36 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     </div>
-
-    <!-- PAN File -->
-<div class="row g-2">
-    <div class="col-12 col-md-6">
-        <label for="pan_file" class="form-label small">Upload PAN Document *</label>
-        <div class="input-group input-group-sm mb-2">
-            <input type="file" class="form-control form-control-sm d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="pan_file_upload_btn">Upload PAN</button>
+    <div class="row g-2">
+        <!-- PAN Number -->
+        <div class="col-12 col-md-6">
+                <label for="pan_file" class="form-label small">Upload PAN Document *</label>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="file" class="form-control form-control-sm d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="pan_upload_btn">Upload PAN</button>
+                </div>
         </div>
-        <div id="pan_file_name" class="small text-muted mb-2 {{ $panDoc ? '' : 'd-none' }}">
-            @if($panDoc)
-                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View PAN Document</a> (Uploaded on {{ $panDoc['remarks'] }})
-                <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
-                <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'pan_file')">Remove</button>
-            @endif
-        </div>
+            <div class="col-12 col-md-6">
+                <label for="pan_number" class="form-label small">PAN Number *</label>
+                <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number"
+                    value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}"
+                    required>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="pan_verified" name="pan_verified"
+                        {{ old('pan_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label small" for="pan_verified">
+                        I confirm the PAN number matches the uploaded document
+                    </label>
+                </div>
+                <div id="pan_file_name" class="small text-muted mb-2 {{ $panDoc ? '' : 'd-none' }}">
+                    @if($panDoc)
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View PAN Document</a> (Uploaded on {{ $panDoc['remarks'] }})
+                    <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
+                    @endif
+                </div>
+            </div>
+        
     </div>
-    <div class="col-12 col-md-6">
-        <label for="pan_number" class="form-label small">PAN Number *</label>
-        <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number" value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}" required>
-        <div class="form-check mt-1">
-            <input class="form-check-input" type="checkbox" id="pan_verified" name="pan_verified" {{ old('pan_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
-            <label class="form-check-label small" for="pan_verified">I confirm the PAN number matches the uploaded document</label>
-        </div>
-    </div>
-</div>
 
 
     <!-- GST Applicable -->
@@ -626,74 +628,116 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
     </div>
     <!-- GST Fields -->
-<div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
-    <div class="row g-2">
-        <div class="col-12">
-            <div class="form-group mb-2">
-                <label for="gst_file" class="form-label small">Upload GST Document *</label>
-                <div class="input-group input-group-sm mb-2">
-                    <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="gst_file_upload_btn">Upload GST</button>
-                </div>
-                <div id="gst_file_name" class="small text-muted mb-2 {{ $gstDoc ? '' : 'd-none' }}">
-                    @if($gstDoc)
+    <div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
+        <div class="row g-2">
+            <div class="col-12">
+                <div class="form-group mb-2">
+                    <label for="gst_file" class="form-label small">Upload GST Document *</label>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="gst_upload_btn">Upload GST</button>
+                    </div>
+                    <div id="gst_file_name" class="small text-muted mb-2 {{ $gstDoc ? '' : 'd-none' }}">
+                        @if($gstDoc)
                         <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $gstDoc['path']) }}">View GST Document</a> (Uploaded on {{ $gstDoc['remarks'] }})
                         <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
-                        <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'gst_file')">Remove</button>
-                    @endif
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-2">
+            <div class="col-12 col-md-6">
+                <div class="form-group mb-2">
+                    <label for="gst_number" class="form-label small">GST Number *</label>
+                    <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number"
+                        value="{{ old('gst_number', $gstDoc['details']['gst_number'] ?? ($application->entityDetails->gst_number ?? '')) }}">
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="form-group mb-2">
+                    <label for="gst_validity" class="form-label small">GST Validity Date *</label>
+                    <input type="date" class="form-control form-control-sm" id="gst_validity" name="gst_validity"
+                    min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}"
+                    value="{{ old('gst_validity', $gstDoc['details']['gst_validity'] ?? ($application->entityDetails->additional_data['gst_validity'] ?? '')) }}">
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- GST Fields -->
+    <div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
+        <div class="row g-2">
+            <div class="col-12">
+                <div class="form-group mb-2">
+                    <label for="gst_file" class="form-label small">Upload GST Document *</label>
+                    <div class="input-group input-group-sm mb-2">
+                        <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="gst_upload_btn">Upload GST</button>
+                    </div>
+                    <div id="gst_file_name" class="small text-muted mb-2 {{ $gstDoc ? '' : 'd-none' }}">
+                        @if($gstDoc)
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $gstDoc['path']) }}">View GST Document</a> (Uploaded on {{ $gstDoc['remarks'] }})
+                        <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row g-2">
+            <div class="col-12 col-md-6">
+                <div class="form-group mb-2">
+                    <label for="gst_number" class="form-label small">GST Number *</label>
+                    <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number"
+                        value="{{ old('gst_number', $gstDoc['details']['gst_number'] ?? ($application->entityDetails->gst_number ?? '')) }}">
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="form-group mb-2">
+                    <label for="gst_validity" class="form-label small">GST Validity Date *</label>
+                    <input type="date" class="form-control form-control-sm" id="gst_validity" name="gst_validity"
+                        value="{{ old('gst_validity', $gstDoc['details']['gst_validity'] ?? ($application->entityDetails->additional_data['gst_validity'] ?? '')) }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seed License -->
     <div class="row g-2">
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
-                <label for="gst_number" class="form-label small">GST Number *</label>
-                <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number" value="{{ old('gst_number', $gstDoc['details']['gst_number'] ?? ($application->entityDetails->gst_number ?? '')) }}">
+                <label for="seed_license_file" class="form-label small">Upload Seed License Document *</label>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="file" class="form-control form-control-sm d-none" id="seed_license_file" name="seed_license_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="seed_license_upload_btn">Upload Seed License</button>
+                </div>
+                <div id="seed_license_file_name" class="small text-muted mb-2 {{ $seedLicenseDoc ? '' : 'd-none' }}">
+                    @if($seedLicenseDoc)
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $seedLicenseDoc['path']) }}">View Seed License Document</a> (Uploaded on {{ $seedLicenseDoc['remarks'] }})
+                    <input type="hidden" name="existing_seed_license_file" value="{{ $seedLicenseDoc['path'] }}">
+                    @endif
+                </div>
+                <label for="seed_license" class="form-label small">Seed License Number *</label>
+                <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license"
+                    value="{{ old('seed_license', $seedLicenseDoc['details']['seed_license_number'] ?? ($application->entityDetails->seed_license ?? '')) }}" required>
+                <div class="form-check mt-1">
+                    <input class="form-check-input" type="checkbox" id="seed_license_verified" name="seed_license_verified"
+                        {{ old('seed_license_verified', $seedLicenseDoc['verified'] ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label small" for="seed_license_verified">
+                        I confirm the Seed License number matches the uploaded document
+                    </label>
+                </div>
             </div>
         </div>
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
-                <label for="gst_validity" class="form-label small">GST Validity Date *</label>
-                <input type="date" class="form-control form-control-sm" id="gst_validity" name="gst_validity" value="{{ old('gst_validity', $gstDoc['details']['gst_validity'] ?? ($application->entityDetails->additional_data['gst_validity'] ?? '')) }}">
+                <label for="seed_license_validity" class="form-label small">Seed License Validity Date *</label>
+                <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity"
+                min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}"
+                value="{{ old('seed_license_validity', $seedLicenseDoc['details']['seed_license_validity'] ?? ($application->entityDetails->additional_data['seed_license_validity'] ?? '')) }}" required>
             </div>
         </div>
     </div>
-</div>
-
-    
-
-                    <!-- Seed License File -->
-<div class="row g-2">
-    <div class="col-12 col-md-6">
-        <div class="form-group mb-2">
-            <label for="seed_license_file" class="form-label small">Upload Seed License Document *</label>
-            <div class="input-group input-group-sm mb-2">
-                <input type="file" class="form-control form-control-sm d-none" id="seed_license_file" name="seed_license_file" accept=".pdf,.jpg,.jpeg,.png">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="seed_license_file_upload_btn">Upload Seed License</button>
-            </div>
-            <div id="seed_license_file_name" class="small text-muted mb-2 {{ $seedLicenseDoc ? '' : 'd-none' }}">
-                @if($seedLicenseDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $seedLicenseDoc['path']) }}">View Seed License Document</a> (Uploaded on {{ $seedLicenseDoc['remarks'] }})
-                    <input type="hidden" name="existing_seed_license_file" value="{{ $seedLicenseDoc['path'] }}">
-                    <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'seed_license_file')">Remove</button>
-                @endif
-            </div>
-            <label for="seed_license" class="form-label small">Seed License Number *</label>
-            <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license" value="{{ old('seed_license', $seedLicenseDoc['details']['seed_license_number'] ?? ($application->entityDetails->seed_license ?? '')) }}" required>
-            <div class="form-check mt-1">
-                <input class="form-check-input" type="checkbox" id="seed_license_verified" name="seed_license_verified" {{ old('seed_license_verified', $seedLicenseDoc['verified'] ?? false) ? 'checked' : '' }}>
-                <label class="form-check-label small" for="seed_license_verified">I confirm the Seed License number matches the uploaded document</label>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md-6">
-        <div class="form-group mb-2">
-            <label for="seed_license_validity" class="form-label small">Seed License Validity Date *</label>
-            <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity" min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" value="{{ old('seed_license_validity', $seedLicenseDoc['details']['seed_license_validity'] ?? ($application->entityDetails->additional_data['seed_license_validity'] ?? '')) }}" required>
-        </div>
-    </div>
-</div>
 
     <div class="row g-2">
         <div class="col-12 col-md-6">
@@ -711,26 +755,23 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             <h4 class="fs-6">Bank Details</h4>
         </div>
     </div>
-                    <!-- Bank File -->
-<div class="row g-2">
-    <div class="col-12">
-        <div class="form-group mb-2">
-            <label for="bank_file" class="form-label small">Upload Bank Document (Passbook/Cancelled Cheque) *</label>
-            <div class="input-group input-group-sm mb-2">
-                <input type="file" class="form-control form-control-sm d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="bank_file_upload_btn">Upload Bank Document</button>
-            </div>
-            <div id="bank_file_name" class="small text-muted mb-2 {{ $bankDoc ? '' : 'd-none' }}">
-                @if($bankDoc)
+    <div class="row g-2">
+        <div class="col-12">
+            <div class="form-group mb-2">
+                <label for="bank_file" class="form-label small">Upload Bank Document (Passbook/Cancelled Cheque) *</label>
+                <div class="input-group input-group-sm mb-2">
+                    <input type="file" class="form-control form-control-sm d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="bank_upload_btn">Upload Bank Document</button>
+                </div>
+                <div id="bank_file_name" class="small text-muted mb-2 {{ $bankDoc ? '' : 'd-none' }}">
+                    @if($bankDoc)
                     <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $bankDoc['path']) }}">View Bank Document</a> (Uploaded on {{ $bankDoc['remarks'] }})
                     <input type="hidden" name="existing_bank_file" value="{{ $bankDoc['path'] }}">
-                    <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'bank_file')">Remove</button>
-                @endif
+                    @endif
+                </div>
             </div>
         </div>
     </div>
-</div>
-
     <div class="row g-2">
         <div class="col-12 col-md-3">
             <div class="form-group mb-2">
@@ -746,7 +787,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     value="{{ old('account_holder', $bankDoc['details']['account_holder'] ?? ($application->entityDetails->additional_data['bank_details']['account_holder'] ?? '')) }}" required>
             </div>
         </div>
-        <div class="col-12 col-md-3">
+         <div class="col-12 col-md-3">
             <div class="form-group mb-2">
                 <label for="account_number" class="form-label small">Account Number *</label>
                 <input type="text" class="form-control form-control-sm" id="account_number" name="account_number"
@@ -761,7 +802,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     </div>
-
+    
 
     <!-- Authorized Persons Section -->
     <div class="card mb-2">
@@ -771,9 +812,9 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         <div class="card-body p-2">
             <div class="mb-2">
                 <label for="has_authorized_persons" class="form-label small">Do you have authorized persons?</label>
-                <select id="has_authorized_persons" name="has_authorized_persons">
-                    <option value="yes" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'selected' : '' }}>Yes</option>
+                <select id="has_authorized_persons" name="has_authorized_persons" class="form-select form-select-sm">
                     <option value="no" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'no' ? 'selected' : '' }}>No</option>
+                    <option value="yes" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'selected' : '' }}>Yes</option>
                 </select>
             </div>
             <div id="authorized_persons_section" class="{{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? '' : 'd-none' }}">
@@ -795,104 +836,56 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                             @php
                             $authPersons = old('auth_person_name', $application->entityDetails->additional_data['authorized_persons'] ?? []);
                             if (empty($authPersons)) {
-                            $authPersons[] = ['name' => '', 'contact' => '', 'email' => '', 'address' => '', 'relation' => '', 'letter' => '', 'aadhar' => ''];
+                                $authPersons[] = ['name' => '', 'contact' => '', 'email' => '', 'address' => '', 'relation' => '', 'letter' => '', 'aadhar' => ''];
                             }
                             @endphp
                             @foreach($authPersons as $index => $person)
-    <tr class="authorized-person-entry">
-        <!-- Name -->
-        <td data-label="Name">
-            <input type="text" class="form-control form-control-sm"
-                name="auth_person_name[]"
-                value="{{ old("auth_person_name.$index", $person['name'] ?? '') }}"
-                {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
-            <div class="invalid-feedback">Please enter a valid name</div>
-        </td>
-
-        <!-- Contact Number -->
-        <td data-label="Contact Number">
-            <input type="tel" class="form-control form-control-sm"
-                name="auth_person_contact[]"
-                value="{{ old("auth_person_contact.$index", $person['contact'] ?? '') }}"
-                pattern="[0-9]{10}"
-                {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
-            <div class="invalid-feedback">Please enter a 10-digit phone number</div>
-        </td>
-
-        <!-- Email Address -->
-        <td data-label="Email Address">
-            <input type="email" class="form-control form-control-sm"
-                name="auth_person_email[]"
-                value="{{ old("auth_person_email.$index", $person['email'] ?? '') }}">
-            <div class="invalid-feedback">Please enter a valid email address</div>
-        </td>
-
-        <!-- Full Address -->
-        <td data-label="Full Address">
-            <textarea class="form-control form-control-sm"
-                name="auth_person_address[]"
-                rows="2"
-                {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>{{ old("auth_person_address.$index", $person['address'] ?? '') }}</textarea>
-            <div class="invalid-feedback">Please enter the full address</div>
-        </td>
-
-        <!-- Relation -->
-        <td data-label="Relation">
-            <input type="text" class="form-control form-control-sm"
-                name="auth_person_relation[]"
-                value="{{ old("auth_person_relation.$index", $person['relation'] ?? '') }}"
-                {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
-            <div class="invalid-feedback">Please specify the relation</div>
-        </td>
-
-        <!-- Letter of Authorization -->
-        <td data-label="Letter of Authorisation">
-            <input type="file" class="form-control form-control-sm"
-                name="auth_person_letter[]"
-                accept=".pdf,.doc,.docx"
-                onchange="handleAuthPersonFileChange(this, {{ $index }}, 'letter')"
-                {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
-            <div class="invalid-feedback">Letter of Authorization is required</div>
-            <div id="auth_person_letter_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['letter']) && !in_array($index, old('removed_auth_person_letter', [])) ? '' : 'd-none' }}">
-                @if(isset($person['letter']) && $person['letter'] && !in_array($index, old('removed_auth_person_letter', [])))
-                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal"
-                    data-src="{{ asset('storage/' . $person['letter']) }}">View Letter</a>
-                <input type="hidden" name="existing_auth_person_letter[{{ $index }}]" value="{{ $person['letter'] }}">
-                <button type="button" class="btn btn-sm btn-outline-danger ms-2"
-                    onclick="removeExistingAuthPersonFile(this, 'letter', {{ $index }})">
-                    Remove
-                </button>
-                @endif
-            </div>
-        </td>
-
-        <!-- Aadhar -->
-        <td data-label="Aadhar">
-            <input type="file" class="form-control form-control-sm"
-                name="auth_person_aadhar[]"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onchange="handleAuthPersonFileChange(this, {{ $index }}, 'aadhar')"
-                {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
-            <div class="invalid-feedback">Aadhar document is required</div>
-            <div id="auth_person_aadhar_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['aadhar']) && !in_array($index, old('removed_auth_person_aadhar', [])) ? '' : 'd-none' }}">
-                @if(isset($person['aadhar']) && $person['aadhar'] && !in_array($index, old('removed_auth_person_aadhar', [])))
-                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal"
-                    data-src="{{ asset('storage/' . $person['aadhar']) }}">View Aadhar</a>
-                <input type="hidden" name="existing_auth_person_aadhar[{{ $index }}]" value="{{ $person['aadhar'] }}">
-                <button type="button" class="btn btn-sm btn-outline-danger ms-2"
-                    onclick="removeExistingAuthPersonFile(this, 'aadhar', {{ $index }})">
-                    Remove
-                </button>
-                @endif
-            </div>
-        </td>
-
-        <!-- Action -->
-        <td data-label="Action">
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)">-</button>
-        </td>
-    </tr>
-@endforeach
+                            <tr class="authorized-person-entry">
+                                <td data-label="Name">
+                                    <input type="text" class="form-control form-control-sm" name="auth_person_name[]" value="{{ old("auth_person_name.$index", $person['name'] ?? '') }}" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
+                                    <div class="invalid-feedback"></div>
+                                </td>
+                                <td data-label="Contact Number">
+                                    <input type="tel" class="form-control form-control-sm" name="auth_person_contact[]" value="{{ old("auth_person_contact.$index", $person['contact'] ?? '') }}" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
+                                    <div class="invalid-feedback"></div>
+                                </td>
+                                <td data-label="Email Address">
+                                    <input type="email" class="form-control form-control-sm" name="auth_person_email[]" value="{{ old("auth_person_email.$index", $person['email'] ?? '') }}">
+                                    <div class="invalid-feedback"></div>
+                                </td>
+                                <td data-label="Full Address">
+                                    <textarea class="form-control form-control-sm" name="auth_person_address[]" rows="2" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>{{ old("auth_person_address.$index", $person['address'] ?? '') }}</textarea>
+                                    <div class="invalid-feedback"></div>
+                                </td>
+                                <td data-label="Relation">
+                                    <input type="text" class="form-control form-control-sm" name="auth_person_relation[]" value="{{ old("auth_person_relation.$index", $person['relation'] ?? '') }}" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
+                                    <div class="invalid-feedback"></div>
+                                </td>
+                                <td data-label="Letter of Authorisation">
+                                    <input type="file" class="form-control form-control-sm" name="auth_person_letter[]" accept=".pdf,.doc,.docx" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
+                                    <div class="invalid-feedback"></div>
+                                    <div id="auth_person_letter_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['letter']) ? '' : 'd-none' }}">
+                                        @if(isset($person['letter']) && $person['letter'])
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['letter']) }}">View Letter</a>
+                                        <input type="hidden" name="existing_auth_person_letter[]" value="{{ $person['letter'] }}">
+                                        @endif
+                                    </div>
+                                </td>
+                                <td data-label="Aadhar">
+                                    <input type="file" class="form-control form-control-sm" name="auth_person_aadhar[]" accept=".pdf,.jpg,.jpeg,.png" {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>
+                                    <div class="invalid-feedback"></div>
+                                    <div id="auth_person_aadhar_{{ $index }}_name" class="small text-muted mt-1 {{ isset($person['aadhar']) ? '' : 'd-none' }}">
+                                        @if(isset($person['aadhar']) && $person['aadhar'])
+                                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $person['aadhar']) }}">View Aadhar</a>
+                                        <input type="hidden" name="existing_auth_person_aadhar[]" value="{{ $person['aadhar'] }}">
+                                        @endif
+                                    </div>
+                                </td>
+                                <td data-label="Action">
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)">-</button>
+                                </td>
+                            </tr>
+                            @endforeach
                         </tbody>
                     </table>
                 </div>
@@ -924,7 +917,6 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
     <input type="hidden" name="original_entity_type" value="{{ old('entity_type', isset($application->entityDetails) ? $application->entityDetails->entity_type : '') }}">
 </div>
 <script>
-    
     document.addEventListener('DOMContentLoaded', function() {
         var documentModal = document.getElementById('documentModal');
         documentModal.addEventListener('show.bs.modal', function(event) {
@@ -1015,8 +1007,8 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     function clearInapplicableFields(entityType) {
         const containers = {
-            'individual_person': ['individual_name', 'individual_dob', 'individual_father_name', 'individual_age'],
-            'sole_proprietorship': ['proprietor_name', 'proprietor_dob', 'proprietor_father_name', 'proprietor_age'],
+            'individual_person': ['individual_name', 'individual_dob', 'individual_father_name','individual_age'],
+            'sole_proprietorship': ['proprietor_name', 'proprietor_dob', 'proprietor_father_name','proprietor_age'],
             'partnership': ['partners_container'],
             'llp': ['llp_partners_container', 'llpin_number', 'llp_incorporation_date'],
             'private_company': ['directors_container', 'cin_number', 'incorporation_date'],
@@ -1063,10 +1055,10 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
     }
 
     function addPartner() {
-        const container = document.getElementById('partners_container');
-        const newEntry = document.createElement('div');
-        newEntry.className = 'partner-entry mb-2 border-bottom pb-2';
-        newEntry.innerHTML = `
+    const container = document.getElementById('partners_container');
+    const newEntry = document.createElement('div');
+    newEntry.className = 'partner-entry mb-2 border-bottom pb-2';
+    newEntry.innerHTML = `
         <div class="row g-2">
             <div class="col-12 col-md-4">
                 <div class="form-group mb-2">
@@ -1096,23 +1088,23 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     `;
-        container.appendChild(newEntry);
-    }
+    container.appendChild(newEntry);
+}
 
-    function removePartner(button) {
-        const entries = document.querySelectorAll('.partner-entry');
-        if (entries.length > 1) {
-            button.closest('.partner-entry').remove();
-        } else {
-            alert('At least one partner is required.');
-        }
+function removePartner(button) {
+    const entries = document.querySelectorAll('.partner-entry');
+    if (entries.length > 1) {
+        button.closest('.partner-entry').remove();
+    } else {
+        alert('At least one partner is required.');
     }
+}
 
-    function addSignatory() {
-        const container = document.getElementById('signatories_container');
-        const newEntry = document.createElement('div');
-        newEntry.className = 'signatory-entry mb-2 border-bottom pb-2';
-        newEntry.innerHTML = `
+function addSignatory() {
+    const container = document.getElementById('signatories_container');
+    const newEntry = document.createElement('div');
+    newEntry.className = 'signatory-entry mb-2 border-bottom pb-2';
+    newEntry.innerHTML = `
         <div class="row g-2">
             <div class="col-12 col-md-4">
                 <div class="form-group mb-2">
@@ -1142,21 +1134,21 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     `;
-        container.appendChild(newEntry);
-    }
+    container.appendChild(newEntry);
+}
 
-    function removeSignatory(button) {
-        const entries = document.querySelectorAll('.signatory-entry');
-        if (entries.length > 1) {
-            button.closest('.signatory-entry').remove();
-        } else {
-            // Clear fields instead of removing the last entry (since signatories are optional)
-            const entry = button.closest('.signatory-entry');
-            entry.querySelector('input[name="signatory_name[]"]').value = '';
-            entry.querySelector('input[name="signatory_designation[]"]').value = '';
-            entry.querySelector('input[name="signatory_contact[]"]').value = '';
-        }
+function removeSignatory(button) {
+    const entries = document.querySelectorAll('.signatory-entry');
+    if (entries.length > 1) {
+        button.closest('.signatory-entry').remove();
+    } else {
+        // Clear fields instead of removing the last entry (since signatories are optional)
+        const entry = button.closest('.signatory-entry');
+        entry.querySelector('input[name="signatory_name[]"]').value = '';
+        entry.querySelector('input[name="signatory_designation[]"]').value = '';
+        entry.querySelector('input[name="signatory_contact[]"]').value = '';
     }
+}
 
     function addLLPPartner() {
         const container = document.getElementById('llp_partners_container');
@@ -1329,201 +1321,103 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             alert('At least one trustee is required.');
         }
     }
-     let removedDocuments = {}; 
-    function handleFileChange(input, fieldName) {
-    const fileNameDiv = document.getElementById(`${fieldName}_name`);
-    if (fileNameDiv) {
+
+    function handleFileChange(input, index, type) {
+        const fileNameDiv = document.getElementById(`auth_person_${type}_${index}_name`);
         if (input.files.length > 0) {
             fileNameDiv.classList.add('d-none');
-            const hiddenInput = fileNameDiv.querySelector('input[type="hidden"]');
-            if (hiddenInput) hiddenInput.remove();
-            const removeBtn = fileNameDiv.querySelector('button');
-            if (removeBtn) removeBtn.remove();
-            delete removedDocuments[fieldName];
         } else {
-            const existingLink = fileNameDiv.querySelector('a');
-            if (existingLink) fileNameDiv.classList.remove('d-none');
-        }
-    }
-}
-
-// Generalized function to handle removal of existing files
-function removeExistingFile(button, fieldName) {
-    const container = button.closest(`#${fieldName}_name`);
-    if (container) {
-        container.classList.add('d-none');
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = `removed_${fieldName}`;
-        hiddenInput.value = '1';
-        container.appendChild(hiddenInput);
-        removedDocuments[fieldName] = true;
-        const fileInput = container.closest('.form-group, .file-upload-wrapper').querySelector(`input[name="${fieldName}"]`);
-        if (fileInput) fileInput.required = true;
-    }
-}
-
-
-    const hasAuthorizedPersons = document.getElementById('has_authorized_persons');
-    const authorizedPersonsSection = document.getElementById('authorized_persons_section');
-
-    function toggleAuthorizedPersonsSection() {
-        if (hasAuthorizedPersons.value === 'yes') {
-            authorizedPersonsSection.classList.remove('d-none');
-            // Add required attributes to inputs
-            const inputs = authorizedPersonsSection.querySelectorAll('input:not([type="email"]), textarea');
-            inputs.forEach(input => input.setAttribute('required', ''));
-        } else {
-            authorizedPersonsSection.classList.add('d-none');
-            // Remove required attributes and clear inputs
-            const inputs = authorizedPersonsSection.querySelectorAll('input, textarea');
-            inputs.forEach(input => {
-                input.removeAttribute('required');
-                if (input.type !== 'file') input.value = '';
-            });
-            const fileInputs = authorizedPersonsSection.querySelectorAll('input[type="file"]');
-            fileInputs.forEach(input => input.value = '');
+            fileNameDiv.classList.remove('d-none');
         }
     }
 
-    hasAuthorizedPersons.addEventListener('change', toggleAuthorizedPersonsSection);
-    toggleAuthorizedPersonsSection();
 
-    // Handle file input changes for authorized persons
-    // Handle file input change for authorized persons
-function handleAuthPersonFileChange(input, index, type) {
-    const fileNameDiv = document.getElementById(`auth_person_${type}_${index}_name`);
-    if (fileNameDiv) {
-        if (input.files.length > 0) {
-            fileNameDiv.classList.add('d-none');
-            const hiddenInput = fileNameDiv.querySelector('input[type="hidden"]');
-            if (hiddenInput) hiddenInput.remove();
-            const removeBtn = fileNameDiv.querySelector('button');
-            if (removeBtn) removeBtn.remove();
-            const removedInput = document.querySelector(`input[name="removed_auth_person_${type}[]"][value="${index}"]`);
-            if (removedInput) removedInput.remove();
-        } else {
-            const existingLink = fileNameDiv.querySelector('a');
-            if (existingLink) fileNameDiv.classList.remove('d-none');
+     const hasAuthorizedPersons = document.getElementById('has_authorized_persons');
+        const authorizedPersonsSection = document.getElementById('authorized_persons_section');
+
+        function toggleAuthorizedPersonsSection() {
+            if (hasAuthorizedPersons.value === 'yes') {
+                authorizedPersonsSection.classList.remove('d-none');
+                // Add required attributes to inputs
+                const inputs = authorizedPersonsSection.querySelectorAll('input:not([type="email"]), textarea');
+                inputs.forEach(input => input.setAttribute('required', ''));
+            } else {
+                authorizedPersonsSection.classList.add('d-none');
+                // Remove required attributes and clear inputs
+                const inputs = authorizedPersonsSection.querySelectorAll('input, textarea');
+                inputs.forEach(input => {
+                    input.removeAttribute('required');
+                    if (input.type !== 'file') input.value = '';
+                });
+                const fileInputs = authorizedPersonsSection.querySelectorAll('input[type="file"]');
+                fileInputs.forEach(input => input.value = '');
+            }
         }
-    }
-}
 
-// Handle removal of existing authorized person files
-function removeExistingAuthPersonFile(button, type, index) {
-    const container = button.closest(`#auth_person_${type}_${index}_name`);
-    if (container) {
-        container.classList.add('d-none');
-        const hiddenInput = document.createElement('input');
-        hiddenInput.type = 'hidden';
-        hiddenInput.name = `removed_auth_person_${type}[]`;
-        hiddenInput.value = index;
-        container.appendChild(hiddenInput);
-        const fileInput = container.closest('tr').querySelector(`input[name="auth_person_${type}[]"]`);
-        if (fileInput) fileInput.required = true;
-    }
-}
-    // Add new authorized person row
-function addAuthorizedPerson() {
-    const container = document.getElementById('authorized_persons_container');
-    const newRow = document.createElement('tr');
-    newRow.className = 'authorized-person-entry';
-    
-    // Get the next available index
-    const index = document.querySelectorAll('.authorized-person-entry').length;
-    
-    newRow.innerHTML = `
-        <!-- Name -->
+        hasAuthorizedPersons.addEventListener('change', toggleAuthorizedPersonsSection);
+        toggleAuthorizedPersonsSection(); 
+
+    function addAuthorizedPerson() {
+        const container = document.getElementById('authorized_persons_container');
+        const newRow = document.createElement('tr');
+        newRow.className = 'authorized-person-entry';
+        newRow.innerHTML = `
         <td data-label="Name">
-            <input type="text" class="form-control form-control-sm" name="auth_person_name[]" required>
-            <div class="invalid-feedback">Please enter a valid name</div>
+            <input type="text" class="form-control" name="auth_person_name[]" required>
+            <div class="invalid-feedback"></div>
         </td>
-        
-        <!-- Contact Number -->
         <td data-label="Contact Number">
-            <input type="tel" class="form-control form-control-sm" name="auth_person_contact[]" required pattern="[0-9]{10}">
-            <div class="invalid-feedback">Please enter a 10-digit phone number</div>
+            <input type="tel" class="form-control" name="auth_person_contact[]" required>
+            <div class="invalid-feedback"></div>
         </td>
-        
-        <!-- Email Address -->
         <td data-label="Email Address">
-            <input type="email" class="form-control form-control-sm" name="auth_person_email[]">
-            <div class="invalid-feedback">Please enter a valid email address</div>
+            <input type="email" class="form-control" name="auth_person_email[]">
+            <div class="invalid-feedback"></div>
         </td>
-        
-        <!-- Full Address -->
         <td data-label="Full Address">
-            <textarea class="form-control form-control-sm" name="auth_person_address[]" rows="2" required></textarea>
-            <div class="invalid-feedback">Please enter the full address</div>
+            <textarea class="form-control" name="auth_person_address[]" rows="2" required></textarea>
+            <div class="invalid-feedback"></div>
         </td>
-        
-        <!-- Relation -->
         <td data-label="Relation">
-            <input type="text" class="form-control form-control-sm" name="auth_person_relation[]" required>
-            <div class="invalid-feedback">Please specify the relation</div>
+            <input type="text" class="form-control" name="auth_person_relation[]" required>
+            <div class="invalid-feedback"></div>
         </td>
-        
-        <!-- Letter of Authorization -->
         <td data-label="Letter of Authorisation">
-            <input type="file" class="form-control form-control-sm" name="auth_person_letter[]" accept=".pdf,.doc,.docx" required>
-            <div class="invalid-feedback">Letter of Authorization is required</div>
-            <div id="auth_person_letter_${index}_name" class="small text-muted mt-1 d-none"></div>
+            <input type="file" class="form-control" name="auth_person_letter[]" accept=".pdf,.doc,.docx" required>
+            <div class="invalid-feedback"></div>
         </td>
-        
-        <!-- Aadhar -->
         <td data-label="Aadhar">
-            <input type="file" class="form-control form-control-sm" name="auth_person_aadhar[]" accept=".pdf,.jpg,.jpeg,.png" required>
-            <div class="invalid-feedback">Aadhar document is required</div>
-            <div id="auth_person_aadhar_${index}_name" class="small text-muted mt-1 d-none"></div>
+            <input type="file" class="form-control" name="auth_person_aadhar[]" accept=".pdf,.jpg,.jpeg,.png" required>
+            <div class="invalid-feedback"></div>
         </td>
-        
-        <!-- Action -->
         <td data-label="Action">
             <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)">-</button>
         </td>
     `;
-    
-    container.appendChild(newRow);
-}
+        container.appendChild(newRow);
 
-// Remove authorized person row with confirmation
-function removeAuthorizedPerson(button) {
-    const row = button.closest('tr');
-    const container = row.parentElement;
-    const rows = container.querySelectorAll('tr');
-    
-    // Check if row has any data
-    const hasData = Array.from(row.querySelectorAll('input:not([type="file"]), textarea'))
-        .some(input => input.value.trim() !== '');
-    
-    const hasFiles = Array.from(row.querySelectorAll('input[type="file"]'))
-        .some(input => input.files.length > 0);
-    
-    const hasExistingFiles = Array.from(row.querySelectorAll('[id$="_name"] a'))
-        .some(link => link !== null);
-    
-    if (rows.length > 1) {
-        if (hasData || hasFiles || hasExistingFiles) {
-            if (confirm('This row contains data. Are you sure you want to remove it?')) {
-                row.remove();
-            }
-        } else {
+        const index = document.querySelectorAll('.authorized-person-entry').length - 1;
+        const letterInput = newRow.querySelector('input[name="auth_person_letter[]"]');
+        const aadharInput = newRow.querySelector('input[name="auth_person_aadhar[]"]');
+
+        letterInput.addEventListener('change', () => handleFileChange(letterInput, index, 'letter'));
+        aadharInput.addEventListener('change', () => handleFileChange(aadharInput, index, 'aadhar'));
+    }
+
+    function removeAuthorizedPerson(button) {
+        const entries = document.querySelectorAll('.authorized-person-entry');
+        const row = button.closest('.authorized-person-entry');
+        const inputs = row.querySelectorAll('input:not([type="file"]), textarea');
+        const isEmpty = Array.from(inputs).every(input => input.value.trim() === '');
+        const fileInputs = row.querySelectorAll('input[type="file"]');
+        const filesEmpty = Array.from(fileInputs).every(input => !input.files.length);
+
+        if (entries.length > 1 || (isEmpty && filesEmpty)) {
             row.remove();
-        }
-    } else {
-        // For the last row, clear all fields instead of removing
-        if (hasData || hasFiles || hasExistingFiles) {
-            if (confirm('Clear all fields in this row?')) {
-                row.querySelectorAll('input:not([type="file"]), textarea').forEach(input => input.value = '');
-                row.querySelectorAll('input[type="file"]').forEach(input => input.value = '');
-                row.querySelectorAll('[id$="_name"]').forEach(div => {
-                    div.classList.add('d-none');
-                    div.innerHTML = '';
-                });
-            }
+        } else {
+            alert('At least one authorized person entry is required if any field is filled.');
         }
     }
-}
 
     // Initialize event listeners
     document.addEventListener('DOMContentLoaded', function() {
@@ -1624,10 +1518,7 @@ function removeAuthorizedPerson(button) {
                     // Scroll to the first problematic DOB input
                     const invalidDobInput = errorDiv.previousElementSibling;
                     if (invalidDobInput) {
-                        invalidDobInput.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
+                        invalidDobInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         invalidDobInput.focus();
                     }
                 }
@@ -1855,7 +1746,7 @@ function removeAuthorizedPerson(button) {
     // Initialize all upload handlers
     function initializeUploaders() {
         // Bank Document
-        const bankUploadBtn = document.getElementById('bank_file_upload_btn');
+        const bankUploadBtn = document.getElementById('bank_upload_btn');
         const bankFileInput = document.getElementById('bank_file');
         const bankFileName = document.getElementById('bank_file_name');
         if (bankUploadBtn && bankFileInput && bankFileName) {
@@ -1873,7 +1764,7 @@ function removeAuthorizedPerson(button) {
         }
 
         // PAN Card
-        const panUploadBtn = document.getElementById('pan_file_upload_btn');
+        const panUploadBtn = document.getElementById('pan_upload_btn');
         const panFileInput = document.getElementById('pan_file');
         const panFileName = document.getElementById('pan_file_name');
 
@@ -1892,7 +1783,7 @@ function removeAuthorizedPerson(button) {
         }
 
         // Seed License
-        const seedUploadBtn = document.getElementById('seed_license_file_upload_btn');
+        const seedUploadBtn = document.getElementById('seed_license_upload_btn');
         const seedFileInput = document.getElementById('seed_license_file');
         const seedFileName = document.getElementById('seed_license_file_name');
         if (seedUploadBtn && seedFileInput && seedFileName) {
@@ -1910,7 +1801,7 @@ function removeAuthorizedPerson(button) {
         }
 
         // GST Document
-        const gstUploadBtn = document.getElementById('gst_file_upload_btn');
+        const gstUploadBtn = document.getElementById('gst_upload_btn');
         const gstFileInput = document.getElementById('gst_file');
         const gstFileName = document.getElementById('gst_file_name');
         if (gstUploadBtn && gstFileInput && gstFileName) {
@@ -1941,102 +1832,85 @@ function removeAuthorizedPerson(button) {
         }
 
         // Initialize DOB validation for all date inputs
-        const dobInputs = document.querySelectorAll('.dob-input');
-        console.log("DOB Inputs found:", dobInputs.length);
+    const dobInputs = document.querySelectorAll('.dob-input');
+    console.log("DOB Inputs found:", dobInputs.length);
 
-        dobInputs.forEach(dobInput => {
-            // Find related elements
-            const ageInput = dobInput.closest('.col-12').nextElementSibling.querySelector('.age-display');
-            let errorDiv = dobInput.parentNode.querySelector('.invalid-feedback.dob-error');
-            if (!errorDiv) {
-                errorDiv = document.createElement('div');
-                errorDiv.classList.add('invalid-feedback', 'dob-error');
-                dobInput.parentNode.appendChild(errorDiv);
+    dobInputs.forEach(dobInput => {
+        // Find related elements
+        const ageInput = dobInput.closest('.col-12').nextElementSibling.querySelector('.age-display');
+        let errorDiv = dobInput.parentNode.querySelector('.invalid-feedback.dob-error');
+        if (!errorDiv) {
+            errorDiv = document.createElement('div');
+            errorDiv.classList.add('invalid-feedback', 'dob-error');
+            dobInput.parentNode.appendChild(errorDiv);
+        }
+        const form = dobInput.closest('form');
+        // Function to validate DOB
+        const validateDOB = () => {
+            // Clear previous error state first
+            dobInput.classList.remove('is-invalid');
+            errorDiv.textContent = ''; // Clear existing error message
+            const dob = new Date(dobInput.value);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const m = today.getMonth() - dob.getMonth();
+            
+            // Adjust age if birthday hasn't occurred yet this year
+            if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                age--;
             }
-            const form = dobInput.closest('form');
-            // Function to validate DOB
-            const validateDOB = () => {
-                // Clear previous error state first
+            
+            // Update the age field
+            ageInput.value = age > 0 ? age : '';
+            
+            // Validate age (minimum 18 years)
+            if (dobInput.value && age < 18) {
+                dobInput.classList.add('is-invalid');
+                errorDiv.textContent = 'Must be at least 18 years old.';
+                
+                // Disable form submission if configured
+                if (form) {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.disabled = true;
+                }
+                return false;
+            } else {
                 dobInput.classList.remove('is-invalid');
-                errorDiv.textContent = ''; // Clear existing error message
-                const dob = new Date(dobInput.value);
-                const today = new Date();
-                let age = today.getFullYear() - dob.getFullYear();
-                const m = today.getMonth() - dob.getMonth();
-
-                // Adjust age if birthday hasn't occurred yet this year
-                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
-                    age--;
+                errorDiv.textContent = '';
+                
+                // Re-enable form submission if configured
+                if (form) {
+                    const submitBtn = form.querySelector('button[type="submit"]');
+                    if (submitBtn) submitBtn.disabled = false;
                 }
-
-                // Update the age field
-                ageInput.value = age > 0 ? age : '';
-
-                // Validate age (minimum 18 years)
-                if (dobInput.value && age < 18) {
-                    dobInput.classList.add('is-invalid');
-                    errorDiv.textContent = 'Must be at least 18 years old.';
-
-                    // Disable form submission if configured
-                    if (form) {
-                        const submitBtn = form.querySelector('button[type="submit"]');
-                        if (submitBtn) submitBtn.disabled = true;
-                    }
-                    return false;
-                } else {
-                    dobInput.classList.remove('is-invalid');
-                    errorDiv.textContent = '';
-
-                    // Re-enable form submission if configured
-                    if (form) {
-                        const submitBtn = form.querySelector('button[type="submit"]');
-                        if (submitBtn) submitBtn.disabled = false;
-                    }
-                    return true;
+                return true;
+            }
+        };
+        
+        // Event listener for change
+        dobInput.addEventListener('change', validateDOB);
+        
+        // Event listener for blur (when field loses focus)
+        dobInput.addEventListener('blur', validateDOB);
+        
+        // Also validate on form submission
+        if (form) {
+            form.addEventListener('submit', function(e) {
+                if (!validateDOB()) {
+                    e.preventDefault(); // Prevent form submission if invalid
+                    // Scroll to the first error
+                    dobInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    dobInput.focus();
                 }
-            };
-
-            // Event listener for change
-            dobInput.addEventListener('change', validateDOB);
-
-            // Event listener for blur (when field loses focus)
-            dobInput.addEventListener('blur', validateDOB);
-
-            // Also validate on form submission
-            if (form) {
-                form.addEventListener('submit', function(e) {
-                    if (!validateDOB()) {
-                        e.preventDefault(); // Prevent form submission if invalid
-                        // Scroll to the first error
-                        dobInput.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
-                        dobInput.focus();
-                    }
-                });
-            }
-
-            // Trigger validation on page load if DOB is already set
-            if (dobInput.value) {
-                validateDOB();
-            }
-        });
-
+            });
+        }
+        
+        // Trigger validation on page load if DOB is already set
+        if (dobInput.value) {
+            validateDOB();
+        }
     });
 
-    $(document).ready(function() {
-    const fileFields = ['bank_file', 'seed_license_file', 'pan_file', 'gst_file'];
-    fileFields.forEach(field => {
-        // Trigger file input click when upload button is clicked
-        // $(`#${field}_upload_btn`).on('click', function() {
-        //     $(`#${field}`).trigger('click');
-        // });
-        // Handle file input change
-        $(`#${field}`).on('change', function() {
-            handleFileChange(this, field);
-        });
     });
-});
 </script>
 @endpush

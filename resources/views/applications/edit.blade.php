@@ -17,14 +17,14 @@
                             'Financial & Distributorships', 'Bank Details', 'Declarations', 'Review & Submit'];
 
                             $completedStepsData = [
-                            1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit) && !empty($application->district) && !empty($application->state),
-                            2 => $application->entityDetails && !empty($application->entityDetails->establishment_name) && !empty($application->entityDetails->pan_number),
-                            3 => $application->distributionDetail && !empty($application->distributionDetail->area_covered),
-                            4 => $application->businessPlans->isNotEmpty() && $application->businessPlans->first(), // Use a real key field
-                            5 => $application->financialInfo && !empty($application->financialInfo->net_worth), // Use a real key field
-                            6 => $application->bankDetail && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number), // Use a real key field
-                            7 => $application->declarations->isNotEmpty(),
-                            8 => $application->status === 'submitted',
+                                1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit) && !empty($application->district) && !empty($application->state),
+                                2 => $application->entityDetails && !empty($application->entityDetails->establishment_name) && !empty($application->entityDetails->pan_number),
+                                3 => $application->distributionDetail && !empty($application->distributionDetail->area_covered),
+                                4 => $application->businessPlans->isNotEmpty(), // Check if any business plans exist
+                                5 => $application->financialInfo && !empty($application->financialInfo->net_worth),
+                                6 => $application->bankDetail && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
+                                7 => $application->declarations->isNotEmpty(), // Assuming Declarations are saved as a collection
+                                8 => $application->status === 'initiated', // This step is 'completed' if the application is initiated (pre-submission review)
                             ];
 
                             $currentStep = $initialFrontendStep;
@@ -34,16 +34,17 @@
                             @php
                             $stepNumber = $index + 1;
                             $isActive = ($currentStep == $stepNumber);
-                            $isCompleted = $completedStepsData[$stepNumber] ?? false;
-                            $isClickable = $isCompleted || ($stepNumber < $currentStep);
-                                @endphp
+                            $isCompleted = $completedStepsData[$stepNumber] ?? false; // Use the derived completion status
+                            $isClickable = $isCompleted || ($stepNumber < $currentStep); // A step is clickable if completed or if it's a previous step
+                            @endphp
 
-                                <div class="step {{ $isActive ? 'active' : '' }} {{ $isCompleted ? 'completed' : '' }} {{ $isClickable ? 'clickable' : '' }} mb-2"
+                            <div class="step {{ $isActive ? 'active' : '' }} {{ $isCompleted ? 'completed' : '' }} {{ $isClickable ? 'clickable' : '' }} mb-2"
                                 data-step="{{ $stepNumber }}">
                                 <div class="step-circle" style="width:24px;height:24px;font-size:12px;line-height:24px;">{{ $stepNumber }}</div>
                                 <div class="step-label" style="font-size:11px;">{{ $stepName }}</div>
+                            </div>
+                            @endforeach
                         </div>
-                        @endforeach
                     </div>
                 </div>
 
@@ -51,6 +52,8 @@
                     @csrf
                     @method('PUT')
                     <input type="hidden" id="application_id" name="application_id" value="{{ $application->id }}">
+                    <input type="hidden" id="initial_frontend_step" value="{{ $initialFrontendStep }}">
+
 
                     <div class="step-content" data-step="1">
                         @include('components.form-sections.step1', [

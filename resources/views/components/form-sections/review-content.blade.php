@@ -131,7 +131,27 @@
             $entityType = $application->entityDetails->entity_type;
             $additionalData = is_array($application->entityDetails->additional_data) ? $application->entityDetails->additional_data : json_decode($application->entityDetails->additional_data, true) ?? [];
         @endphp
-        @if($entityType === 'sole_proprietorship' && isset($additionalData['proprietor']) && is_array($additionalData['proprietor']))
+         @if($entityType === 'individual_person' && isset($additionalData['individual']) && is_array($additionalData['individual']))
+            <h5>In Case of Sole Proprietorship</h5>
+            <table class="table">
+                <tr>
+                    <td class="label">Name of Proprietor:</td>
+                    <td class="value">{{ $additionalData['individual']['name'] ?? 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Date of Birth:</td>
+                    <td class="value">{{ $additionalData['individual']['dob'] ?? 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Father's/Husband's Name:</td>
+                    <td class="value">{{ $additionalData['individual']['father_name'] ?? 'N/A' }}</td>
+                </tr>                
+                <tr>
+                    <td class="label">Age:</td>
+                    <td class="value">{{ $additionalData['individual']['age'] ?? 'N/A' }}</td>
+                </tr>
+            </table>
+        @elseif($entityType === 'sole_proprietorship' && isset($additionalData['proprietor']) && is_array($additionalData['proprietor']))
             <h5>In Case of Sole Proprietorship</h5>
             <table class="table">
                 <tr>
@@ -145,26 +165,10 @@
                 <tr>
                     <td class="label">Father's/Husband's Name:</td>
                     <td class="value">{{ $additionalData['proprietor']['father_name'] ?? 'N/A' }}</td>
-                </tr>
+                </tr>                
                 <tr>
-                    <td class="label">Permanent Address of Proprietor:</td>
-                    <td class="value">
-                        {{ $additionalData['proprietor']['address'] ?? 'N/A' }},
-                        {{ $additionalData['proprietor']['landmark'] ?? 'N/A' }},
-                        {{ $additionalData['proprietor']['city'] ?? 'N/A' }},
-                        {{ $additionalData['proprietor']['district'] ?? 'N/A' }},
-                        {{ $additionalData['proprietor']['state'] ?? 'N/A' }},
-                        {{ $additionalData['proprietor']['pincode'] ?? 'N/A' }},
-                        {{ $additionalData['proprietor']['country'] ?? 'N/A' }}
-                    </td>
-                </tr>
-                <tr>
-                    <td class="label">Mobile Number:</td>
-                    <td class="value">{{ $additionalData['proprietor']['contact'] ?? 'N/A' }}</td>
-                </tr>
-                <tr>
-                    <td class="label">E-mail Address:</td>
-                    <td class="value">{{ $additionalData['proprietor']['email'] ?? 'N/A' }}</td>
+                    <td class="label">Age:</td>
+                    <td class="value">{{ $additionalData['proprietor']['age'] ?? 'N/A' }}</td>
                 </tr>
             </table>
         @elseif(in_array($entityType, ['partnership', 'llp', 'private_company', 'public_company', 'cooperative_society', 'trust']) && isset($additionalData['partners']) && is_array($additionalData['partners']))

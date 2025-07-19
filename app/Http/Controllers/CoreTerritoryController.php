@@ -125,4 +125,5 @@ class CoreTerritoryController extends Controller
             ->get();
         return response()->json(array('territoryList' => $territoryList));
     }
+    
 }

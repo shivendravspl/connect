@@ -10,42 +10,65 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ApplicationNotification extends Mailable
+class ApplicationNotification extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    public $application;
-    public $subject;
-    public $remarks;
-    public $actionType;
+    public const TYPE_REJECTED = 'rejected';
+    public const TYPE_REVERTED = 'reverted';
+    public const TYPE_HOLD = 'hold';
+    public const TYPE_APPROVAL = 'approval';
+    public const TYPE_MIS = 'mis';
+    public const TYPE_INFO = 'info';
 
-    public function __construct(Onboarding $application, string $subject, ?string $remarks = null)
-    {
-        $this->application = $application;
-        $this->subject = $subject;
-        $this->remarks = $remarks;
-        $this->actionType = $this->determineActionType($subject);
+    /**
+     * Create a new message instance.
+     */
+    public function __construct(
+        public Onboarding $application,
+        protected string $mailSubject,  // Changed from 'subject' to 'mailSubject'
+        public ?string $remarks = null
+    ) {
+        $this->afterCommit();
     }
 
-    public function build()
+    /**
+     * Get the message envelope.
+     */
+    public function envelope(): Envelope
     {
-        return $this->subject($this->subject)
-            ->view('emails.application_notification')
-            ->with([
+        return new Envelope(
+            subject: $this->mailSubject,  // Use the renamed property here
+        );
+    }
+
+    /**
+     * Get the message content definition.
+     */
+    public function content(): Content
+    {
+        return new Content(
+            view: 'emails.application_notification',
+            with: [
                 'application' => $this->application,
-                'subject' => $this->subject,
                 'remarks' => $this->remarks,
-                'actionType' => $this->actionType
-            ]);
+                'actionType' => $this->determineActionType(),
+            ],
+        );
     }
 
-    private function determineActionType($subject): string
+    /**
+     * Determine action type based on subject.
+     */
+    private function determineActionType(): string
     {
-        if (str_contains($subject, 'Rejected')) return 'rejected';
-        if (str_contains($subject, 'Reverted')) return 'reverted';
-        if (str_contains($subject, 'Hold')) return 'hold';
-        if (str_contains($subject, 'Approval Required')) return 'approval';
-        if (str_contains($subject, 'MIS')) return 'mis';
-        return 'info';
+        return match (true) {
+            str_contains($this->mailSubject, 'Rejected') => self::TYPE_REJECTED,
+            str_contains($this->mailSubject, 'Reverted') => self::TYPE_REVERTED,
+            str_contains($this->mailSubject, 'Hold') => self::TYPE_HOLD,
+            str_contains($this->mailSubject, 'Approval Required') => self::TYPE_APPROVAL,
+            str_contains($this->mailSubject, 'MIS') => self::TYPE_MIS,
+            default => self::TYPE_INFO,
+        };
     }
 }

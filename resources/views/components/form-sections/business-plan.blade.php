@@ -1,6 +1,4 @@
 <div id="business-plan" class="form-section">
-    <h5 class="mb-3">Business Plan (Next Two Years)</h5>
-
     @php
         $year2025 = App\Models\Year::where('period', '2025-26')->first();
         $year2026 = App\Models\Year::where('period', '2026-27')->first();

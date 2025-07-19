@@ -104,4 +104,9 @@ class Employee extends Model
     {
         return str_contains($this->emp_designation, 'Regional Business Manager');
     }
+
+    public function isMisTeam()
+    {
+        return $this->emp_department_code === 'MIS';
+    }
 }

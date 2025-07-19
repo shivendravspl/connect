@@ -2,25 +2,17 @@
 
 @push('styles')
 <style>
-    .compact-table {
-        font-size: 0.85rem;
-        line-height: 1.2;
-    }
-    .compact-table th, .compact-table td {
-        padding: 0.5rem;
-        vertical-align: middle;
-    }
-    .compact-table .btn-sm {
-        font-size: 0.75rem;
-        padding: 0.2rem 0.4rem;
-    }
-    .compact-table .badge {
-        font-size: 0.7rem;
-        padding: 0.3rem 0.5rem;
-    }
-    .card {
+    .form-section {
         margin-bottom: 1rem;
+        padding: 1rem;
+        background-color: #fff;
+        border: 1px solid #dee2e6;
         border-radius: 0.25rem;
+    }
+    .table th, .table td {
+        vertical-align: middle;
+        font-size: 0.8rem;
+        padding: 0.5rem;
     }
     .modal-body .document-preview {
         max-height: 400px;
@@ -31,26 +23,68 @@
         height: auto;
         margin-bottom: 0.5rem;
     }
+    .card {
+        margin-bottom: 1rem;
+    }
+    .btn-sm {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+    }
+    .badge {
+        font-size: 0.75rem;
+    }
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .form-select-sm, .form-control-sm {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .alert-dismissible {
+        font-size: 0.8rem;
+        padding: 0.5rem;
+    }
     @media (max-width: 768px) {
-        .compact-table {
-            font-size: 0.75rem;
-        }
-        .compact-table th, .compact-table td {
-            padding: 0.3rem;
-        }
-        .compact-table .btn-sm {
-            font-size: 0.65rem;
-            padding: 0.15rem 0.3rem;
-        }
         .container-fluid {
-            padding: 0.5rem;
+            padding: 0.3rem;
         }
         .card {
             margin: 0;
             border-radius: 0;
         }
+        .table th, .table td {
+            font-size: 0.7rem;
+            padding: 0.3rem;
+        }
         .modal-content {
-            margin: 0.5rem;
+            margin: 0.3rem;
+        }
+        .modal-body {
+            padding: 0.5rem;
+        }
+        .btn-sm {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+        }
+        h4, h5, h6 {
+            font-size: 0.9rem;
+        }
+        .form-select-sm, .form-control-sm {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.4rem;
+        }
+        .alert-dismissible {
+            font-size: 0.7rem;
+        }
+    }
+    @media (max-width: 576px) {
+        .form-section {
+            padding: 0.5rem;
+        }
+        .col-12 {
+            padding-left: 0.5rem;
+            padding-right: 0.5rem;
         }
     }
 </style>
@@ -58,9 +92,17 @@
 
 @section('content')
 <div class="container-fluid py-3">
+    <!-- Page Title -->
     <div class="row mb-3">
         <div class="col-12">
-            <h2 class="mb-2">Distributor Application - View (ID: {{ $application->application_code ?? 'N/A' }})</h2>
+            <div class="page-title-box">
+                <h4 class="page-title">Verify Documents for {{ $application->application_code ?? 'N/A' }}</h4>
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item active">Verify Documents</li>
+                    </ol>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -69,21 +111,21 @@
             <div class="card">
                 <div class="card-body">
                     <!-- Application Status -->
-                    <div class="form-section mb-3">
+                    <div class="form-section">
                         <h5 class="mb-2">Application Status</h5>
                         <div class="table-responsive">
-                            <table class="table table-bordered compact-table">
+                            <table class="table table-bordered table-sm">
                                 <tbody>
                                     <tr>
-                                        <td><strong>Status</strong></td>
+                                        <th>Status</th>
                                         <td><span class="badge bg-{{ $application->status_badge ?? 'secondary' }}">{{ ucfirst($application->status ?? 'N/A') }}</span></td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Submitted On</strong></td>
+                                        <th>Submitted On</th>
                                         <td>{{ $application->created_at ? $application->created_at->format('d-M-Y H:i') : 'N/A' }}</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>Last Updated</strong></td>
+                                        <th>Last Updated</th>
                                         <td>{{ $application->updated_at ? $application->updated_at->format('d-M-Y H:i') : 'N/A' }}</td>
                                     </tr>
                                 </tbody>
@@ -91,127 +133,126 @@
                         </div>
                     </div>
 
-                    <!-- Step 1: Basic Details -->
-                    @if($application->current_progress_step >= 1)
-                        <div id="basic-details" class="form-section mb-3">
-                            <h5 class="mb-2">Basic Details</h5>
-                            <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
-                                    <tbody>
-                                        <tr>
-                                            <td><strong>Territory</strong></td>
-                                            <td>{{ isset($application->territory) ? DB::table('core_territory')->where('id', $application->territory)->value('territory_name') ?? 'N/A' : 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Region</strong></td>
-                                            <td>{{ isset($application->region) ? DB::table('core_region')->where('id', $application->region)->value('region_name') ?? 'N/A' : 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Zone</strong></td>
-                                            <td>{{ isset($application->zone) ? DB::table('core_zone')->where('id', $application->zone)->value('zone_name') ?? 'N/A' : 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Business Unit</strong></td>
-                                            <td>{{ isset($application->business_unit) ? DB::table('core_business_unit')->where('id', $application->business_unit)->value('business_unit_name') ?? 'N/A' : 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Crop Vertical</strong></td>
-                                            <td>{{ isset($application->crop_vertical) && $application->crop_vertical === '1' ? 'Field Crop' : 'Veg Crop' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>State</strong></td>
-                                            <td>{{ isset($application->state) ? DB::table('core_state')->where('id', $application->state)->value('state_name') ?? 'N/A' : 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>District</strong></td>
-                                            <td>{{ isset($application->district) ? DB::table('core_district')->where('id', $application->district)->value('district_name') ?? 'N/A' : 'N/A' }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                    <!-- Basic Details -->
+                    <div id="basic-details" class="form-section">
+                        <h5 class="mb-2">Basic Details</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th>Territory</th>
+                                        <td>{{ isset($application->territory) ? DB::table('core_territory')->where('id', $application->territory)->value('territory_name') ?? 'N/A' : 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Region</th>
+                                        <td>{{ isset($application->region) ? DB::table('core_region')->where('id', $application->region)->value('region_name') ?? 'N/A' : 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Zone</th>
+                                        <td>{{ isset($application->zone) ? DB::table('core_zone')->where('id', $application->zone)->value('zone_name') ?? 'N/A' : 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Business Unit</th>
+                                        <td>{{ isset($application->business_unit) ? DB::table('core_business_unit')->where('id', $application->business_unit)->value('business_unit_name') ?? 'N/A' : 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>Crop Vertical</th>
+                                        <td>{{ isset($application->crop_vertical) && $application->crop_vertical === '1' ? 'Field Crop' : 'Veg Crop' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>State</th>
+                                        <td>{{ isset($application->state) ? DB::table('core_state')->where('id', $application->state)->value('state_name') ?? 'N/A' : 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>District</th>
+                                        <td>{{ isset($application->district) ? DB::table('core_district')->where('id', $application->district)->value('district_name') ?? 'N/A' : 'N/A' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                    @endif
+                    </div>
 
-                    <!-- Step 2: Entity Details -->
-                    @if($application->current_progress_step >= 2 && isset($application->entityDetails))
-                        <div id="entity-details" class="form-section mb-3">
+                    <!-- Entity Details -->
+                    @if(isset($application->entityDetails))
+                        <div id="entity-details" class="form-section">
                             <h5 class="mb-2">Entity Details</h5>
                             <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
+                                <table class="table table-bordered table-sm">
                                     <tbody>
                                         <tr>
-                                            <td><strong>Type of Firm</strong></td>
+                                            <th>Type of Firm</th>
                                             <td>{{ $application->entityDetails->entity_type ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Firm Name</strong></td>
+                                            <th>Firm Name</th>
                                             <td>{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Business Address</strong></td>
+                                            <th>Business Address</th>
                                             <td>{{ $application->entityDetails->business_address ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>House No</strong></td>
+                                            <th>House No</th>
                                             <td>{{ $application->entityDetails->house_no ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Landmark</strong></td>
+                                            <th>Landmark</th>
                                             <td>{{ $application->entityDetails->landmark ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>City</strong></td>
+                                            <th>City</th>
                                             <td>{{ $application->entityDetails->city ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Pincode</strong></td>
+                                            <th>Pincode</th>
                                             <td>{{ $application->entityDetails->pincode ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>State</strong></td>
+                                            <th>State</th>
                                             <td>{{ $application->entityDetails->state->state_name ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>District</strong></td>
+                                            <th>District</th>
                                             <td>{{ $application->entityDetails->district->district_name ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Country</strong></td>
+                                            <th>Country</th>
                                             <td>{{ $application->entityDetails->district->country ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Mobile</strong></td>
+                                            <th>Mobile</th>
                                             <td>{{ $application->entityDetails->mobile ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Email</strong></td>
+                                            <th>Email</th>
                                             <td>{{ $application->entityDetails->email ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>PAN Number</strong></td>
+                                            <th>PAN Number</th>
                                             <td>{{ $application->entityDetails->pan_number ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>GST Applicable</strong></td>
+                                            <th>GST Applicable</th>
                                             <td>{{ $application->entityDetails->gst_applicable ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>GST Number</strong></td>
+                                            <th>GST Number</th>
                                             <td>{{ $application->entityDetails->gst_number ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Seed License</strong></td>
+                                            <th>Seed License</th>
                                             <td>{{ $application->entityDetails->seed_license ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>TAN Number</strong></td>
+                                            <th>TAN Number</th>
                                             <td>{{ $application->entityDetails->additional_data['tan_number'] ?? 'N/A' }}</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <!-- Documents -->
+                            <!-- Documents Section -->
+                            <h6 class="mb-2">Documents</h6>
                             @php
                                 $documents = [];
                                 if (!empty($application->entityDetails->documents_data)) {
@@ -224,9 +265,8 @@
                                     }
                                 }
                             @endphp
-                            <h6 class="mb-2">Documents</h6>
                             <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
+                                <table class="table table-bordered table-sm">
                                     <thead>
                                         <tr>
                                             <th>Type</th>
@@ -270,7 +310,7 @@
                                 </table>
                             </div>
 
-                            <!-- Document Modals -->
+                            <!-- Document Preview Modals -->
                             @foreach($documents as $index => $doc)
                                 @if($doc['path'])
                                     <div class="modal fade" id="documentModal-{{ $index }}" tabindex="-1" aria-labelledby="documentModalLabel-{{ $index }}" aria-hidden="true">
@@ -282,7 +322,7 @@
                                                 </div>
                                                 <div class="modal-body document-preview">
                                                     @if(in_array(strtolower(pathinfo($doc['path'], PATHINFO_EXTENSION)), ['pdf']))
-                                                        <embed src="{{ Storage::url($doc['path']) }}" type="application/pdf" width="100%" height="400px">
+                                                        <embed src="{{ Storage::url($doc['path']) }}" type="application/pdf" width="100%" height="300px">
                                                     @elseif(in_array(strtolower(pathinfo($doc['path'], PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg']))
                                                         <img src="{{ Storage::url($doc['path']) }}" alt="{{ $doc['details']['name'] ?? 'Document' }}">
                                                     @else
@@ -290,7 +330,7 @@
                                                     @endif
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -302,30 +342,30 @@
                             @if($application->entityDetails->entity_type === 'sole_proprietorship')
                                 <h6 class="mb-2">Proprietor Details</h6>
                                 <div class="table-responsive">
-                                    <table class="table table-bordered compact-table">
+                                    <table class="table table-bordered table-sm">
                                         <tbody>
                                             <tr>
-                                                <td><strong>Name</strong></td>
+                                                <th>Name</th>
                                                 <td>{{ $application->entityDetails->additional_data['proprietor']['name'] ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Date of Birth</strong></td>
+                                                <th>Date of Birth</th>
                                                 <td>{{ $application->entityDetails->additional_data['proprietor']['dob'] ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Father's Name</strong></td>
+                                                <th>Father's Name</th>
                                                 <td>{{ $application->entityDetails->additional_data['proprietor']['father_name'] ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Address</strong></td>
+                                                <th>Address</th>
                                                 <td>{{ $application->entityDetails->additional_data['proprietor']['address'] ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Pincode</strong></td>
+                                                <th>Pincode</th>
                                                 <td>{{ $application->entityDetails->additional_data['proprietor']['pincode'] ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Country</strong></td>
+                                                <th>Country</th>
                                                 <td>{{ $application->entityDetails->additional_data['proprietor']['country'] ?? 'N/A' }}</td>
                                             </tr>
                                         </tbody>
@@ -334,42 +374,42 @@
                             @elseif(in_array($application->entityDetails->entity_type, ['partnership', 'llp', 'private_company', 'public_company', 'cooperative_society', 'trust']))
                                 <h6 class="mb-2">{{ ucfirst(str_replace('_', ' ', $application->entityDetails->entity_type)) }} Details</h6>
                                 <div class="table-responsive">
-                                    <table class="table table-bordered compact-table">
+                                    <table class="table table-bordered table-sm">
                                         <tbody>
                                             @if($application->entityDetails->entity_type === 'llp')
                                                 <tr>
-                                                    <td><strong>LLPIN Number</strong></td>
+                                                    <th>LLPIN Number</th>
                                                     <td>{{ $application->entityDetails->additional_data['llp']['llpin_number'] ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td><strong>Incorporation Date</strong></td>
+                                                    <th>Incorporation Date</th>
                                                     <td>{{ $application->entityDetails->additional_data['llp']['incorporation_date'] ?? 'N/A' }}</td>
                                                 </tr>
                                             @elseif(in_array($application->entityDetails->entity_type, ['private_company', 'public_company']))
                                                 <tr>
-                                                    <td><strong>CIN Number</strong></td>
+                                                    <th>CIN Number</th>
                                                     <td>{{ $application->entityDetails->additional_data['company']['cin_number'] ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td><strong>Incorporation Date</strong></td>
+                                                    <th>Incorporation Date</th>
                                                     <td>{{ $application->entityDetails->additional_data['company']['incorporation_date'] ?? 'N/A' }}</td>
                                                 </tr>
                                             @elseif($application->entityDetails->entity_type === 'cooperative_society')
                                                 <tr>
-                                                    <td><strong>Registration Number</strong></td>
+                                                    <th>Registration Number</th>
                                                     <td>{{ $application->entityDetails->additional_data['cooperative']['reg_number'] ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td><strong>Registration Date</strong></td>
+                                                    <th>Registration Date</th>
                                                     <td>{{ $application->entityDetails->additional_data['cooperative']['reg_date'] ?? 'N/A' }}</td>
                                                 </tr>
                                             @elseif($application->entityDetails->entity_type === 'trust')
                                                 <tr>
-                                                    <td><strong>Registration Number</strong></td>
+                                                    <th>Registration Number</th>
                                                     <td>{{ $application->entityDetails->additional_data['trust']['reg_number'] ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td><strong>Registration Date</strong></td>
+                                                    <th>Registration Date</th>
                                                     <td>{{ $application->entityDetails->additional_data['trust']['reg_date'] ?? 'N/A' }}</td>
                                                 </tr>
                                             @endif
@@ -378,7 +418,7 @@
                                 </div>
                                 <h6 class="mb-2">{{ $application->entityDetails->entity_type === 'partnership' ? 'Partners' : ($application->entityDetails->entity_type === 'llp' ? 'Designated Partners' : ($application->entityDetails->entity_type === 'cooperative_society' ? 'Committee Members' : ($application->entityDetails->entity_type === 'trust' ? 'Trustees' : 'Directors'))) }}</h6>
                                 <div class="table-responsive">
-                                    <table class="table table-bordered compact-table">
+                                    <table class="table table-bordered table-sm">
                                         <thead>
                                             <tr>
                                                 <th>Name</th>
@@ -421,113 +461,117 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                @if(!empty($application->entityDetails->additional_data['authorized_persons']))
-                                    <h6 class="mb-2">Authorized Persons</h6>
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered compact-table">
-                                            <thead>
+                            @endif
+
+                            <!-- Authorized Persons -->
+                            @if(!empty($application->entityDetails->additional_data['authorized_persons']))
+                                <h6 class="mb-2">Authorized Persons</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Contact</th>
+                                                <th>Email</th>
+                                                <th>Address</th>
+                                                <th>Relation</th>
+                                                <th>Letter</th>
+                                                <th>Aadhar</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($application->entityDetails->additional_data['authorized_persons'] as $index => $person)
                                                 <tr>
-                                                    <th>Name</th>
-                                                    <th>Contact</th>
-                                                    <th>Email</th>
-                                                    <th>Address</th>
-                                                    <th>Relation</th>
-                                                    <th>Letter</th>
-                                                    <th>Aadhar</th>
+                                                    <td>{{ $person['name'] ?? 'N/A' }}</td>
+                                                    <td>{{ $person['contact'] ?? 'N/A' }}</td>
+                                                    <td>{{ $person['email'] ?? 'N/A' }}</td>
+                                                    <td>{{ $person['address'] ?? 'N/A' }}</td>
+                                                    <td>{{ $person['relation'] ?? 'N/A' }}</td>
+                                                    <td>
+                                                        @if(!empty($person['letter']))
+                                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#authPersonLetterModal-{{ $index }}">View</button>
+                                                        @else
+                                                            N/A
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if(!empty($person['aadhar']))
+                                                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#authPersonAadharModal-{{ $index }}">View</button>
+                                                        @else
+                                                            N/A
+                                                        @endif
+                                                    </td>
                                                 </tr>
-                                            </thead>
-                                            <tbody>
-                                                @foreach($application->entityDetails->additional_data['authorized_persons'] as $index => $person)
-                                                    <tr>
-                                                        <td>{{ $person['name'] ?? 'N/A' }}</td>
-                                                        <td>{{ $person['contact'] ?? 'N/A' }}</td>
-                                                        <td>{{ $person['email'] ?? 'N/A' }}</td>
-                                                        <td>{{ $person['address'] ?? 'N/A' }}</td>
-                                                        <td>{{ $person['relation'] ?? 'N/A' }}</td>
-                                                        <td>
-                                                            @if(!empty($person['letter']))
-                                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#authPersonLetterModal-{{ $index }}">View</button>
-                                                            @else
-                                                                N/A
-                                                            @endif
-                                                        </td>
-                                                        <td>
-                                                            @if(!empty($person['aadhar']))
-                                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#authPersonAadharModal-{{ $index }}">View</button>
-                                                            @else
-                                                                N/A
-                                                            @endif
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    @foreach($application->entityDetails->additional_data['authorized_persons'] as $index => $person)
-                                        @if(!empty($person['letter']))
-                                            <div class="modal fade" id="authPersonLetterModal-{{ $index }}" tabindex="-1" aria-labelledby="authPersonLetterModalLabel-{{ $index }}" aria-hidden="true">
-                                                <div class="modal-dialog modal-lg">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="authPersonLetterModalLabel-{{ $index }}">Authorization Letter - {{ $person['name'] ?? 'Document' }}</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <div class="modal-body document-preview">
-                                                            @if(in_array(strtolower(pathinfo($person['letter'], PATHINFO_EXTENSION)), ['pdf']))
-                                                                <embed src="{{ asset('storage/' . $person['letter']) }}" type="application/pdf" width="100%" height="400px">
-                                                            @elseif(in_array(strtolower(pathinfo($person['letter'], PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg']))
-                                                                <img src="{{ asset('storage/' . $person['letter']) }}" alt="Authorization Letter">
-                                                            @else
-                                                                <a href="{{ asset('storage/' . $person['letter']) }}" target="_blank" class="btn btn-sm btn-primary">Download Authorization Letter</a>
-                                                            @endif
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                        </div>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Modals for Authorized Persons Documents -->
+                                @foreach($application->entityDetails->additional_data['authorized_persons'] as $index => $person)
+                                    @if(!empty($person['letter']))
+                                        <div class="modal fade" id="authPersonLetterModal-{{ $index }}" tabindex="-1" aria-labelledby="authPersonLetterModalLabel-{{ $index }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="authPersonLetterModalLabel-{{ $index }}">Authorization Letter - {{ $person['name'] ?? 'Document' }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body document-preview">
+                                                        @if(in_array(strtolower(pathinfo($person['letter'], PATHINFO_EXTENSION)), ['pdf']))
+                                                            <embed src="{{ asset('storage/' . $person['letter']) }}" type="application/pdf" width="100%" height="300px">
+                                                        @elseif(in_array(strtolower(pathinfo($person['letter'], PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg']))
+                                                            <img src="{{ asset('storage/' . $person['letter']) }}" alt="Authorization Letter">
+                                                        @else
+                                                            <a href="{{ asset('storage/' . $person['letter']) }}" target="_blank" class="btn btn-sm btn-primary">Download Authorization Letter</a>
+                                                        @endif
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                                                     </div>
                                                 </div>
                                             </div>
-                                        @endif
-                                        @if(!empty($person['aadhar']))
-                                            <div class="modal fade" id="authPersonAadharModal-{{ $index }}" tabindex="-1" aria-labelledby="authPersonAadharModalLabel-{{ $index }}" aria-hidden="true">
-                                                <div class="modal-dialog modal-lg">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="authPersonAadharModalLabel-{{ $index }}">Aadhar - {{ $person['name'] ?? 'Document' }}</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <div class="modal-body document-preview">
-                                                            @if(in_array(strtolower(pathinfo($person['aadhar'], PATHINFO_EXTENSION)), ['pdf']))
-                                                                <embed src="{{ asset('storage/' . $person['aadhar']) }}" type="application/pdf" width="100%" height="400px">
-                                                            @elseif(in_array(strtolower(pathinfo($person['aadhar'], PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg']))
-                                                                <img src="{{ asset('storage/' . $person['aadhar']) }}" alt="Aadhar Document">
-                                                            @else
-                                                                <a href="{{ asset('storage/' . $person['aadhar']) }}" target="_blank" class="btn btn-sm btn-primary">Download Aadhar</a>
-                                                            @endif
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                                        </div>
+                                        </div>
+                                    @endif
+                                    @if(!empty($person['aadhar']))
+                                        <div class="modal fade" id="authPersonAadharModal-{{ $index }}" tabindex="-1" aria-labelledby="authPersonAadharModalLabel-{{ $index }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="authPersonAadharModalLabel-{{ $index }}">Aadhar - {{ $person['name'] ?? 'Document' }}</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body document-preview">
+                                                        @if(in_array(strtolower(pathinfo($person['aadhar'], PATHINFO_EXTENSION)), ['pdf']))
+                                                            <embed src="{{ asset('storage/' . $person['aadhar']) }}" type="application/pdf" width="100%" height="300px">
+                                                        @elseif(in_array(strtolower(pathinfo($person['aadhar'], PATHINFO_EXTENSION)), ['png', 'jpg', 'jpeg']))
+                                                            <img src="{{ asset('storage/' . $person['aadhar']) }}" alt="Aadhar Document">
+                                                        @else
+                                                            <a href="{{ asset('storage/' . $person['aadhar']) }}" target="_blank" class="btn btn-sm btn-primary">Download Aadhar</a>
+                                                        @endif
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                                                     </div>
                                                 </div>
                                             </div>
-                                        @endif
-                                    @endforeach
-                                @endif
+                                        </div>
+                                    @endif
+                                @endforeach
                             @endif
                         </div>
-                    @elseif($application->current_progress_step < 2)
+                    @else
                         <div class="alert alert-warning">
-                            Entity Details not available. Form not progressed beyond Step 1.
+                            Entity Details not available. Please check the controller to ensure <code>$application->entityDetails</code> is passed correctly.
                         </div>
                     @endif
 
-                    <!-- Step 3: Distribution Details -->
-                    @if($application->current_progress_step >= 3 && isset($application->distributionDetail))
-                        <div id="distribution-details" class="form-section mb-3">
+                    <!-- Distribution Details -->
+                    @if(isset($application->distributionDetail))
+                        <div id="distribution-details" class="form-section">
                             <h5 class="mb-2">Distribution Details</h5>
                             <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
+                                <table class="table table-bordered table-sm">
                                     <tbody>
                                         @php
                                             $areaCovered = $application->distributionDetail->area_covered ?? [];
@@ -545,33 +589,33 @@
                                             }
                                         @endphp
                                         <tr>
-                                            <td><strong>Area Covered</strong></td>
+                                            <th>Area Covered</th>
                                             <td>{{ !empty($areaCovered) ? implode(', ', $areaCovered) : 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Appointment Type</strong></td>
+                                            <th>Appointment Type</th>
                                             <td>{{ $application->distributionDetail->appointment_type ?? 'N/A' }}</td>
                                         </tr>
                                         @if($application->distributionDetail && $application->distributionDetail->appointment_type === 'replacement')
                                             <tr>
-                                                <td><strong>Reason for Replacement</strong></td>
+                                                <th>Reason for Replacement</th>
                                                 <td>{{ $application->distributionDetail->replacement_reason ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Commitment to Recover Outstanding</strong></td>
+                                                <th>Commitment to Recover Outstanding</th>
                                                 <td>{{ $application->distributionDetail->outstanding_recovery ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Name of Previous Firm</strong></td>
+                                                <th>Name of Previous Firm</th>
                                                 <td>{{ $application->distributionDetail->previous_firm_name ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
-                                                <td><strong>Code of Previous Firm</strong></td>
+                                                <th>Code of Previous Firm</th>
                                                 <td>{{ $application->distributionDetail->previous_firm_code ?? 'N/A' }}</td>
                                             </tr>
                                         @elseif($application->distributionDetail && $application->distributionDetail->appointment_type === 'new_area')
                                             <tr>
-                                                <td><strong>Earlier Distributor</strong></td>
+                                                <th>Earlier Distributor</th>
                                                 <td>{{ $application->distributionDetail->earlier_distributor ?? 'N/A' }}</td>
                                             </tr>
                                         @endif
@@ -581,12 +625,16 @@
                         </div>
                     @endif
 
-                    <!-- Step 4: Business Plan -->
-                    @if($application->current_progress_step >= 4 && isset($application->businessPlans) && $application->businessPlans->isNotEmpty())
-                        <div id="business-plan" class="form-section mb-3">
+                    <!-- Business Plan -->
+                    @if(isset($application->businessPlans))
+                        <div id="business-plan" class="form-section">
                             <h5 class="mb-2">Business Plan (Next Two Years)</h5>
+                            @php
+                                $year2025 = \App\Models\Year::where('period', '2025-26')->first();
+                                $year2026 = \App\Models\Year::where('period', '2026-27')->first();
+                            @endphp
                             <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
+                                <table class="table table-bordered table-sm">
                                     <thead>
                                         <tr>
                                             <th>Crop</th>
@@ -595,10 +643,6 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @php
-                                            $year2025 = \App\Models\Year::where('period', '2025-26')->first();
-                                            $year2026 = \App\Models\Year::where('period', '2026-27')->first();
-                                        @endphp
                                         @foreach($application->businessPlans as $plan)
                                             @php
                                                 $targets = is_string($plan->yearly_targets) ? json_decode($plan->yearly_targets, true) : ($plan->yearly_targets ?? []);
@@ -615,27 +659,27 @@
                         </div>
                     @endif
 
-                    <!-- Step 5: Financial & Operational Information -->
-                    @if($application->current_progress_step >= 5 && isset($application->financialInfo))
-                        <div id="financial-info" class="form-section mb-3">
+                    <!-- Financial & Operational Information -->
+                    @if(isset($application->financialInfo))
+                        <div id="financial-info" class="form-section">
                             <h5 class="mb-2">Financial & Operational Information</h5>
                             <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
+                                <table class="table table-bordered table-sm">
                                     <tbody>
                                         <tr>
-                                            <td><strong>Net Worth (Previous FY)</strong></td>
+                                            <th>Net Worth (Previous FY)</th>
                                             <td>{{ $application->financialInfo->net_worth ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Shop Ownership</strong></td>
+                                            <th>Shop Ownership</th>
                                             <td>{{ $application->financialInfo->shop_ownership ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Godown Area & Ownership</strong></td>
+                                            <th>Godown Area & Ownership</th>
                                             <td>{{ $application->financialInfo->godown_area ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Years in Business</strong></td>
+                                            <th>Years in Business</th>
                                             <td>{{ $application->financialInfo->years_in_business ?? 'N/A' }}</td>
                                         </tr>
                                     </tbody>
@@ -643,7 +687,7 @@
                             </div>
                             <h6 class="mb-2">Annual Turnover</h6>
                             <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
+                                <table class="table table-bordered table-sm">
                                     <thead>
                                         <tr>
                                             <th>Financial Year</th>
@@ -671,15 +715,15 @@
                         </div>
                     @endif
 
-                    <!-- Step 6: Existing Distributorships -->
-                    @if($application->current_progress_step >= 6 && isset($application->existingDistributorships))
-                        <div id="existing-distributorships" class="form-section mb-3">
+                    <!-- Existing Distributorships -->
+                    @if(isset($application->existingDistributorships))
+                        <div id="existing-distributorships" class="form-section">
                             <h5 class="mb-2">Existing Distributorships (Agro Inputs)</h5>
                             @if($application->existingDistributorships->isEmpty())
                                 <p class="text-muted">No existing distributorships provided.</p>
                             @else
                                 <div class="table-responsive">
-                                    <table class="table table-bordered compact-table">
+                                    <table class="table table-bordered table-sm">
                                         <thead>
                                             <tr>
                                                 <th>Company Name</th>
@@ -698,51 +742,51 @@
                         </div>
                     @endif
 
-                    <!-- Step 7: Bank Details -->
-                    @if($application->current_progress_step >= 7 && isset($application->bankDetail))
-                        <div id="bank-details" class="form-section mb-3">
+                    <!-- Bank Details -->
+                    @if(isset($application->bankDetail))
+                        <div id="bank-details" class="form-section">
                             <h5 class="mb-2">Bank Details</h5>
                             <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
+                                <table class="table table-bordered table-sm">
                                     <tbody>
                                         <tr>
-                                            <td><strong>Financial Status</strong></td>
+                                            <th>Financial Status</th>
                                             <td>{{ $application->bankDetail->financial_status ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>No. of Retailers Dealt With</strong></td>
+                                            <th>No. of Retailers Dealt With</th>
                                             <td>{{ $application->bankDetail->retailer_count ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Bank Name</strong></td>
+                                            <th>Bank Name</th>
                                             <td>{{ $application->bankDetail->bank_name ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Account Holder Name</strong></td>
+                                            <th>Account Holder Name</th>
                                             <td>{{ $application->bankDetail->account_holder ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Account Number</strong></td>
+                                            <th>Account Number</th>
                                             <td>{{ $application->bankDetail->account_number ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>IFSC Code</strong></td>
+                                            <th>IFSC Code</th>
                                             <td>{{ $application->bankDetail->ifsc_code ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Account Type</strong></td>
+                                            <th>Account Type</th>
                                             <td>{{ $application->bankDetail->account_type ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>Relationship Duration (Years)</strong></td>
+                                            <th>Relationship Duration (Years)</th>
                                             <td>{{ $application->bankDetail->relationship_duration ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>OD Limit (if any)</strong></td>
+                                            <th>OD Limit (if any)</th>
                                             <td>{{ $application->bankDetail->od_limit ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
-                                            <td><strong>OD Security</strong></td>
+                                            <th>OD Security</th>
                                             <td>{{ $application->bankDetail->od_security ?? 'N/A' }}</td>
                                         </tr>
                                     </tbody>
@@ -751,9 +795,9 @@
                         </div>
                     @endif
 
-                    <!-- Step 8: Declarations -->
-                    @if($application->current_progress_step >= 8 && isset($application->declarations))
-                        <div id="declarations" class="form-section mb-3">
+                    <!-- Declarations -->
+                    @if(isset($application->declarations))
+                        <div id="declarations" class="form-section">
                             <h5 class="mb-2">Declarations</h5>
                             @php
                                 $questions = [
@@ -818,74 +862,83 @@
                                     ],
                                 ];
                             @endphp
-                            <div class="table-responsive">
-                                <table class="table table-bordered compact-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Question</th>
-                                            <th>Answer</th>
-                                            <th>Details</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($questions as $questionKey => $config)
-                                            @php
-                                                $declaration = $application->declarations->where('question_key', $questionKey)->first();
-                                                $hasIssue = $declaration ? $declaration->has_issue : false;
-                                                $details = [];
-                                                if ($declaration && $declaration->details) {
-                                                    $details = is_array($declaration->details)
-                                                        ? $declaration->details
-                                                        : json_decode($declaration->details, true);
-                                                }
-                                            @endphp
-                                            <tr>
-                                                <td>{{ $config['label'] }}</td>
-                                                <td>{{ $hasIssue ? 'Yes' : 'No' }}</td>
-                                                <td>
+                            @foreach($questions as $questionKey => $config)
+                                @php
+                                    $declaration = $application->declarations->where('question_key', $questionKey)->first();
+                                    $hasIssue = $declaration ? $declaration->has_issue : false;
+                                    $details = [];
+                                    if ($declaration && $declaration->details) {
+                                        $details = is_array($declaration->details)
+                                            ? $declaration->details
+                                            : json_decode($declaration->details, true);
+                                    }
+                                @endphp
+                                <div class="card mb-1">
+                                    <div class="card-body p-1">
+                                        <h6 class="mb-1" style="font-size: 0.85rem;">{{ $config['label'] }}</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm">
+                                                <tbody>
+                                                    <tr>
+                                                        <th>Answer</th>
+                                                        <td>{{ $hasIssue ? 'Yes' : 'No' }}</td>
+                                                    </tr>
                                                     @if($hasIssue && !empty($details))
                                                         @if(isset($config['details_field']))
-                                                            {{ $details[$config['details_field']] ?? 'N/A' }}
+                                                            <tr>
+                                                                <th>Details</th>
+                                                                <td>{{ $details[$config['details_field']] ?? 'N/A' }}</td>
+                                                            </tr>
                                                         @elseif(isset($config['details_fields']))
                                                             @foreach($config['details_fields'] as $field => $label)
-                                                                {{ $label }}: {{ $details[$field] ?? 'N/A' }}<br>
+                                                                <tr>
+                                                                    <th>{{ $label }}</th>
+                                                                    <td>{{ $details[$field] ?? 'N/A' }}</td>
+                                                                </tr>
                                                             @endforeach
                                                         @endif
-                                                    @else
-                                                        N/A
                                                     @endif
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                        @php
-                                            $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
-                                            $update = $application->declarations->where('question_key', 'declaration_update')->first();
-                                        @endphp
-                                        <tr>
-                                            <td>a. I/We hereby solemnly affirm the truthfulness and completeness of the foregoing information and agree to be bound by all terms and conditions of the appointment/agreement with the Company.</td>
-                                            <td>{{ $truthful && $truthful->has_issue ? 'Affirmed' : 'Not Affirmed' }}</td>
-                                            <td>N/A</td>
-                                        </tr>
-                                        <tr>
-                                            <td>b. I/We undertake to inform the company of any changes to the information provided herein within a period of 7 days, accompanied by relevant documentation.</td>
-                                            <td>{{ $update && $update->has_issue ? 'Agreed' : 'Not Agreed' }}</td>
-                                            <td>N/A</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                            <div class="card">
+                                <div class="card-body p-1">
+                                    <h6 class="mb-1" style="font-size: 0.85rem;">Declaration</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-sm">
+                                            <tbody>
+                                                @php
+                                                    $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
+                                                    $update = $application->declarations->where('question_key', 'declaration_update')->first();
+                                                @endphp
+                                                <tr>
+                                                    <th>a. I/We hereby solemnly affirm the truthfulness and completeness of the foregoing information and agree to be bound by all terms and conditions of the appointment/agreement with the Company.</th>
+                                                    <td>{{ $truthful && $truthful->has_issue ? 'Affirmed' : 'Not Affirmed' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <th>b. I/We undertake to inform the company of any changes to the information provided herein within a period of 7 days, accompanied by relevant documentation.</th>
+                                                    <td>{{ $update && $update->has_issue ? 'Agreed' : 'Not Agreed' }}</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     @endif
 
                     <!-- Approval Logs -->
-                    @if($application->status !== 'draft' && isset($application->approvalLogs))
-                        <div id="approval-logs" class="form-section mb-3">
+                    @if(isset($application->approvalLogs))
+                        <div id="approval-logs" class="form-section">
                             <h5 class="mb-2">Approval Logs</h5>
                             @if($application->approvalLogs->isEmpty())
                                 <p class="text-muted">No approval logs available.</p>
                             @else
                                 <div class="table-responsive">
-                                    <table class="table table-bordered compact-table">
+                                    <table class="table table-bordered table-sm">
                                         <thead>
                                             <tr>
                                                 <th>User</th>
@@ -910,102 +963,107 @@
                         </div>
                     @endif
 
-                    <!-- Take Action Section -->
-                    @if(auth()->user()->emp_id === $application->current_approver_id)
-                        {{--<div id="take-action" class="form-section mb-3">
-                            <h5 class="mb-2">Take Action</h5>
-                            <form id="approve-form" action="{{ route('approvals.approve', $application) }}" method="POST" class="d-inline">
-                                @csrf
-                                <div class="mb-3">
-                                    <label for="approveRemarks" class="form-label">Remarks (Optional)</label>
-                                    <textarea name="remarks" id="approveRemarks" class="form-control" rows="2"></textarea>
-                                </div>
-                                <button type="submit" id="approve-button" class="btn btn-sm btn-success">Approve</button>
-                            </form>
-                            <button type="button" class="btn btn-sm btn-warning ms-2" data-bs-toggle="modal" data-bs-target="#revertModal">Revert</button>
-                            <button type="button" class="btn btn-sm btn-secondary ms-2" data-bs-toggle="modal" data-bs-target="#holdModal">Hold</button>
-                            <button type="button" class="btn btn-sm btn-danger ms-2" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button>
+                    <!-- Document Verification Section -->
+                    <div id="document-verification" class="form-section">
+                        <h4 class="card-title mb-2">Document Verification</h4>
+                        <div id="verification-message" class="mt-2" style="display: none;"></div>
+                        @php
+                            $checkpoints = [
+                                'business_entity_proofs' => [
+                                    'label' => 'Business Entity Proofs',
+                                    'document_types' => ['pan_file', 'gst_file', 'seed_license_file'],
+                                ],
+                                'ownership_confirmation' => [
+                                    'label' => 'Ownership Confirmation',
+                                    'document_types' => ['pan_file'],
+                                ],
+                                'all_required_documents' => [
+                                    'label' => 'All Required Documents',
+                                    'document_types' => ['pan_file', 'gst_file', 'seed_license_file', 'bank_file'],
+                                ],
+                            ];
+                        @endphp
+                        <form id="verification-form" action="{{ route('approvals.submit-verification', $application) }}" method="POST">
+                            @csrf
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Document Type</th>
+                                            <th>Status</th>
+                                            <th>Reason/Requirement</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($checkpoints as $checkpoint => $config)
+                                            @php
+                                                $verification = $application->documentVerifications->where('document_type', $checkpoint)->first();
+                                            @endphp
+                                            <tr>
+                                                <td>{{ $config['label'] }}</td>
+                                                <td>
+                                                    <select class="form-select form-select-sm" name="checkpoints[{{ $checkpoint }}][status]">
+                                                        <option value="verified" {{ optional($verification)->status === 'verified' ? 'selected' : '' }}>
+                                                            Available & Verified
+                                                        </option>
+                                                        <option value="rejected" {{ optional($verification)->status === 'rejected' ? 'selected' : '' }}>
+                                                            Not Available
+                                                        </option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <textarea class="form-control form-control-sm" name="checkpoints[{{ $checkpoint }}][remarks]"
+                                                        placeholder="Reason for rejection / Additional Requirement" rows="2">{{ optional($verification)->remarks }}</textarea>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
 
-                            <!-- Revert Modal -->
-                            <div class="modal fade" id="revertModal" tabindex="-1" aria-labelledby="revertModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <form action="{{ route('approvals.revert', $application) }}" method="POST">
-                                            @csrf
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="revertModalLabel">Revert Application</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label for="revertRemarks" class="form-label">Reason for Revert *</label>
-                                                    <textarea name="remarks" id="revertRemarks" class="form-control" rows="3" required></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-sm btn-warning">Confirm Revert</button>
-                                            </div>
-                                        </form>
-                                    </div>
+                            <!-- Additional Requirements Section -->
+                            <div class="form-section mt-3">
+                                <h5 class="mb-2">Additional Requirements</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm" id="additional-requirements-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Name of Document</th>
+                                                <th>Remark</th>
+                                                <th>Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @php
+                                                $additionalRequirements = $application->documentVerifications->where('document_type', 'additional_requirements')->first()->remarks ?? [];
+                                                if (is_string($additionalRequirements)) {
+                                                    $additionalRequirements = json_decode($additionalRequirements, true) ?? [];
+                                                }
+                                            @endphp
+                                            @foreach($additionalRequirements as $index => $req)
+                                                <tr>
+                                                    <td>
+                                                        <input type="text" class="form-control form-control-sm" name="additional_requirements[{{ $index }}][name]"
+                                                            value="{{ $req['name'] ?? '' }}" placeholder="e.g., GST Certificate">
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" class="form-control form-control-sm" name="additional_requirements[{{ $index }}][remark]"
+                                                            value="{{ $req['remark'] ?? '' }}" placeholder="e.g., Missing Page 2 – Request Reupload">
+                                                    </td>
+                                                    <td>
+                                                        <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                    <button type="button" class="btn btn-sm btn-primary mt-1" id="add-requirement">Add Requirement</button>
                                 </div>
                             </div>
 
-                            <!-- Hold Modal -->
-                            <div class="modal fade" id="holdModal" tabindex="-1" aria-labelledby="holdModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <form action="{{ route('approvals.hold', $application) }}" method="POST">
-                                            @csrf
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="holdModalLabel">Put Application On Hold</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label for="holdRemarks" class="form-label">Reason for Hold *</label>
-                                                    <textarea name="remarks" id="holdRemarks" class="form-control" rows="3" required></textarea>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label for="followUpDate" class="form-label">Follow-up Date *</label>
-                                                    <input type="date" name="follow_up_date" id="followUpDate" class="form-control" required>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-sm btn-secondary">Confirm Hold</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Reject Modal -->
-                            <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <form action="{{ route('approvals.reject', $application) }}" method="POST">
-                                            @csrf
-                                            <div class="modal-header">
-                                                <h5 class="modal-title" id="rejectModalLabel">Reject Application</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <div class="mb-3">
-                                                    <label for="rejectRemarks" class="form-label">Reason for Rejection *</label>
-                                                    <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3" required></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-sm btn-danger">Confirm Rejection</button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>--}}
-                    @endif
+                            <button type="submit" class="btn btn-success btn-sm mt-2">Submit Verification</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1014,13 +1072,65 @@
 
 @push('scripts')
 <script>
-    document.getElementById('approve-form')?.addEventListener('submit', function() {
-        document.querySelectorAll('.form-section button').forEach(button => {
-            button.disabled = true;
+    $(document).ready(function() {
+        let rowIndex = {{ count($additionalRequirements) }};
+        $('#add-requirement').click(function() {
+            const newRow = `
+                <tr>
+                    <td>
+                        <input type="text" class="form-control form-control-sm" name="additional_requirements[${rowIndex}][name]"
+                            placeholder="e.g., GST Certificate">
+                    </td>
+                    <td>
+                        <input type="text" class="form-control form-control-sm" name="additional_requirements[${rowIndex}][remark]"
+                            placeholder="e.g., Missing Page 2 – Request Reupload">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger remove-row">Remove</button>
+                    </td>
+                </tr>`;
+            $('#additional-requirements-table tbody').append(newRow);
+            rowIndex++;
+        });
+
+        $(document).on('click', '.remove-row', function() {
+            $(this).closest('tr').remove();
+        });
+
+        $('#verification-form').on('submit', function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const url = form.attr('action');
+            const data = form.serialize();
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: data,
+                success: function(response) {
+                    $('#verification-message').html(`
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            ${response.message || 'Document verification submitted successfully.'}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `).show();
+                    setTimeout(function() {
+                        window.location.href = response.next_step?.url || '{{ route("dashboard") }}';
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    const errors = xhr.responseJSON?.errors || { message: 'An error occurred while submitting the verification.' };
+                    const errorMessage = Object.values(errors).flat().join('<br>');
+                    $('#verification-message').html(`
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            ${errorMessage}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    `).show();
+                }
+            });
         });
     });
 </script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 @endpush
 @endsection

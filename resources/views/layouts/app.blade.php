@@ -1,12 +1,5 @@
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        // Set data-bs-theme from sessionStorage, default to 'light' if not set
-        var storedTheme = sessionStorage.getItem("data-bs-theme") || "light";
-        document.documentElement.setAttribute("data-bs-theme", storedTheme);
-    });
-</script>
 <!DOCTYPE html>
-<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-theme="default" data-theme-colors="default">
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="dark" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable">
 @include('layouts.header')
 
 <body>

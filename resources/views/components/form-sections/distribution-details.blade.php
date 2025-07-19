@@ -1,7 +1,5 @@
 <!-- Step 3: Distribution Details -->
-<div id="distribution-details" class="form-section p-2">
-    <h5 class="mb-3 fs-6">Distribution Details</h5>
-    
+<div id="distribution-details" class="form-section p-2">    
     <div class="row g-2">
         <div class="col-md-12">
             <div class="form-group mb-2">

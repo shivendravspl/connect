@@ -1,5 +1,4 @@
 <div id="basic-details" class="form-section">
-    <h5 class="mb-3">Basic Details</h5>
     <div class="row g-2">
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">

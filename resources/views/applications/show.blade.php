@@ -9,26 +9,36 @@
         border-radius: 0.25rem;
     }
 
-    .form-control[readonly],
-    select[readonly] {
-        background-color: #e9ecef;
-        cursor: not-allowed;
-    }
-
     .table th,
     .table td {
         vertical-align: middle;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
+        padding: 0.5rem;
     }
 
     .document-link a {
         color: #007bff;
         text-decoration: none;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .document-link a:hover {
         text-decoration: underline;
+    }
+
+    .btn-sm {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .modal-content {
+        font-size: 0.8rem;
+    }
+
+    .modal-body iframe {
+        width: 100%;
+        height: 400px;
+        border: none;
     }
 
     /* Mobile-specific styles */
@@ -39,36 +49,17 @@
         }
         
         h2 {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
         }
         
         h5 {
-            font-size: 1.2rem;
+            font-size: 1.1rem;
         }
         
         .card {
             margin-left: -0.5rem;
             margin-right: -0.5rem;
             border-radius: 0;
-        }
-        
-        .form-group {
-            margin-bottom: 0.75rem;
-        }
-        
-        .form-label {
-            font-size: 0.85rem;
-            margin-bottom: 0.25rem;
-        }
-        
-        .form-control, .form-select {
-            font-size: 0.85rem;
-            padding: 0.375rem 0.75rem;
-        }
-        
-        .btn {
-            font-size: 0.85rem;
-            padding: 0.25rem 0.5rem;
         }
         
         .table-responsive {
@@ -81,11 +72,15 @@
         }
         
         .modal-body {
-            padding: 1rem;
+            padding: 0.75rem;
         }
         
         .modal-footer .btn {
             margin-bottom: 0.5rem;
+        }
+
+        .modal-body iframe {
+            height: 300px;
         }
     }
 </style>
@@ -99,65 +94,58 @@
             <!-- Application Status -->
             <div class="mb-3">
                 <h5 class="mb-2">Application Status: <span class="badge bg-{{ $application->status_badge }}">{{ ucfirst($application->status) }}</span></h5>
-                <p class="mb-1"><strong>Submitted On:</strong> {{ $application->created_at->format('d-M-Y H:i') }}</p>
-                <p class="mb-1"><strong>Last Updated:</strong> {{ $application->updated_at->format('d-M-Y H:i') }}</p>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Submitted On</th>
+                                <td>{{ $application->created_at->format('d-M-Y H:i') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated</th>
+                                <td>{{ $application->updated_at->format('d-M-Y H:i') }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Step 1: Basic Details -->
             <div id="basic-details" class="form-section">
                 <h5 class="mb-3">Basic Details</h5>
-                <div class="row">
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Territory</label>
-                            <input type="text" class="form-control" readonly
-                             value="{{ isset($application->territory) ? DB::table('core_territory')->where('id', $application->territory)->value('territory_name') ?? 'N/A' : 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-2">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Region</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ isset($application->region) ? DB::table('core_region')->where('id', $application->region)->value('region_name') ?? 'N/A' : 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-2">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Zone</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ isset($application->zone) ? DB::table('core_zone')->where('id', $application->zone)->value('zone_name') ?? 'N/A' : 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Business Unit</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ isset($application->business_unit) ? DB::table('core_business_unit')->where('id', $application->business_unit)->value('business_unit_name') ?? 'N/A' : 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-2">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Crop Vertical</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ isset($application->crop_vertical) && $application->crop_vertical === '1' ? 'Field Crop' : 'Veg Crop' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">State</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ isset($application->state) ? DB::table('core_state')->where('id', $application->state)->value('state_name') ?? 'N/A' : 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">District</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ isset($application->district) ? DB::table('core_district')->where('id', $application->district)->value('district_name') ?? 'N/A' : 'N/A' }}">
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Territory</th>
+                                <td>{{ isset($application->territory) ? DB::table('core_territory')->where('id', $application->territory)->value('territory_name') ?? 'N/A' : 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Region</th>
+                                <td>{{ isset($application->region) ? DB::table('core_region')->where('id', $application->region)->value('region_name') ?? 'N/A' : 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Zone</th>
+                                <td>{{ isset($application->zone) ? DB::table('core_zone')->where('id', $application->zone)->value('zone_name') ?? 'N/A' : 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Business Unit</th>
+                                <td>{{ isset($application->business_unit) ? DB::table('core_business_unit')->where('id', $application->business_unit)->value('business_unit_name') ?? 'N/A' : 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Crop Vertical</th>
+                                <td>{{ isset($application->crop_vertical) && $application->crop_vertical === '1' ? 'Field Crop' : 'Veg Crop' }}</td>
+                            </tr>
+                            <tr>
+                                <th>State</th>
+                                <td>{{ isset($application->state) ? DB::table('core_state')->where('id', $application->state)->value('state_name') ?? 'N/A' : 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>District</th>
+                                <td>{{ isset($application->district) ? DB::table('core_district')->where('id', $application->district)->value('district_name') ?? 'N/A' : 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -165,137 +153,79 @@
             @if(isset($application->entityDetails))
             <div id="entity-details" class="form-section">
                 <h5 class="mb-3">Entity Details</h5>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Type of Firm</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->entity_type ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Firm Name</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->establishment_name ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Business Address</label>
-                            <textarea class="form-control" readonly rows="2">{{ $application->entityDetails->business_address ?? 'N/A' }}</textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">House No</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->house_no ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Landmark</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->landmark ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">City</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->city ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Pincode</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->pincode ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">State</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->state->state_name ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">District</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->district->district_name ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Country</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->district->country ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Mobile</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->mobile ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Email</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->email ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">PAN Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->pan_number ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">GST Applicable</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->gst_applicable ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">GST Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->gst_number ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Seed License</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->seed_license ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">TAN Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['tan_number'] ?? 'N/A' }}">
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Type of Firm</th>
+                                <td>{{ $application->entityDetails->entity_type ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Firm Name</th>
+                                <td>{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Business Address</th>
+                                <td>{{ $application->entityDetails->business_address ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>House No</th>
+                                <td>{{ $application->entityDetails->house_no ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Landmark</th>
+                                <td>{{ $application->entityDetails->landmark ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>City</th>
+                                <td>{{ $application->entityDetails->city ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Pincode</th>
+                                <td>{{ $application->entityDetails->pincode ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>State</th>
+                                <td>{{ $application->entityDetails->state->state_name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>District</th>
+                                <td>{{ $application->entityDetails->district->district_name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Country</th>
+                                <td>{{ $application->entityDetails->district->country ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Mobile</th>
+                                <td>{{ $application->entityDetails->mobile ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Email</th>
+                                <td>{{ $application->entityDetails->email ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>PAN Number</th>
+                                <td>{{ $application->entityDetails->pan_number ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>GST Applicable</th>
+                                <td>{{ $application->entityDetails->gst_applicable ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>GST Number</th>
+                                <td>{{ $application->entityDetails->gst_number ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Seed License</th>
+                                <td>{{ $application->entityDetails->seed_license ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>TAN Number</th>
+                                <td>{{ $application->entityDetails->additional_data['tan_number'] ?? 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Documents -->
@@ -312,6 +242,7 @@
                         }
                     }
                 @endphp
+                @if(!empty($documents))
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
                         <thead>
@@ -324,7 +255,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($documents as $doc)
+                            @foreach($documents as $index => $doc)
                             <tr>
                                 <td>{{ ucfirst($doc['type'] ?? 'N/A') }}</td>
                                 <td>
@@ -337,7 +268,11 @@
                                     @endif
                                 </td>
                                 <td class="document-link">
-                                    <a href="{{ Storage::url($doc['path'] ?? '') }}" target="_blank">{{ $doc['path'] ? 'View' : 'N/A' }}</a>
+                                    @if($doc['path'])
+                                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#documentModal{{ $index }}">View</button>
+                                    @else
+                                    N/A
+                                    @endif
                                 </td>
                                 <td>{{ $doc['status'] ?? 'Pending' }}</td>
                                 <td>{{ isset($doc['verified']) && $doc['verified'] ? 'Yes' : 'No' }}</td>
@@ -347,121 +282,107 @@
                     </table>
                 </div>
 
+                <!-- Document Modals -->
+                @foreach($documents as $index => $doc)
+                @if($doc['path'])
+                <div class="modal fade" id="documentModal{{ $index }}" tabindex="-1" aria-labelledby="documentModalLabel{{ $index }}" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header p-2">
+                                <h5 class="modal-title" id="documentModalLabel{{ $index }}">{{ ucfirst($doc['type'] ?? 'Document') }}</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body p-2">
+                                <iframe src="{{ Storage::url($doc['path']) }}" title="{{ $doc['type'] ?? 'Document' }}"></iframe>
+                            </div>
+                            <div class="modal-footer p-2">
+                                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @endif
+                @endforeach
+                @endif
+
                 <!-- Entity-Specific Details -->
                 @if($application->entityDetails->entity_type === 'sole_proprietorship')
                 <h6 class="mb-2">Proprietor Details</h6>
-                <div class="row">
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Name</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['proprietor']['name'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Date of Birth</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['proprietor']['dob'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-4">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Father's Name</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['proprietor']['father_name'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Address</label>
-                            <textarea class="form-control" readonly rows="2">{{ $application->entityDetails->additional_data['proprietor']['address'] ?? 'N/A' }}</textarea>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Pincode</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['proprietor']['pincode'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Country</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['proprietor']['country'] ?? 'N/A' }}">
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Name</th>
+                                <td>{{ $application->entityDetails->additional_data['proprietor']['name'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Date of Birth</th>
+                                <td>{{ $application->entityDetails->additional_data['proprietor']['dob'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Father's Name</th>
+                                <td>{{ $application->entityDetails->additional_data['proprietor']['father_name'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Address</th>
+                                <td>{{ $application->entityDetails->additional_data['proprietor']['address'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Pincode</th>
+                                <td>{{ $application->entityDetails->additional_data['proprietor']['pincode'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Country</th>
+                                <td>{{ $application->entityDetails->additional_data['proprietor']['country'] ?? 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
                 @elseif(in_array($application->entityDetails->entity_type, ['partnership', 'llp', 'private_company', 'public_company', 'cooperative_society', 'trust']))
                 <h6 class="mb-2">{{ ucfirst(str_replace('_', ' ', $application->entityDetails->entity_type)) }} Details</h6>
-                @if(in_array($application->entityDetails->entity_type, ['llp', 'private_company', 'public_company', 'cooperative_society', 'trust']))
-                <div class="row">
-                    @if($application->entityDetails->entity_type === 'llp')
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">LLPIN Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['llp']['llpin_number'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Incorporation Date</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['llp']['incorporation_date'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    @elseif(in_array($application->entityDetails->entity_type, ['private_company', 'public_company']))
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">CIN Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['company']['cin_number'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Incorporation Date</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['company']['incorporation_date'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    @elseif($application->entityDetails->entity_type === 'cooperative_society')
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Registration Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['cooperative']['reg_number'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Registration Date</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['cooperative']['reg_date'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    @elseif($application->entityDetails->entity_type === 'trust')
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Registration Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['trust']['reg_number'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Registration Date</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->entityDetails->additional_data['trust']['reg_date'] ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    @endif
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            @if($application->entityDetails->entity_type === 'llp')
+                            <tr>
+                                <th>LLPIN Number</th>
+                                <td>{{ $application->entityDetails->additional_data['llp']['llpin_number'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Incorporation Date</th>
+                                <td>{{ $application->entityDetails->additional_data['llp']['incorporation_date'] ?? 'N/A' }}</td>
+                            </tr>
+                            @elseif(in_array($application->entityDetails->entity_type, ['private_company', 'public_company']))
+                            <tr>
+                                <th>CIN Number</th>
+                                <td>{{ $application->entityDetails->additional_data['company']['cin_number'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Incorporation Date</th>
+                                <td>{{ $application->entityDetails->additional_data['company']['incorporation_date'] ?? 'N/A' }}</td>
+                            </tr>
+                            @elseif($application->entityDetails->entity_type === 'cooperative_society')
+                            <tr>
+                                <th>Registration Number</th>
+                                <td>{{ $application->entityDetails->additional_data['cooperative']['reg_number'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Registration Date</th>
+                                <td>{{ $application->entityDetails->additional_data['cooperative']['reg_date'] ?? 'N/A' }}</td>
+                            </tr>
+                            @elseif($application->entityDetails->entity_type === 'trust')
+                            <tr>
+                                <th>Registration Number</th>
+                                <td>{{ $application->entityDetails->additional_data['trust']['reg_number'] ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Registration Date</th>
+                                <td>{{ $application->entityDetails->additional_data['trust']['reg_date'] ?? 'N/A' }}</td>
+                            </tr>
+                            @endif
+                        </tbody>
+                    </table>
                 </div>
-                @endif
                 <h6 class="mb-2">{{ $application->entityDetails->entity_type === 'partnership' ? 'Partners' : ($application->entityDetails->entity_type === 'llp' ? 'Designated Partners' : ($application->entityDetails->entity_type === 'cooperative_society' ? 'Committee Members' : ($application->entityDetails->entity_type === 'trust' ? 'Trustees' : 'Directors'))) }}</h6>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
@@ -507,148 +428,157 @@
                         </tbody>
                     </table>
                 </div>
-    
                 @endif
             </div>
             @endif
 
-               @if(!empty($application->entityDetails->additional_data['authorized_persons']))
-                <h6 class="mb-2">Authorized Persons</h6>
+            @if(!empty($application->entityDetails->additional_data['authorized_persons']))
+            <h6 class="mb-2">Authorized Persons</h6>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Contact</th>
+                            <th>Email</th>
+                            <th>Address</th>
+                            <th>Relation</th>
+                            <th>Letter</th>
+                            <th>Aadhar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($application->entityDetails->additional_data['authorized_persons'] as $index => $person)
+                        <tr>
+                            <td>{{ $person['name'] ?? 'N/A' }}</td>
+                            <td>{{ $person['contact'] ?? 'N/A' }}</td>
+                            <td>{{ $person['email'] ?? 'N/A' }}</td>
+                            <td>{{ $person['address'] ?? 'N/A' }}</td>
+                            <td>{{ $person['relation'] ?? 'N/A' }}</td>
+                            <td>
+                                @if (!empty($person['letter']))
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#authLetterModal{{ $index }}">View</button>
+                                @else
+                                N/A
+                                @endif
+                            </td>
+                            <td>
+                                @if (!empty($person['aadhar']))
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#authAadharModal{{ $index }}">View</button>
+                                @else
+                                N/A
+                                @endif
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Authorized Persons Modals -->
+            @foreach($application->entityDetails->additional_data['authorized_persons'] as $index => $person)
+            @if(!empty($person['letter']))
+            <div class="modal fade" id="authLetterModal{{ $index }}" tabindex="-1" aria-labelledby="authLetterModalLabel{{ $index }}" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header p-2">
+                            <h5 class="modal-title" id="authLetterModalLabel{{ $index }}">Authorization Letter</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-2">
+                            <iframe src="{{ asset('storage/' . $person['letter']) }}" title="Authorization Letter"></iframe>
+                        </div>
+                        <div class="modal-footer p-2">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+            @if(!empty($person['aadhar']))
+            <div class="modal fade" id="authAadharModal{{ $index }}" tabindex="-1" aria-labelledby="authAadharModalLabel{{ $index }}" aria-hidden="true">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header p-2">
+                            <h5 class="modal-title" id="authAadharModalLabel{{ $index }}">Aadhar Document</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-2">
+                            <iframe src="{{ asset('storage/' . $person['aadhar']) }}" title="Aadhar Document"></iframe>
+                        </div>
+                        <div class="modal-footer p-2">
+                            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+            @endforeach
+            @endif
+
+            <!-- Step 3: Distribution Details -->
+            @if(isset($application->distributionDetail))
+            <div id="distribution-details" class="form-section">
+                <h5 class="mb-3">Distribution Details</h5>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
-                        <thead>
-                            <tr>
-                                <th>Name</th>
-                                <th>Contact</th>
-                                <th>Email</th>
-                                <th>Address</th>
-                                <th>Relation</th>
-                                <th>Letter</th>
-                                <th>Aadhar</th>
-                            </tr>
-                        </thead>
                         <tbody>
-                            @foreach($application->entityDetails->additional_data['authorized_persons'] as $person)
+                            @php
+                                $areaCovered = $application->distributionDetail->area_covered ?? [];
+                                if (is_string($areaCovered)) {
+                                    $decoded = json_decode($areaCovered, true);
+                                    if (is_array($decoded)) {
+                                        $areaCovered = count($decoded) === 1 && str_contains($decoded[0], ',') 
+                                            ? array_map('trim', explode(',', $decoded[0])) 
+                                            : $decoded;
+                                    } else {
+                                        $areaCovered = array_map('trim', explode(',', $areaCovered));
+                                    }
+                                } elseif (!is_array($areaCovered)) {
+                                    $areaCovered = [];
+                                }
+                            @endphp
                             <tr>
-                                <td>{{ $person['name'] ?? 'N/A' }}</td>
-                                <td>{{ $person['contact'] ?? 'N/A' }}</td>
-                                <td>{{ $person['email'] ?? 'N/A' }}</td>
-                                <td>{{ $person['address'] ?? 'N/A' }}</td>
-                                <td>{{ $person['relation'] ?? 'N/A' }}</td>
-                                <td>
-                                    @if (!empty($person['letter']))
-                                        <a href="{{ asset('storage/' . $person['letter']) }}" target="_blank" class="btn btn-sm btn-primary">View</a>
-                                    @else
-                                        N/A
-                                    @endif
-                                </td>
-                                <td>
-                                    @if (!empty($person['aadhar']))
-                                        <a href="{{ asset('storage/' . $person['aadhar']) }}" target="_blank" class="btn btn-sm btn-primary">View</a>
-                                    @else
-                                        N/A
-                                    @endif
-                                </td>
+                                <th>Area Covered</th>
+                                <td>{{ !empty($areaCovered) ? implode(', ', $areaCovered) : 'N/A' }}</td>
                             </tr>
-                            @endforeach
+                            <tr>
+                                <th>Appointment Type</th>
+                                <td>{{ $application->distributionDetail->appointment_type ?? 'N/A' }}</td>
+                            </tr>
+                            @if($application->distributionDetail && $application->distributionDetail->appointment_type === 'replacement')
+                            <tr>
+                                <th>Reason for Replacement</th>
+                                <td>{{ $application->distributionDetail->replacement_reason ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Commitment to Recover Outstanding</th>
+                                <td>{{ $application->distributionDetail->outstanding_recovery ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Name of Previous Firm</th>
+                                <td>{{ $application->distributionDetail->previous_firm_name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Code of Previous Firm</th>
+                                <td>{{ $application->distributionDetail->previous_firm_code ?? 'N/A' }}</td>
+                            </tr>
+                            @elseif($application->distributionDetail && $application->distributionDetail->appointment_type === 'new_area')
+                            <tr>
+                                <th>Earlier Distributor</th>
+                                <td>{{ $application->distributionDetail->earlier_distributor ?? 'N/A' }}</td>
+                            </tr>
+                            @endif
                         </tbody>
                     </table>
                 </div>
-                @endif
-
-            <!-- Step 3: Distribution Details -->
-            <div id="distribution-details" class="form-section">
-                <h5 class="mb-3">Distribution Details</h5>
-                <div class="row">
-                    @php
-                        $areaCovered = $application->distributionDetail->area_covered ?? [];
-                        if (is_string($areaCovered)) {
-                            $decoded = json_decode($areaCovered, true);
-                            if (is_array($decoded)) {
-                                $areaCovered = count($decoded) === 1 && str_contains($decoded[0], ',') 
-                                    ? array_map('trim', explode(',', $decoded[0])) 
-                                    : $decoded;
-                            } else {
-                                $areaCovered = array_map('trim', explode(',', $areaCovered));
-                            }
-                        } elseif (!is_array($areaCovered)) {
-                            $areaCovered = [];
-                        }
-                    @endphp
-                    <div class="col-12">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Area Covered</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ !empty($areaCovered) ? implode(', ', $areaCovered) : 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Appointment Type</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->distributionDetail->appointment_type ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                @if($application->distributionDetail && $application->distributionDetail->appointment_type === 'replacement')
-                <div class="replacement-section">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="form-group mb-2">
-                                <label class="form-label">Reason for Replacement</label>
-                                <textarea class="form-control" readonly rows="2">{{ $application->distributionDetail->replacement_reason ?? 'N/A' }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="form-group mb-2">
-                                <label class="form-label">Commitment to Recover Outstanding</label>
-                                <textarea class="form-control" readonly rows="2">{{ $application->distributionDetail->outstanding_recovery ?? 'N/A' }}</textarea>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12 col-md-6">
-                            <div class="form-group mb-2">
-                                <label class="form-label">Name of Previous Firm</label>
-                                <input type="text" class="form-control" readonly
-                                    value="{{ $application->distributionDetail->previous_firm_name ?? 'N/A' }}">
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-6">
-                            <div class="form-group mb-2">
-                                <label class="form-label">Code of Previous Firm</label>
-                                <input type="text" class="form-control" readonly
-                                    value="{{ $application->distributionDetail->previous_firm_code ?? 'N/A' }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @elseif($application->distributionDetail && $application->distributionDetail->appointment_type === 'new_area')
-                <div class="new-area-section">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="form-group mb-2">
-                                <label class="form-label">Earlier Distributor</label>
-                                <input type="text" class="form-control" readonly
-                                    value="{{ $application->distributionDetail->earlier_distributor ?? 'N/A' }}">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                @endif
             </div>
+            @endif
 
             <!-- Step 4: Business Plan -->
+            @if(isset($application->businessPlans) && !$application->businessPlans->isEmpty())
             <div id="business-plan" class="form-section">
                 <h5 class="mb-3">Business Plan (Next Two Years)</h5>
-                @php
-                    $year2025 = \App\Models\Year::where('period', '2025-26')->first();
-                    $year2026 = \App\Models\Year::where('period', '2026-27')->first();
-                @endphp
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
                         <thead>
@@ -659,6 +589,10 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php
+                                $year2025 = \App\Models\Year::where('period', '2025-26')->first();
+                                $year2026 = \App\Models\Year::where('period', '2026-27')->first();
+                            @endphp
                             @foreach($application->businessPlans as $plan)
                             @php
                                 $targets = is_string($plan->yearly_targets) ? json_decode($plan->yearly_targets, true) : ($plan->yearly_targets ?? []);
@@ -673,84 +607,68 @@
                     </table>
                 </div>
             </div>
+            @endif
 
             <!-- Step 5: Financial & Operational Information -->
+            @if(isset($application->financialInfo))
             <div id="financial-info" class="form-section">
                 <h5 class="mb-3">Financial & Operational Information</h5>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Net Worth (Previous FY)</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->financialInfo->net_worth ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Shop Ownership</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->financialInfo->shop_ownership ?? 'N/A' }}">
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Net Worth (Previous FY)</th>
+                                <td>{{ $application->financialInfo->net_worth ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Shop Ownership</th>
+                                <td>{{ $application->financialInfo->shop_ownership ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Godown Area & Ownership</th>
+                                <td>{{ $application->financialInfo->godown_area ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Years in Business</th>
+                                <td>{{ $application->financialInfo->years_in_business ?? 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Godown Area & Ownership</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->financialInfo->godown_area ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Years in Business</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->financialInfo->years_in_business ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Annual Turnover</label>
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-sm">
-                                    <thead>
-                                        <tr>
-                                            <th>Financial Year</th>
-                                            <th>Net Turnover (₹)</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php
-                                            $turnover = isset($application->financialInfo->annual_turnover) 
-                                                ? (is_string($application->financialInfo->annual_turnover) 
-                                                    ? json_decode($application->financialInfo->annual_turnover, true) 
-                                                    : ($application->financialInfo->annual_turnover ?? [])) 
-                                                : [];
-                                            $defaultYears = ['2022-23', '2023-24', '2024-25'];
-                                        @endphp
-                                        @foreach($defaultYears as $year)
-                                        <tr>
-                                            <td>FY {{ $year }}</td>
-                                            <td>{{ isset($turnover[$year]) ? $turnover[$year] : 'N/A' }}</td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+                <h6 class="mb-2">Annual Turnover</h6>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Financial Year</th>
+                                <th>Net Turnover (₹)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @php
+                                $turnover = isset($application->financialInfo->annual_turnover) 
+                                    ? (is_string($application->financialInfo->annual_turnover) 
+                                        ? json_decode($application->financialInfo->annual_turnover, true) 
+                                        : ($application->financialInfo->annual_turnover ?? [])) 
+                                    : [];
+                                $defaultYears = ['2022-23', '2023-24', '2024-25'];
+                            @endphp
+                            @foreach($defaultYears as $year)
+                            <tr>
+                                <td>FY {{ $year }}</td>
+                                <td>{{ isset($turnover[$year]) ? $turnover[$year] : 'N/A' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
+            @endif
 
             <!-- Step 6: Existing Distributorships -->
-            @if(isset($application->existingDistributorships))
+            @if(isset($application->existingDistributorships) && !$application->existingDistributorships->isEmpty())
             <div id="existing-distributorships" class="form-section">
                 <h5 class="mb-3">Existing Distributorships (Agro Inputs)</h5>
-                @if($application->existingDistributorships->isEmpty())
-                <p class="text-muted">No existing distributorships provided.</p>
-                @else
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
                         <thead>
@@ -767,7 +685,6 @@
                         </tbody>
                     </table>
                 </div>
-                @endif
             </div>
             @endif
 
@@ -775,91 +692,57 @@
             @if(isset($application->bankDetail))
             <div id="bank-details" class="form-section">
                 <h5 class="mb-3">Bank Details</h5>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Financial Status</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->financial_status ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">No. of Retailers Dealt With</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->retailer_count ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Bank Name</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->bank_name ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Account Holder Name</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->account_holder ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Account Number</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->account_number ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">IFSC Code</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->ifsc_code ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Account Type</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->account_type ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">Relationship Duration (Years)</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->relationship_duration ?? 'N/A' }}">
-                        </div>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">OD Limit (if any)</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->od_limit ?? 'N/A' }}">
-                        </div>
-                    </div>
-                    <div class="col-12 col-md-6">
-                        <div class="form-group mb-2">
-                            <label class="form-label">OD Security</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $application->bankDetail->od_security ?? 'N/A' }}">
-                        </div>
-                    </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-sm">
+                        <tbody>
+                            <tr>
+                                <th>Financial Status</th>
+                                <td>{{ $application->bankDetail->financial_status ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>No. of Retailers Dealt With</th>
+                                <td>{{ $application->bankDetail->retailer_count ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Bank Name</th>
+                                <td>{{ $application->bankDetail->bank_name ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Account Holder Name</th>
+                                <td>{{ $application->bankDetail->account_holder ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Account Number</th>
+                                <td>{{ $application->bankDetail->account_number ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>IFSC Code</th>
+                                <td>{{ $application->bankDetail->ifsc_code ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Account Type</th>
+                                <td>{{ $application->bankDetail->account_type ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Relationship Duration (Years)</th>
+                                <td>{{ $application->bankDetail->relationship_duration ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>OD Limit (if any)</th>
+                                <td>{{ $application->bankDetail->od_limit ?? 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>OD Security</th>
+                                <td>{{ $application->bankDetail->od_security ?? 'N/A' }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
             @endif
 
             <!-- Step 8: Declarations -->
-            @if(isset($application->declarations))
+            @if(isset($application->declarations) && !$application->declarations->isEmpty())
             <div id="declarations" class="form-section">
                 <h5 class="mb-3">Declarations</h5>
                 @php
@@ -936,46 +819,57 @@
                             : json_decode($declaration->details, true);
                     }
                 @endphp
-
                 <div class="card mb-2">
                     <div class="card-body p-2">
-                        <h6 class="mb-2" style="font-size: 0.95rem;">{{ $config['label'] }}</h6>
-                        <p class="mb-1"><strong>Answer:</strong> {{ $hasIssue ? 'Yes' : 'No' }}</p>
-                        @if($hasIssue && !empty($details))
-                        @if(isset($config['details_field']))
-                        <div class="form-group mb-1">
-                            <label class="form-label">Details</label>
-                            <textarea class="form-control" readonly rows="2">{{ $details[$config['details_field']] ?? 'N/A' }}</textarea>
+                        <h6 class="mb-2" style="font-size: 0.9rem;">{{ $config['label'] }}</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <tbody>
+                                    <tr>
+                                        <th>Answer</th>
+                                        <td>{{ $hasIssue ? 'Yes' : 'No' }}</td>
+                                    </tr>
+                                    @if($hasIssue && !empty($details))
+                                    @if(isset($config['details_field']))
+                                    <tr>
+                                        <th>Details</th>
+                                        <td>{{ $details[$config['details_field']] ?? 'N/A' }}</td>
+                                    </tr>
+                                    @elseif(isset($config['details_fields']))
+                                    @foreach($config['details_fields'] as $field => $label)
+                                    <tr>
+                                        <th>{{ $label }}</th>
+                                        <td>{{ $details[$field] ?? 'N/A' }}</td>
+                                    </tr>
+                                    @endforeach
+                                    @endif
+                                    @endif
+                                </tbody>
+                            </table>
                         </div>
-                        @elseif(isset($config['details_fields']))
-                        @foreach($config['details_fields'] as $field => $label)
-                        <div class="form-group mb-1">
-                            <label class="form-label">{{ $label }}</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $details[$field] ?? 'N/A' }}">
-                        </div>
-                        @endforeach
-                        @endif
-                        @endif
                     </div>
                 </div>
                 @endforeach
                 <div class="card">
                     <div class="card-body p-2">
-                        <h6 class="mb-2" style="font-size: 0.95rem;">Declaration</h6>
-                        @php
-                            $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
-                            $update = $application->declarations->where('question_key', 'declaration_update')->first();
-                        @endphp
-                        <div class="form-group mb-1">
-                            <label class="form-label">a. I/We hereby solemnly affirm the truthfulness and completeness of the foregoing information and agree to be bound by all terms and conditions of the appointment/agreement with the Company.</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $truthful && $truthful->has_issue ? 'Affirmed' : 'Not Affirmed' }}">
-                        </div>
-                        <div class="form-group mb-1">
-                            <label class="form-label">b. I/We undertake to inform the company of any changes to the information provided herein within a period of 7 days, accompanied by relevant documentation.</label>
-                            <input type="text" class="form-control" readonly
-                                value="{{ $update && $update->has_issue ? 'Agreed' : 'Not Agreed' }}">
+                        <h6 class="mb-2" style="font-size: 0.9rem;">Declaration</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-sm">
+                                <tbody>
+                                    @php
+                                        $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
+                                        $update = $application->declarations->where('question_key', 'declaration_update')->first();
+                                    @endphp
+                                    <tr>
+                                        <th>a. Truthfulness and Completeness</th>
+                                        <td>{{ $truthful && $truthful->has_issue ? 'Affirmed' : 'Not Affirmed' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>b. Update Commitment</th>
+                                        <td>{{ $update && $update->has_issue ? 'Agreed' : 'Not Agreed' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -983,11 +877,9 @@
             @endif
 
             <!-- Approval Logs -->
+            @if(isset($application->approvalLogs) && !$application->approvalLogs->isEmpty())
             <div id="approval-logs" class="form-section">
                 <h5 class="mb-3">Approval Logs</h5>
-                @if($application->approvalLogs->isEmpty())
-                <p class="text-muted">No approval logs available.</p>
-                @else
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
                         <thead>
@@ -1010,8 +902,8 @@
                         </tbody>
                     </table>
                 </div>
-                @endif
             </div>
+            @endif
         </div>
     </div>
 
@@ -1025,22 +917,14 @@
                 @csrf
                 <div class="mb-2">
                     <label for="approveRemarks" class="form-label">Remarks (Optional)</label>
-                    <textarea name="remarks" id="approveRemarks" class="form-control" rows="2"></textarea>
+                    <textarea name="remarks" id="approveRemarks" class="form-control" rows="2" style="font-size: 0.8rem;"></textarea>
                 </div>
                 <button type="submit" class="btn btn-success btn-sm">Approve</button>
             </form>
 
-            <button type="button" class="btn btn-warning btn-sm ms-1" data-bs-toggle="modal" data-bs-target="#revertModal">
-                Revert
-            </button>
-
-            <button type="button" class="btn btn-secondary btn-sm ms-1" data-bs-toggle="modal" data-bs-target="#holdModal">
-                Hold
-            </button>
-
-            <button type="button" class="btn btn-danger btn-sm ms-1" data-bs-toggle="modal" data-bs-target="#rejectModal">
-                Reject
-            </button>
+            <button type="button" class="btn btn-warning btn-sm ms-1" data-bs-toggle="modal" data-bs-target="#revertModal">Revert</button>
+            <button type="button" class="btn btn-secondary btn-sm ms-1" data-bs-toggle="modal" data-bs-target="#holdModal">Hold</button>
+            <button type="button" class="btn btn-danger btn-sm ms-1" data-bs-toggle="modal" data-bs-target="#rejectModal">Reject</button>
         </div>
     </div>
 
@@ -1057,7 +941,7 @@
                     <div class="modal-body p-2">
                         <div class="mb-2">
                             <label for="revertRemarks" class="form-label">Reason for Revert *</label>
-                            <textarea name="remarks" id="revertRemarks" class="form-control" rows="3" required></textarea>
+                            <textarea name="remarks" id="revertRemarks" class="form-control" rows="3" required style="font-size: 0.8rem;"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer p-2">
@@ -1082,11 +966,11 @@
                     <div class="modal-body p-2">
                         <div class="mb-2">
                             <label for="holdRemarks" class="form-label">Reason for Hold *</label>
-                            <textarea name="remarks" id="holdRemarks" class="form-control" rows="3" required></textarea>
+                            <textarea name="remarks" id="holdRemarks" class="form-control" rows="3" required style="font-size: 0.8rem;"></textarea>
                         </div>
                         <div class="mb-2">
                             <label for="followUpDate" class="form-label">Follow-up Date *</label>
-                            <input type="date" name="follow_up_date" id="followUpDate" class="form-control" required>
+                            <input type="date" name="follow_up_date" id="followUpDate" class="form-control" required style="font-size: 0.8rem;">
                         </div>
                     </div>
                     <div class="modal-footer p-2">
@@ -1111,7 +995,7 @@
                     <div class="modal-body p-2">
                         <div class="mb-2">
                             <label for="rejectRemarks" class="form-label">Reason for Rejection *</label>
-                            <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3" required></textarea>
+                            <textarea name="remarks" id="rejectRemarks" class="form-control" rows="3" required style="font-size: 0.8rem;"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer p-2">
@@ -1125,8 +1009,3 @@
     @endif
 </div>
 @endsection
-
-@push('scripts')
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-@endpush

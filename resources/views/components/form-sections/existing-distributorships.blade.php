@@ -1,6 +1,5 @@
 <div id="existing-distributorships" class="form-section p-2">
     <h5 class="mb-2 fs-6">Existing Distributorships (Agro Inputs) <small class="text-muted">(Leave blank if none)</small></h5>
-    
     <div id="distributorship-container">
         @php
         $existingDistributorships = $application->existingDistributorships ?? [];

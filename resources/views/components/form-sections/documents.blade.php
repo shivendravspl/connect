@@ -21,8 +21,6 @@ $documentTypes = [
 @endphp
 
 <div id="documents" class="form-section step-content" data-step="9">
-    <h5 class="mb-4">Documents Upload</h5>
-
     <div class="alert alert-info">
         <strong>Note:</strong> Please upload clear scanned copies of all required documents. Maximum file size: 2MB. Allowed formats: PDF, JPG, PNG.
     </div>

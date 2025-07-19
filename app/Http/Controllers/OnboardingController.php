@@ -325,6 +325,13 @@ class OnboardingController extends Controller
 
             $currentStep = $step;
         }
+
+        $currentYear = '2025-26';
+        $financialYears = Year::where('status', 'active')
+            ->where('period', '<', $currentYear)
+            ->orderBy('start_year', 'desc')
+            ->take(3)
+            ->get();
         //dd($zone_list);
         return view('applications.create', compact(
             'application',
@@ -336,7 +343,8 @@ class OnboardingController extends Controller
             'crop_type',
             'states',
             'currentStep',
-            'crops'
+            'crops',
+            'financialYears'
         ));
     }
 
@@ -633,6 +641,13 @@ class OnboardingController extends Controller
 
         // Load `Year` models for business plan display
         $years = Year::all()->keyBy('id');
+
+        $currentYear = '2025-26';
+        $financialYears = Year::where('status', 'active')
+            ->where('period', '<', $currentYear)
+            ->orderBy('start_year', 'desc')
+            ->take(3)
+            ->get();
         //dd($preselected);
         if ($step == 8) {
             return view('applications.review-submit', compact('application', 'years'));
@@ -648,7 +663,8 @@ class OnboardingController extends Controller
             'states',
             'step', // Pass the current step to the view
             'initialFrontendStep',
-            'crops'
+            'crops',
+            'financialYears'
         ));
     }
 
@@ -666,7 +682,7 @@ class OnboardingController extends Controller
             $result = ['success' => false, 'error' => 'Invalid step number.']; // Initialize result
 
             $application = null; // Initialize $application to null
-//dd( $stepNumber);
+            //dd( $stepNumber);
             // Load the application ONLY if an application_id is provided (i.e., not step 1 on first save)
             if ($application_id && $stepNumber != 1) {
                 $application = Onboarding::find($application_id);
@@ -839,11 +855,10 @@ class OnboardingController extends Controller
     // Step 2: Entity Details
     private function saveStep2(Request $request, $user, $application_id)
     {
-        //dd($request->all());
         if (!$application_id) {
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
-
+        \Log::info('saveStep2 Request Data:', $request->all());
         DB::beginTransaction();
         try {
             // Fetch existing entity details
@@ -851,12 +866,15 @@ class OnboardingController extends Controller
             $existingDocuments = $entityDetails && $entityDetails->documents_data
                 ? json_decode($entityDetails->documents_data, true)
                 : [];
+            $existingAuthPersons = $entityDetails && isset($entityDetails->additional_data['authorized_persons'])
+                ? $entityDetails->additional_data['authorized_persons']
+                : [];
 
             // Define validation rules
             $rules = [
                 // Common fields
                 'establishment_name' => 'required|string|max:255',
-                'entity_type' => 'required|string|in:sole_proprietorship,partnership,llp,private_company,public_company,cooperative_society,trust',
+                'entity_type' => 'required|string|in:individual_person,sole_proprietorship,partnership,llp,private_company,public_company,cooperative_society,trust',
                 'business_address' => 'required|string',
                 'house_no' => 'nullable|string|max:255',
                 'landmark' => 'nullable|string|max:255',
@@ -870,16 +888,19 @@ class OnboardingController extends Controller
                 'pan_number' => 'required|string|max:20',
                 'pan_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'existing_pan_file' => 'nullable|string',
+                'removed_pan_file' => 'nullable|integer',
                 'pan_verified' => 'nullable|boolean',
                 'gst_applicable' => 'required|in:yes,no',
                 'gst_number' => 'nullable|string|max:20',
                 'gst_validity' => 'nullable|date_format:Y-m-d',
                 'gst_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'existing_gst_file' => 'nullable|string',
+                'removed_gst_file' => 'nullable|integer',
                 'seed_license' => 'required|string|max:255',
                 'seed_license_validity' => 'required|date_format:Y-m-d',
                 'seed_license_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'existing_seed_license_file' => 'nullable|string',
+                'removed_seed_license_file' => 'nullable|integer',
                 'seed_license_verified' => 'nullable|boolean',
                 'bank_name' => 'required|string|max:255',
                 'account_holder' => 'required|string|max:255',
@@ -887,22 +908,29 @@ class OnboardingController extends Controller
                 'ifsc_code' => 'required|string|max:11',
                 'bank_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'existing_bank_file' => 'nullable|string',
+                'removed_bank_file' => 'nullable|integer',
                 'tan_number' => 'nullable|string|max:20',
+                'has_authorized_persons' => 'required|in:yes,no',
+
+                // Individual Person
+                'individual_name' => $request->input('entity_type') === 'individual_person' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'individual_dob' => $request->input('entity_type') === 'individual_person' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
+                'individual_father_name' => $request->input('entity_type') === 'individual_person' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'individual_age' => $request->input('entity_type') === 'individual_person' ? 'required|integer|min:18|max:100' : 'nullable|integer|min:18|max:100',
 
                 // Sole Proprietorship
                 'proprietor_name' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
                 'proprietor_dob' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|date_format:Y-m-d' : 'nullable|date_format:Y-m-d',
                 'proprietor_father_name' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
-                'proprietor_address' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string' : 'nullable|string',
-                'proprietor_pincode' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:10' : 'nullable|string|max:10',
-                'proprietor_country' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|string|max:255' : 'nullable|string|max:255',
+                'proprietor_age' => $request->input('entity_type') === 'sole_proprietorship' ? 'required|integer|min:18|max:100' : 'nullable|integer|min:18|max:100',
 
                 // Partnership
                 'partner_name.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:255' : 'nullable|string|max:255',
-                'partner_father_name.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:255' : 'nullable|string|max:255',
-                'partner_contact.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:20' : 'nullable|string|max:20',
-                'partner_email.*' => $request->input('entity_type') === 'partnership' ? 'required|email|max:50' : 'nullable|email|max:50',
-                'partner_address.*' => $request->input('entity_type') === 'partnership' ? 'required|string' : 'nullable|string',
+                'partner_pan.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:20|regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/' : 'nullable|string|max:20',
+                'partner_contact.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:20|regex:/^[0-9]{10}$/' : 'nullable|string|max:20',
+                'signatory_name.*' => $request->input('entity_type') === 'partnership' ? 'nullable|string|max:255' : 'nullable|string|max:255',
+                'signatory_designation.*' => $request->input('entity_type') === 'partnership' ? 'required_with:signatory_contact.*|string|max:255' : 'nullable|string|max:255',
+                'signatory_contact.*' => $request->input('entity_type') === 'partnership' ? 'required_with:signatory_designation.*|string|max:20|regex:/^[0-9]{10}$/' : 'nullable|string|max:20',
 
                 // LLP
                 'llpin_number' => $request->input('entity_type') === 'llp' ? 'required|string|max:255' : 'nullable|string|max:255',
@@ -946,218 +974,72 @@ class OnboardingController extends Controller
                 'auth_person_aadhar.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'existing_auth_person_letter.*' => 'nullable|string',
                 'existing_auth_person_aadhar.*' => 'nullable|string',
+                'removed_auth_person_letter.*' => 'nullable|integer',
+                'removed_auth_person_aadhar.*' => 'nullable|integer',
             ];
-            // Get existing authorized persons data
-            $existingAuthPersons = $entityDetails && isset($entityDetails->additional_data['authorized_persons'])
-                ? $entityDetails->additional_data['authorized_persons']
-                : [];
-            // Custom validation for file fields and GST
+
+            // Custom validation for file fields and authorized persons
             $validator = Validator::make($request->all(), $rules);
-            $validator->after(function ($validator) use ($request, $existingDocuments) {
-                // Validate PAN file
-                if (!$request->hasFile('pan_file') && !$request->input('existing_pan_file') && !collect($existingDocuments)->firstWhere('type', 'pan')) {
-                    $validator->errors()->add('pan_file', 'The PAN file is required.');
-                }
-
-                // Validate PAN verification if a new file is uploaded
-                if ($request->hasFile('pan_file') && !$request->input('pan_verified')) {
-                    $validator->errors()->add('pan_verified', 'You must confirm that the PAN number matches the uploaded document.');
-                }
-
-                // Validate Seed License file
-                if (!$request->hasFile('seed_license_file') && !$request->input('existing_seed_license_file') && !collect($existingDocuments)->firstWhere('type', 'seed_license')) {
-                    $validator->errors()->add('seed_license_file', 'The seed license file is required.');
-                }
-
-                // Validate Seed License verification if a new file is uploaded
-                if ($request->hasFile('seed_license_file') && !$request->input('seed_license_verified')) {
-                    $validator->errors()->add('seed_license_verified', 'You must confirm that the seed license number matches the uploaded document.');
-                }
-
-                // Validate Bank file
-                if (!$request->hasFile('bank_file') && !$request->input('existing_bank_file') && !collect($existingDocuments)->firstWhere('type', 'bank')) {
-                    $validator->errors()->add('bank_file', 'The bank file is required.');
-                }
-
-                // Validate GST fields if applicable
-                if ($request->input('gst_applicable') === 'yes') {
-                    if (!$request->filled('gst_number')) {
-                        $validator->errors()->add('gst_number', 'The GST number is required when GST is applicable.');
+            $validator->after(function ($validator) use ($request, $existingDocuments, $existingAuthPersons) {
+                // Validate file fields
+                $fileFields = [
+                    'bank_file' => 'A bank document is required.',
+                    'seed_license_file' => 'A seed license document is required.',
+                    'pan_file' => 'A PAN document is required.',
+                    'gst_file' => 'A GST document is required when GST is applicable.'
+                ];
+                foreach ($fileFields as $field => $errorMessage) {
+                    if ($field === 'gst_file' && $request->input('gst_applicable') !== 'yes') {
+                        continue;
                     }
-                    if (!$request->filled('gst_validity')) {
-                        $validator->errors()->add('gst_validity', 'The GST validity date is required when GST is applicable.');
+                    $hasNewFile = $request->hasFile($field);
+                    $hasExistingFile = !empty($request->input("existing_$field")) && !$request->input("removed_$field");
+                    if (!$hasNewFile && !$hasExistingFile) {
+                        $validator->errors()->add($field, $errorMessage);
                     }
-                    if (!$request->hasFile('gst_file') && !$request->input('existing_gst_file') && !collect($existingDocuments)->firstWhere('type', 'gst')) {
-                        $validator->errors()->add('gst_file', 'The GST document is required when GST is applicable.');
+                }
+
+                // Validate authorized persons only if has_authorized_persons is 'yes'
+                if ($request->input('has_authorized_persons') === 'yes') {
+                    if (empty(array_filter($request->input('auth_person_name', [])))) {
+                        $validator->errors()->add('auth_person_name', 'At least one authorized person is required when authorized persons are selected.');
+                    } else {
+                        $removedLetters = $request->input('removed_auth_person_letter', []);
+                        $removedAadhars = $request->input('removed_auth_person_aadhar', []);
+
+                        foreach ($request->input('auth_person_name', []) as $index => $name) {
+                            if (!empty($name)) {
+                                // Validate required fields
+                                if (empty($request->input('auth_person_contact', [])[$index])) {
+                                    $validator->errors()->add("auth_person_contact.$index", 'Contact number is required for each authorized person.');
+                                }
+                                if (empty($request->input('auth_person_address', [])[$index])) {
+                                    $validator->errors()->add("auth_person_address.$index", 'Address is required for each authorized person.');
+                                }
+                                if (empty($request->input('auth_person_relation', [])[$index])) {
+                                    $validator->errors()->add("auth_person_relation.$index", 'Relation is required for each authorized person.');
+                                }
+
+                                // Validate Letter of Authorization
+                                $hasNewLetter = $request->hasFile("auth_person_letter.$index");
+                                $hasExistingLetter = !empty($request->input("existing_auth_person_letter.$index")) ||
+                                    (isset($existingAuthPersons[$index]['letter']) && !in_array($index, $removedLetters));
+                                if (!$hasNewLetter && !$hasExistingLetter) {
+                                    $validator->errors()->add("auth_person_letter.$index", 'A Letter of Authorization is required for each authorized person.');
+                                }
+
+                                // Validate Aadhar
+                                $hasNewAadhar = $request->hasFile("auth_person_aadhar.$index");
+                                $hasExistingAadhar = !empty($request->input("existing_auth_person_aadhar.$index")) ||
+                                    (isset($existingAuthPersons[$index]['aadhar']) && !in_array($index, $removedAadhars));
+                                if (!$hasNewAadhar && !$hasExistingAadhar) {
+                                    $validator->errors()->add("auth_person_aadhar.$index", 'An Aadhar document is required for each authorized person.');
+                                }
+                            }
+                        }
                     }
                 }
             });
-
-            // Custom validation for entity-specific fields
-            $entity_type = $request->input('entity_type');
-            if ($entity_type === 'sole_proprietorship') {
-                if (!$request->filled('proprietor_name')) {
-                    $validator->errors()->add('proprietor_name', 'The proprietor name is required for sole proprietorship.');
-                }
-                if (!$request->filled('proprietor_dob')) {
-                    $validator->errors()->add('proprietor_dob', 'The proprietor date of birth is required for sole proprietorship.');
-                }
-                if (!$request->filled('proprietor_father_name')) {
-                    $validator->errors()->add('proprietor_father_name', 'The proprietor father\'s name is required for sole proprietorship.');
-                }
-                if (!$request->filled('proprietor_address')) {
-                    $validator->errors()->add('proprietor_address', 'The proprietor address is required for sole proprietorship.');
-                }
-                if (!$request->filled('proprietor_pincode')) {
-                    $validator->errors()->add('proprietor_pincode', 'The proprietor pincode is required for sole proprietorship.');
-                }
-                if (!$request->filled('proprietor_country')) {
-                    $validator->errors()->add('proprietor_country', 'The proprietor country is required for sole proprietorship.');
-                }
-            } elseif ($entity_type === 'partnership') {
-                if (empty(array_filter($request->input('partner_name', [])))) {
-                    $validator->errors()->add('partner_name', 'At least one partner is required for partnership.');
-                } else {
-                    foreach ($request->input('partner_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            if (empty($request->input('partner_father_name', [])[$index])) {
-                                $validator->errors()->add("partner_father_name.$index", 'Father\'s name is required for each partner.');
-                            }
-                            if (empty($request->input('partner_contact', [])[$index])) {
-                                $validator->errors()->add("partner_contact.$index", 'Contact number is required for each partner.');
-                            }
-                            if (empty($request->input('partner_email', [])[$index])) {
-                                $validator->errors()->add("partner_email.$index", 'Email is required for each partner.');
-                            }
-                            if (empty($request->input('partner_address', [])[$index])) {
-                                $validator->errors()->add("partner_address.$index", 'Address is required for each partner.');
-                            }
-                        }
-                    }
-                }
-            } elseif ($entity_type === 'llp') {
-                if (!$request->filled('llpin_number')) {
-                    $validator->errors()->add('llpin_number', 'The LLPIN number is required for LLP.');
-                }
-                if (!$request->filled('llp_incorporation_date')) {
-                    $validator->errors()->add('llp_incorporation_date', 'The LLP incorporation date is required for LLP.');
-                }
-                if (empty(array_filter($request->input('llp_partner_name', [])))) {
-                    $validator->errors()->add('llp_partner_name', 'At least one designated partner is required for LLP.');
-                } else {
-                    foreach ($request->input('llp_partner_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            if (empty($request->input('llp_partner_dpin', [])[$index])) {
-                                $validator->errors()->add("llp_partner_dpin.$index", 'DPIN number is required for each partner.');
-                            }
-                            if (empty($request->input('llp_partner_contact', [])[$index])) {
-                                $validator->errors()->add("llp_partner_contact.$index", 'Contact number is required for each partner.');
-                            }
-                            if (empty($request->input('llp_partner_address', [])[$index])) {
-                                $validator->errors()->add("llp_partner_address.$index", 'Address is required for each partner.');
-                            }
-                        }
-                    }
-                }
-            } elseif (in_array($entity_type, ['private_company', 'public_company'])) {
-                if (!$request->filled('cin_number')) {
-                    $validator->errors()->add('cin_number', 'The CIN number is required for companies.');
-                }
-                if (!$request->filled('incorporation_date')) {
-                    $validator->errors()->add('incorporation_date', 'The incorporation date is required for companies.');
-                }
-                if (empty(array_filter($request->input('director_name', [])))) {
-                    $validator->errors()->add('director_name', 'At least one director is required for companies.');
-                } else {
-                    foreach ($request->input('director_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            if (empty($request->input('director_din', [])[$index])) {
-                                $validator->errors()->add("director_din.$index", 'DIN number is required for each director.');
-                            }
-                            if (empty($request->input('director_contact', [])[$index])) {
-                                $validator->errors()->add("director_contact.$index", 'Contact number is required for each director.');
-                            }
-                            if (empty($request->input('director_address', [])[$index])) {
-                                $validator->errors()->add("director_address.$index", 'Address is required for each director.');
-                            }
-                        }
-                    }
-                }
-            } elseif ($entity_type === 'cooperative_society') {
-                if (!$request->filled('cooperative_reg_number')) {
-                    $validator->errors()->add('cooperative_reg_number', 'The registration number is required for cooperative societies.');
-                }
-                if (!$request->filled('cooperative_reg_date')) {
-                    $validator->errors()->add('cooperative_reg_date', 'The registration date is required for cooperative societies.');
-                }
-                if (empty(array_filter($request->input('committee_name', [])))) {
-                    $validator->errors()->add('committee_name', 'At least one committee member is required for cooperative societies.');
-                } else {
-                    foreach ($request->input('committee_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            if (empty($request->input('committee_designation', [])[$index])) {
-                                $validator->errors()->add("committee_designation.$index", 'Designation is required for each committee member.');
-                            }
-                            if (empty($request->input('committee_contact', [])[$index])) {
-                                $validator->errors()->add("committee_contact.$index", 'Contact number is required for each committee member.');
-                            }
-                            if (empty($request->input('committee_address', [])[$index])) {
-                                $validator->errors()->add("committee_address.$index", 'Address is required for each committee member.');
-                            }
-                        }
-                    }
-                }
-            } elseif ($entity_type === 'trust') {
-                if (!$request->filled('trust_reg_number')) {
-                    $validator->errors()->add('trust_reg_number', 'The registration number is required for trusts.');
-                }
-                if (!$request->filled('trust_reg_date')) {
-                    $validator->errors()->add('trust_reg_date', 'The registration date is required for trusts.');
-                }
-                if (empty(array_filter($request->input('trustee_name', [])))) {
-                    $validator->errors()->add('trustee_name', 'At least one trustee is required for trusts.');
-                } else {
-                    foreach ($request->input('trustee_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            if (empty($request->input('trustee_designation', [])[$index])) {
-                                $validator->errors()->add("trustee_designation.$index", 'Designation is required for each trustee.');
-                            }
-                            if (empty($request->input('trustee_contact', [])[$index])) {
-                                $validator->errors()->add("trustee_contact.$index", 'Contact number is required for each trustee.');
-                            }
-                            if (empty($request->input('trustee_address', [])[$index])) {
-                                $validator->errors()->add("trustee_address.$index", 'Address is required for each trustee.');
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Validate authorized persons
-            if ($request->has('auth_person_name') && !empty(array_filter($request->input('auth_person_name', [])))) {
-                foreach ($request->input('auth_person_name', []) as $index => $name) {
-                    if (!empty($name)) {
-                        // Check Letter of Authorization
-                        $hasNewLetter = $request->hasFile("auth_person_letter.$index");
-                        $hasExistingLetter = !empty($request->input("existing_auth_person_letter.$index")) ||
-                            (isset($existingAuthPersons[$index]['letter']) && !empty($existingAuthPersons[$index]['letter']));
-
-                        if (!$hasNewLetter && !$hasExistingLetter) {
-                            $validator->errors()->add("auth_person_letter.$index", 'Either upload a new Letter of Authorization or keep the existing one');
-                        }
-
-                        // Check Aadhar
-                        $hasNewAadhar = $request->hasFile("auth_person_aadhar.$index");
-                        $hasExistingAadhar = !empty($request->input("existing_auth_person_aadhar.$index")) ||
-                            (isset($existingAuthPersons[$index]['aadhar']) && !empty($existingAuthPersons[$index]['aadhar']));
-
-                        if (!$hasNewAadhar && !$hasExistingAadhar) {
-                            $validator->errors()->add("auth_person_aadhar.$index", 'Either upload a new Aadhar document or keep the existing one');
-                        }
-                    }
-                }
-            }
-
 
             if ($validator->fails()) {
                 return ['success' => false, 'error' => $validator->errors()->toArray(), 'status' => 422];
@@ -1167,7 +1049,7 @@ class OnboardingController extends Controller
             $entity_type = $data['entity_type'];
 
             // Initialize documents_data with existing documents
-            $documents_data = $existingDocuments ?: []; // Ensure initialization
+            $documents_data = $existingDocuments ?: [];
 
             // Process new or updated documents
             $documentTypes = [
@@ -1208,21 +1090,15 @@ class OnboardingController extends Controller
             ];
 
             foreach ($documentTypes as $type => $config) {
-                // Skip GST if not applicable
                 if ($type === 'gst' && !$config['condition']) {
-                    $documents_data = array_filter($documents_data, function ($doc) use ($type) {
-                        return $doc['type'] !== $type;
-                    });
+                    $documents_data = array_filter($documents_data, fn($doc) => $doc['type'] !== $type);
                     continue;
                 }
 
-                // If a new file is uploaded, replace or add the document
                 if ($request->hasFile($config['file_field'])) {
                     $file = $request->file($config['file_field']);
                     $path = $file->store('documents/' . $application_id, 'public');
-                    $documents_data = array_filter($documents_data, function ($doc) use ($type) {
-                        return $doc['type'] !== $type;
-                    });
+                    $documents_data = array_filter($documents_data, fn($doc) => $doc['type'] !== $type);
                     $documents_data[] = [
                         'type' => $type,
                         'path' => $path,
@@ -1232,12 +1108,9 @@ class OnboardingController extends Controller
                         'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : false) : false,
                     ];
                 } elseif ($request->input($config['existing_field'])) {
-                    // Keep existing document if provided
                     $existingDoc = collect($documents_data)->firstWhere('type', $type);
                     if ($existingDoc) {
-                        $documents_data = array_filter($documents_data, function ($doc) use ($type) {
-                            return $doc['type'] !== $type;
-                        });
+                        $documents_data = array_filter($documents_data, fn($doc) => $doc['type'] !== $type);
                         $documents_data[] = array_merge($existingDoc, [
                             'details' => array_filter($config['details'], fn($value) => !is_null($value)),
                             'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : ($existingDoc['verified'] ?? false)) : ($existingDoc['verified'] ?? false),
@@ -1265,7 +1138,7 @@ class OnboardingController extends Controller
                 'gst_applicable' => $data['gst_applicable'],
                 'gst_number' => $data['gst_applicable'] === 'yes' ? $data['gst_number'] : null,
                 'seed_license' => $data['seed_license'],
-                'documents_data' => json_encode(array_values($documents_data)), // Ensure array is re-indexed
+                'documents_data' => json_encode(array_values($documents_data)),
                 'additional_data' => [],
                 'updated_at' => now(),
             ];
@@ -1286,14 +1159,19 @@ class OnboardingController extends Controller
             ];
 
             // Process entity-specific data
-            if ($entity_type === 'sole_proprietorship') {
+            if ($entity_type === 'individual_person') {
+                $additionalData['individual'] = [
+                    'name' => $data['individual_name'],
+                    'dob' => $data['individual_dob'],
+                    'father_name' => $data['individual_father_name'],
+                    'age' => $data['individual_age'],
+                ];
+            } elseif ($entity_type === 'sole_proprietorship') {
                 $additionalData['proprietor'] = [
                     'name' => $data['proprietor_name'],
                     'dob' => $data['proprietor_dob'],
                     'father_name' => $data['proprietor_father_name'],
-                    'address' => $data['proprietor_address'],
-                    'pincode' => $data['proprietor_pincode'],
-                    'country' => $data['proprietor_country'],
+                    'age' => $data['proprietor_age'],
                 ];
             } elseif ($entity_type === 'partnership') {
                 $partners = [];
@@ -1302,15 +1180,28 @@ class OnboardingController extends Controller
                         if (!empty($name)) {
                             $partners[] = [
                                 'name' => $name,
-                                'father_name' => $request->input('partner_father_name', [])[$index],
+                                'pan' => $request->input('partner_pan', [])[$index],
                                 'contact' => $request->input('partner_contact', [])[$index],
-                                'email' => $request->input('partner_email', [])[$index],
-                                'address' => $request->input('partner_address', [])[$index],
                             ];
                         }
                     }
                 }
                 $additionalData['partners'] = $partners;
+
+                // Process signatories
+                $signatories = [];
+                if ($request->has('signatory_name') && is_array($request->input('signatory_name'))) {
+                    foreach ($request->input('signatory_name', []) as $index => $name) {
+                        if (!empty($name) || !empty($request->input('signatory_designation', [])[$index])) {
+                            $signatories[] = [
+                                'name' => $name,
+                                'designation' => $request->input('signatory_designation', [])[$index],
+                                'contact' => $request->input('signatory_contact', [])[$index],
+                            ];
+                        }
+                    }
+                }
+                $additionalData['signatories'] = $signatories;
             } elseif ($entity_type === 'llp') {
                 $additionalData['llp'] = [
                     'llpin_number' => $data['llpin_number'],
@@ -1391,15 +1282,17 @@ class OnboardingController extends Controller
 
             // Process authorized persons
             $authorizedPersons = [];
+            $removedLetters = $request->input('removed_auth_person_letter', []);
+            $removedAadhars = $request->input('removed_auth_person_aadhar', []);
             if ($request->has('auth_person_name') && is_array($request->input('auth_person_name'))) {
                 foreach ($request->input('auth_person_name', []) as $index => $name) {
-                    if (!empty($name)) {
+                    if (!empty($name) && !in_array($index, $removedLetters) && !in_array($index, $removedAadhars)) {
                         $personData = [
                             'name' => $name,
-                            'contact' => $request->input('auth_person_contact', [])[$index],
+                            'contact' => $request->input('auth_person_contact', [])[$index] ?? null,
                             'email' => $request->input('auth_person_email', [])[$index] ?? null,
-                            'address' => $request->input('auth_person_address', [])[$index],
-                            'relation' => $request->input('auth_person_relation', [])[$index],
+                            'address' => $request->input('auth_person_address', [])[$index] ?? null,
+                            'relation' => $request->input('auth_person_relation', [])[$index] ?? null,
                         ];
 
                         // Handle Letter
@@ -1407,9 +1300,9 @@ class OnboardingController extends Controller
                             $letterFile = $request->file("auth_person_letter.$index");
                             $letterPath = $letterFile->store('documents/' . $application_id . '/authorized_persons', 'public');
                             $personData['letter'] = $letterPath;
-                        } elseif ($request->input("existing_auth_person_letter.$index")) {
+                        } elseif ($request->input("existing_auth_person_letter.$index") && !in_array($index, $removedLetters)) {
                             $personData['letter'] = $request->input("existing_auth_person_letter.$index");
-                        } elseif (isset($existingAuthPersons[$index]['letter'])) {
+                        } elseif (isset($existingAuthPersons[$index]['letter']) && !in_array($index, $removedLetters)) {
                             $personData['letter'] = $existingAuthPersons[$index]['letter'];
                         }
 
@@ -1418,50 +1311,45 @@ class OnboardingController extends Controller
                             $aadharFile = $request->file("auth_person_aadhar.$index");
                             $aadharPath = $aadharFile->store('documents/' . $application_id . '/authorized_persons', 'public');
                             $personData['aadhar'] = $aadharPath;
-                        } elseif ($request->input("existing_auth_person_aadhar.$index")) {
+                        } elseif ($request->input("existing_auth_person_aadhar.$index") && !in_array($index, $removedAadhars)) {
                             $personData['aadhar'] = $request->input("existing_auth_person_aadhar.$index");
-                        } elseif (isset($existingAuthPersons[$index]['aadhar'])) {
+                        } elseif (isset($existingAuthPersons[$index]['aadhar']) && !in_array($index, $removedAadhars)) {
                             $personData['aadhar'] = $existingAuthPersons[$index]['aadhar'];
                         }
 
-                        $authorizedPersons[] = $personData;
+                        if (!empty($personData['letter']) && !empty($personData['aadhar'])) {
+                            $authorizedPersons[] = $personData;
+                        }
                     }
                 }
             }
 
-            // Add to additional_data
             $additionalData['authorized_persons'] = $authorizedPersons;
 
             // Remove empty arrays or null values from additional_data
-            $additionalData = array_filter($additionalData, function ($value) {
-                if (is_array($value)) {
-                    return !empty(array_filter($value, function ($subValue) {
-                        return !is_null($subValue) && !(is_array($subValue) && empty($subValue));
-                    }));
-                }
-                return !is_null($value);
-            });
+            $additionalData = array_filter($additionalData, fn($value) => is_array($value) ? !empty(array_filter($value, fn($subValue) => !is_null($subValue) && !(is_array($subValue) && empty($subValue)))) : !is_null($value));
 
             // Set additional_data in entityData
             $entityData['additional_data'] = $additionalData;
-            //dd($entityData);
+
             // Update or create EntityDetails
             EntityDetails::updateOrCreate(
                 ['application_id' => $application_id],
                 $entityData
             );
+
+            // Update application progress
             $application = Onboarding::find($application_id);
-            if ($application) {
-                if ($application->current_progress_step < 3) {
-                    $application->update(['current_progress_step' => 3]);
-                }
+            if ($application && $application->current_progress_step < 3) {
+                $application->update(['current_progress_step' => 3]);
             }
+
             DB::commit();
             return ['success' => true, 'message' => 'Entity details and documents saved successfully', 'application_id' => $application_id, 'current_step' => 3];
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Error saving entity details: ' . $e->getMessage());
-            return ['success' => false, 'error' => 'An error occurred while saving entity details and documents.'];
+            return ['success' => false, 'error' => 'An error occurred while saving entity details and documents.', 'status' => 500];
         }
     }
     // Step 3: Distribution Details
@@ -2157,12 +2045,12 @@ class OnboardingController extends Controller
             }
 
             // Set initial approval level based on first approver's designation
-            $approvalLevel = $this->getApprovalLevelFromDesignation($firstApprover->emp_designation);
+            // $approvalLevel = $this->getApprovalLevelFromDesignation($firstApprover->emp_designation);
 
             $application->update([
-                'status' => 'submitted',
+                'status' => 'initiated',
                 'current_approver_id' => $firstApprover->id,
-                'approval_level' => $approvalLevel,
+                'approval_level' => $firstApprover->emp_designation,
                 'updated_at' => now()
             ]);
 
@@ -2202,6 +2090,43 @@ class OnboardingController extends Controller
 
 
 
+    public function destroy(Onboarding $application)
+    {
+        $user = Auth::user();
+        if ($application->status !== 'draft' || $application->created_by !== $user->emp_id) {
+            Log::warning("Unauthorized delete attempt by emp_id: {$user->emp_id} for application_id: {$application->id}");
+            abort(403, 'Unauthorized action');
+        }
+
+        // Load relationships to log existing data
+        $application->load([
+            'entityDetails',
+            'distributionDetail',
+            'businessPlans',
+            'financialInfo',
+            'existingDistributorships',
+            'bankDetail',
+            'declarations',
+        ]);
+
+        // Log related records before deletion
+        Log::info("Preparing to delete application_id: {$application->id}, user_id: {$user->emp_id}", [
+            'entityDetails' => $application->entityDetails ? $application->entityDetails->toArray() : null,
+            'distributionDetail' => $application->distributionDetail ? $application->distributionDetail->toArray() : null,
+            'businessPlans_count' => $application->businessPlans->count(),
+            'financialInfo' => $application->financialInfo ? $application->financialInfo->toArray() : null,
+            'existingDistributorships_count' => $application->existingDistributorships->count(),
+            'bankDetail' => $application->bankDetail ? $application->bankDetail->toArray() : null,
+            'declarations' => $application->declarations ? $application->declarations->toArray() : null,
+        ]);
+
+        // Delete the application (cascading deletes handled in Onboarding model)
+        $application->delete();
+
+        return redirect()->route('applications.index')
+            ->with('success', 'Application and related data deleted successfully');
+    }
+
     // private function sendNotification($application_id, $approver_id, $action)
     // {
     //     $application = Onboarding::find($application_id);
@@ -2236,6 +2161,7 @@ class OnboardingController extends Controller
 
         return response()->json($districts);
     }
+
 
     public function removeDocument(Request $request, $applicationId)
     {

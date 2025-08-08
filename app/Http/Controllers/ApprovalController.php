@@ -73,12 +73,50 @@ class ApprovalController extends Controller
     public function approve(Request $request, Onboarding $application)
     {
         $user = Auth::user();
+        Log::info('Approve request received', [
+            'application_id' => $application->id,
+            'request_data' => $request->all(),
+            'form_action' => $request->url()
+        ]);
+
         $this->authorizeApproval($application, $user->emp_id);
+
+        // Validate application status
+        if (!in_array($application->status, ['under_review', 'initiated', 'on_hold'])) {
+            Log::error('Invalid status for approve action', [
+                'application_id' => $application->id,
+                'status' => $application->status
+            ]);
+            return redirect()->route('approvals.dashboard')->with('error', 'Cannot approve an application with status: ' . $application->status);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'remarks' => 'nullable|string|min:5',
+            'application_id' => 'required|exists:onboardings,id'
+        ], [
+            'remarks.min' => 'The remarks, if provided, must be at least 5 characters.',
+            'application_id.exists' => 'The selected application is invalid.'
+        ]);
+
+        if ($validator->fails()) {
+            Log::error('Validation failed for approve request', [
+                'application_id' => $application->id,
+                'errors' => $validator->errors()->all()
+            ]);
+            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Please correct the errors in the form.');
+        }
+
+        if ($request->input('application_id') != $application->id) {
+            Log::error('Mismatched application ID', [
+                'url_application_id' => $application->id,
+                'form_application_id' => $request->input('application_id')
+            ]);
+            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
+        }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
         $nextApprover = $currentApprover->manager;
 
-        // Log approval action
         $this->createApprovalLog(
             $application->id,
             $user->emp_id,
@@ -98,21 +136,52 @@ class ApprovalController extends Controller
             $this->scheduleReminder($nextApprover, $application);
         }
 
-        return redirect()->route('dashboard')
+        return redirect()->route('approvals.dashboard')
             ->with('success', 'Application approved successfully');
     }
 
     public function reject(Request $request, Onboarding $application)
     {
         $user = Auth::user();
+        Log::info('Reject request received', [
+            'application_id' => $application->id,
+            'request_data' => $request->all(),
+            'form_action' => $request->url()
+        ]);
+
         $this->authorizeApproval($application, $user->emp_id);
 
+        // Validate application status
+        if (!in_array($application->status, ['under_review', 'initiated', 'on_hold'])) {
+            Log::error('Invalid status for reject action', [
+                'application_id' => $application->id,
+                'status' => $application->status
+            ]);
+            return redirect()->route('approvals.dashboard')->with('error', 'Cannot reject an application with status: ' . $application->status);
+        }
+
         $validator = Validator::make($request->all(), [
-            'remarks' => 'required|string|min:20'
+            'remarks' => 'required|string|min:5',
+            'application_id' => 'required|exists:onboardings,id'
+        ], [
+            'remarks.min' => 'The reason for rejecting the application must be at least 5 characters.',
+            'application_id.exists' => 'The selected application is invalid.'
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            Log::error('Validation failed for reject request', [
+                'application_id' => $application->id,
+                'errors' => $validator->errors()->all()
+            ]);
+            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Please correct the errors in the form.');
+        }
+
+        if ($request->input('application_id') != $application->id) {
+            Log::error('Mismatched application ID', [
+                'url_application_id' => $application->id,
+                'form_application_id' => $request->input('application_id')
+            ]);
+            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
@@ -133,21 +202,50 @@ class ApprovalController extends Controller
         $this->notifyCreator($application, 'Application Rejected', $request->input('remarks'));
         $this->notifySalesHierarchy($application, 'Application Rejected');
 
-        return redirect()->route('dashboard')
+        return redirect()->route('approvals.dashboard')
             ->with('success', 'Application rejected successfully');
     }
-
     public function revert(Request $request, Onboarding $application)
     {
         $user = Auth::user();
+        Log::info('Revert request received', [
+            'application_id' => $application->id,
+            'request_data' => $request->all(),
+            'form_action' => $request->url()
+        ]);
         $this->authorizeApproval($application, $user->emp_id);
 
+        // Validate application status
+        if (!in_array($application->status, ['under_review', 'initiated', 'on_hold'])) {
+            Log::error('Invalid status for revert action', [
+                'application_id' => $application->id,
+                'status' => $application->status
+            ]);
+            return redirect()->route('approvals.dashboard')->with('error', 'Cannot revert an application with status: ' . $application->status);
+        }
+
         $validator = Validator::make($request->all(), [
-            'remarks' => 'required|string|min:20'
+            'remarks' => 'required|string|min:5',
+            'application_id' => 'required|exists:onboardings,id'
+        ], [
+            'remarks.min' => 'The reason for reverting the application must be at least 5 characters.',
+            'application_id.exists' => 'The selected application is invalid.'
         ]);
 
         if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
+            Log::error('Validation failed for revert request', [
+                'application_id' => $application->id,
+                'errors' => $validator->errors()->all()
+            ]);
+            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Please correct the errors in the form.');
+        }
+
+        if ($request->input('application_id') != $application->id) {
+            Log::error('Mismatched application ID', [
+                'url_application_id' => $application->id,
+                'form_application_id' => $request->input('application_id')
+            ]);
+            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
@@ -162,27 +260,46 @@ class ApprovalController extends Controller
         $application->update([
             'status' => 'reverted',
             'current_approver_id' => $application->created_by,
-            'approval_level' => 'initiated'
+            'approval_level' => $currentApprover->emp_designation
         ]);
 
         $this->notifyCreator($application, 'Application Reverted', $request->input('remarks'));
 
-        return redirect()->route('dashboard')
+        return redirect()->route('approvals.dashboard')
             ->with('success', 'Application reverted successfully');
     }
 
     public function hold(Request $request, Onboarding $application)
     {
         $user = Auth::user();
+        Log::info('Hold request received', [
+            'application_id' => $application->id,
+            'request_data' => $request->all(),
+            'form_action' => $request->url()
+        ]);
+
         $this->authorizeApproval($application, $user->emp_id);
 
         $validator = Validator::make($request->all(), [
-            'remarks' => 'required|string|min:20',
-            'follow_up_date' => 'required|date|after:now'
+            'remarks' => 'required|string|min:5',
+            'follow_up_date' => 'required|date|after:now',
+            'application_id' => 'required|exists:onboardings,id'
         ]);
 
         if ($validator->fails()) {
+            Log::error('Validation failed for hold request', [
+                'application_id' => $application->id,
+                'errors' => $validator->errors()->all()
+            ]);
             return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        if ($request->input('application_id') != $application->id) {
+            Log::error('Mismatched application ID', [
+                'url_application_id' => $application->id,
+                'form_application_id' => $request->input('application_id')
+            ]);
+            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
@@ -203,9 +320,10 @@ class ApprovalController extends Controller
         $this->notifyCreator($application, 'Application On Hold', $request->input('remarks'));
         $this->scheduleFollowUp($application, $request->input('follow_up_date'));
 
-        return redirect()->route('dashboard')
+        return redirect()->route('approvals.dashboard')
             ->with('success', 'Application put on hold successfully');
     }
+
 
     // ==================== PRIVATE METHODS ====================
 
@@ -325,10 +443,11 @@ class ApprovalController extends Controller
             Mail::to($businessHead->emp_email)->queue(
                 new ApplicationNotification(
                     //$application, 'FYI: Application Approved'
-                        application: $application,
-                        mailSubject: 'Application Approved',
-                        remarks: 'Fyi'
-                    ));
+                    application: $application,
+                    mailSubject: 'Application Approved',
+                    remarks: 'Fyi'
+                )
+            );
         }
     }
 
@@ -361,7 +480,7 @@ class ApprovalController extends Controller
                 new ApplicationNotification(
                     application: $application,
                     mailSubject: 'Approval Required'
-                    )
+                )
             );
         }
     }

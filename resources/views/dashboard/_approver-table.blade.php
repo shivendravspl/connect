@@ -1,3 +1,4 @@
+<!-- resources/views/dashboard/_approver-table.blade.php -->
 @if($pendingApplications->isEmpty())
 <div class="alert alert-info no-data-message">No applications pending your approval.</div>
 @else
@@ -24,24 +25,18 @@
                 <td>
                     @php
                     $isApprover = $application->current_approver_id === Auth::user()->emp_id;
-                    // The "isManager" logic might need to be more precise if it's not direct reporting.
-                    // For simplicity, I'm keeping it as is, but consider if `current_approver_id` already covers managers.
-                    $isManager = false; // Assuming current_approver_id logic handles it or this needs more complex relation
                     @endphp
-                    @php
-                    $isApprover = $application->current_approver_id === Auth::user()->emp_id;
-                @endphp
-                @if($isApprover)
-                    <div class="btn-group" role="group">
-                        <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="fas fa-eye">View</i></a>
-                        <button type="button" class="btn btn-sm btn-success approve-btn" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Approve"><i class="fas fa-check">Approve</i></button>
-                        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#revertModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Revert"><i class="fas fa-undo">Revert</i></button>
-                        <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#holdModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Hold"><i class="fas fa-pause">Hold</i></button>
-                        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#rejectModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Reject"><i class="fas fa-times">Reject</i></button>
-                    </div>
-                @else
-                    <span class="badge bg-secondary">Awaiting {{ $application->currentApprover->emp_name ?? 'Approval' }}</span>
-                @endif
+                    @if($isApprover)
+                        <div class="btn-group" role="group">
+                            <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="fas fa-eye">View</i></a>
+                            <button type="button" class="btn btn-sm btn-success action-modal" data-bs-toggle="modal" data-bs-target="#approveModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Approve"><i class="fas fa-check">Approve</i></button>
+                            <button type="button" class="btn btn-sm btn-warning action-modal" data-bs-toggle="modal" data-bs-target="#revertModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Revert"><i class="fas fa-undo">Revert</i></button>
+                            <button type="button" class="btn btn-sm btn-secondary action-modal" data-bs-toggle="modal" data-bs-target="#holdModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Hold"><i class="fas fa-pause">Hold</i></button>
+                            <button type="button" class="btn btn-sm btn-danger action-modal" data-bs-toggle="modal" data-bs-target="#rejectModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Reject"><i class="fas fa-times">Reject</i></button>
+                        </div>
+                    @else
+                        <span class="badge bg-secondary">Awaiting {{ $application->currentApprover->emp_name ?? 'Approval' }}</span>
+                    @endif
                 </td>
             </tr>
             @endforeach
@@ -49,6 +44,5 @@
     </table>
     {{ $pendingApplications->links() }}
 </div>
-{{-- Include the shared modals here --}}
 @include('dashboard.partials.approval_modals')
 @endif

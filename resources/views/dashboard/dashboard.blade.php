@@ -304,7 +304,7 @@
                                 </div>
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2">
                                     <label class="form-label">Status</label>
-                                    <select name="status" id="status" class="form-select form-select-sm">
+                                    <select name="status" id="status1" class="form-select form-select-sm">
                                         <option value="">All</option>
                                         <option value="initiated" {{ $filters['status'] == 'initiated' ? 'selected' : '' }}>Initiated</option>
                                         <option value="under_review" {{ $filters['status'] == 'under_review' ? 'selected' : '' }}>Review</option>
@@ -585,6 +585,43 @@
             getZoneByBU(bu);
         });
 
+
+        // Modal handler for all actions
+        const actionMap = {
+            revertModal:   { form: '#revert-form',   input: '#revert_application_id',   action: 'revert' },
+            holdModal:     { form: '#hold-form',     input: '#hold_application_id',     action: 'hold' },
+            rejectModal:   { form: '#reject-form',   input: '#reject_application_id',   action: 'reject' },
+            approveModal:  { form: '#approve-form',  input: '#approve_application_id',  action: 'approve' }
+        };
+
+        $(document).on('show.bs.modal', '.action-modal', function (event) {
+            const button = $(event.relatedTarget);
+            const applicationId = button.data('application-id');
+            const modalId = $(this).attr('id');
+            const config = actionMap[modalId];
+
+            console.log('Modal opened:', modalId);
+            console.log('Button data:', button.data());
+            console.log('Application ID:', applicationId);
+            console.log('Config:', config);
+
+            if (config) {
+                $(config.input).val(applicationId);
+                const url = `{{ url('approvals') }}/${applicationId}/${config.action}`;
+                $(config.form).attr('action', url);
+                console.log('Form action set to:', url);
+                console.log('Application ID input set to:', $(config.input).val());
+            } else {
+                console.error('No config found for modal:', modalId);
+            }
+        });
+
+        // Disable submit buttons on form submit
+        $('#revert-form, #hold-form, #reject-form, #approve-form').on('submit', function () {
+            $(this).find('button[type="submit"]').prop('disabled', true).text('Processing...');
+            $(this).find('.btn-close').prop('disabled', true);
+        });
+
         // Expandable panel for MIS table rows
         $(document).on('click', '.expandable-panel', function() {
             $(this).next('.panel-content').toggle();
@@ -853,45 +890,5 @@
             }
         });
     }
-
-    $(document).ready(function () {
-        // Mapping modal IDs to form config
-        const actionMap = {
-            revertModal:   { form: '#revert-form',   input: '#revert_application_id',   action: 'revert' },
-            holdModal:     { form: '#hold-form',     input: '#hold_application_id',     action: 'hold' },
-            rejectModal:   { form: '#reject-form',   input: '#reject_application_id',   action: 'reject' },
-            approveModal:  { form: '#approve-form',  input: '#approve_application_id',  action: 'approve' }
-        };
-
-        // Handle all modals (revert, hold, reject, approve)
-        $(document).on('show.bs.modal', '.action-modal', function (event) {
-            const button = $(event.relatedTarget);
-            const applicationId = button.data('application-id');
-            const modalId = $(this).attr('id');
-            const config = actionMap[modalId];
-
-            if (config) {
-                $(config.input).val(applicationId);
-                const url = `{{ url('approvals') }}/${applicationId}/${config.action}`;
-                $(config.form).attr('action', url);
-            }
-        });
-
-        // Trigger approve modal (with optional remarks prompt)
-        $(document).on('click', '.approve-btn', function (e) {
-            e.preventDefault();
-            const applicationId = $(this).data('application-id');
-            const url = `{{ url('approvals') }}/${applicationId}/approve`;
-            $('#approve_application_id').val(applicationId);
-            $('#approve-form').attr('action', url);
-            $('#approveModal').modal('show');
-        });
-
-        // Disable submit buttons on any modal form submit
-        $('#revert-form, #hold-form, #reject-form, #approve-form').on('submit', function () {
-            $(this).find('button[type="submit"]').prop('disabled', true).text('Processing...');
-            $(this).find('.btn-close').prop('disabled', true);
-        });
-    });
 </script>
 @endpush

@@ -36,6 +36,8 @@ class LoginController extends Controller
 
     protected function validateLogin(Request $request)
     {
+          \Log::info("Form Token: " . $request->_token);
+         \Log::info("Session Token: " . csrf_token());
         $request->validate([
             'login' => [
                 'required',

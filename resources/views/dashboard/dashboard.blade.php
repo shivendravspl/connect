@@ -429,7 +429,7 @@
                                 My Apps (<span id="tab-my-count">{{ $data['counts']['my'] }}</span>)
                             </a>
                         </li>
-                        @if(Auth::user()->employee->isMisTeam())
+                       @if(Auth::check() && Auth::user()->employee && Auth::user()->employee->isMisTeam())
                         <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" href="#mis-tab">
                                 MIS (<span id="tab-mis-count">{{ $data['counts']['mis'] }}</span>)
@@ -457,7 +457,7 @@
                             @include('dashboard._sales-table')
                             @endif
                         </div>
-                        @if(Auth::user()->employee->isMisTeam())
+                        @if(Auth::check() && Auth::user()->employee && Auth::user()->employee->isMisTeam())
                         <div class="tab-pane fade" id="mis-tab">
                             @if ($misApplications->isEmpty())
                             <div class="no-data-message">No applications pending MIS processing.</div>
@@ -729,7 +729,7 @@
                 $('#tab-pending-count').text(data.counts.pending || 0);
                 $('#tab-my-count').text(data.counts.my || 0);
                 $('#tab-master-count').text(data.counts.total || 0);
-                @if(Auth::user()->employee->isMisTeam())
+                @if(Auth::check() && Auth::user()->employee && Auth::user()->employee->isMisTeam())
                 $('#tab-mis-count').text(data.counts.mis || 0);
                 @endif
 

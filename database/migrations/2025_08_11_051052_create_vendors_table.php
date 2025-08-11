@@ -23,7 +23,8 @@ return new class extends Migration
             $table->string('vendor_email')->nullable();
             $table->string('contact_person_name')->nullable();
             $table->string('contact_number')->nullable();
-            $table->string('vnrs_contact_person_name')->nullable();
+            $table->unsignedBigInteger('vnr_contact_department_id')->nullable();
+            $table->unsignedBigInteger('vnr_contact_person_id')->nullable();
             $table->string('payment_terms')->nullable();
 
             // Legal Information
@@ -35,7 +36,7 @@ return new class extends Migration
             $table->string('gst_number')->nullable();
             $table->string('gst_certificate_copy_path')->nullable();
             $table->string('msme_number')->nullable();
-            $table->string('msme_certificate_copy')->nullable();
+            $table->string('msme_certificate_copy_path')->nullable();
 
             // Banking Information
             $table->string('bank_account_holder_name')->nullable();

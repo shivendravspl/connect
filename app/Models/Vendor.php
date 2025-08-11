@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vendor extends Model
 {
-    use SoftDeletes;
 
     protected $fillable = [
         // Company Information
@@ -21,6 +20,8 @@ class Vendor extends Model
         'vendor_email',
         'contact_person_name',
         'contact_number',
+        'vnr_contact_department_id',
+        'vnr_contact_person_id',
         'vnrs_contact_person_name',
         'payment_terms',
         

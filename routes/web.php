@@ -29,6 +29,8 @@ use App\Http\Controllers\ApprovalController;
 use App\Mail\TestEmail;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\MISProcessingController;
+use App\Http\Controllers\VendorController;
+
 
 
 
@@ -209,7 +211,6 @@ Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('
 
 
 
-Route::resource('vendor', \App\Http\Controllers\Vendor\VendorController::class);
 
 Route::resource('business_nature', \App\Http\Controllers\BusinessNature\BusinessNatureController::class);
 
@@ -255,4 +256,21 @@ Route::middleware(['auth'])->group(function () {
     // });
     Route::get('/get-territory-data', [CoreTerritoryController::class, 'getMappingData']);
     Route::get('/dashboard/dynamic-data', [App\Http\Controllers\HomeController::class, 'dynamicData'])->name('dashboard.dynamic-data');
+
+ Route::prefix('vendors')->name('vendors.')->group(function () {
+    Route::get('/list', [VendorController::class, 'index'])->name('index');
+    Route::get('/create', [VendorController::class, 'create'])->name('create');
+    Route::post('/store', [VendorController::class, 'store'])->name('store');
+    Route::get('/edit/{id}', [VendorController::class, 'edit'])->name('edit');
+    Route::put('/update/{id}', [VendorController::class, 'update'])->name('update');
+    Route::delete('/destroy/{id}', [VendorController::class, 'destroy'])->name('destroy');
+    Route::get('/success/{id}', [VendorController::class, 'success'])->name('success');
+    Route::get('/{id}', [VendorController::class, 'show'])->name('show');
+    Route::get('employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
+    
+    // Add this new route for document viewing
+    Route::get('/documents/{id}/{type}', [VendorController::class, 'showDocument'])
+         ->name('documents.show');
+});
+
 });

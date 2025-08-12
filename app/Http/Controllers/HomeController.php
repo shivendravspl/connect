@@ -240,7 +240,7 @@ class HomeController extends Controller
             ->whereIn('onboardings.status', ['initiated', 'under_review', 'on_hold', 'reverted'])
             ->where('onboardings.approval_level', $employee_details->emp_designation ?? '');
         $pendingApplications = $pendingApplicationsQuery->paginate(10, ['*'], 'page_pending');
-
+//dd($pendingApplicationsQuery);
         $myApplicationsQuery = Onboarding::query()
             ->with(['entityDetails', 'createdBy', 'currentApprover', 'territoryDetail', 'regionDetail', 'zoneDetail', 'approvalLogs'])
             ->where(function ($q) use ($user) {

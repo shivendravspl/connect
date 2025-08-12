@@ -87,7 +87,7 @@ class ApprovalController extends Controller
                 'application_id' => $application->id,
                 'status' => $application->status
             ]);
-            return redirect()->route('approvals.dashboard')->with('error', 'Cannot approve an application with status: ' . $application->status);
+            return redirect()->route('dashboard')->with('error', 'Cannot approve an application with status: ' . $application->status);
         }
 
         $validator = Validator::make($request->all(), [
@@ -111,7 +111,7 @@ class ApprovalController extends Controller
                 'url_application_id' => $application->id,
                 'form_application_id' => $request->input('application_id')
             ]);
-            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
+            return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
@@ -136,7 +136,7 @@ class ApprovalController extends Controller
             $this->scheduleReminder($nextApprover, $application);
         }
 
-        return redirect()->route('approvals.dashboard')
+        return redirect()->route('dashboard')
             ->with('success', 'Application approved successfully');
     }
 
@@ -157,7 +157,7 @@ class ApprovalController extends Controller
                 'application_id' => $application->id,
                 'status' => $application->status
             ]);
-            return redirect()->route('approvals.dashboard')->with('error', 'Cannot reject an application with status: ' . $application->status);
+            return redirect()->route('dashboard')->with('error', 'Cannot reject an application with status: ' . $application->status);
         }
 
         $validator = Validator::make($request->all(), [
@@ -181,7 +181,7 @@ class ApprovalController extends Controller
                 'url_application_id' => $application->id,
                 'form_application_id' => $request->input('application_id')
             ]);
-            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
+            return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
@@ -202,7 +202,7 @@ class ApprovalController extends Controller
         $this->notifyCreator($application, 'Application Rejected', $request->input('remarks'));
         $this->notifySalesHierarchy($application, 'Application Rejected');
 
-        return redirect()->route('approvals.dashboard')
+        return redirect()->route('dashboard')
             ->with('success', 'Application rejected successfully');
     }
     public function revert(Request $request, Onboarding $application)
@@ -221,7 +221,7 @@ class ApprovalController extends Controller
                 'application_id' => $application->id,
                 'status' => $application->status
             ]);
-            return redirect()->route('approvals.dashboard')->with('error', 'Cannot revert an application with status: ' . $application->status);
+            return redirect()->route('dashboard')->with('error', 'Cannot revert an application with status: ' . $application->status);
         }
 
         $validator = Validator::make($request->all(), [
@@ -245,7 +245,7 @@ class ApprovalController extends Controller
                 'url_application_id' => $application->id,
                 'form_application_id' => $request->input('application_id')
             ]);
-            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
+            return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
@@ -265,7 +265,7 @@ class ApprovalController extends Controller
 
         $this->notifyCreator($application, 'Application Reverted', $request->input('remarks'));
 
-        return redirect()->route('approvals.dashboard')
+        return redirect()->route('dashboard')
             ->with('success', 'Application reverted successfully');
     }
 
@@ -299,7 +299,7 @@ class ApprovalController extends Controller
                 'url_application_id' => $application->id,
                 'form_application_id' => $request->input('application_id')
             ]);
-            return redirect()->route('approvals.dashboard')->withErrors(['application_id' => 'Invalid application ID']);
+            return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
         $currentApprover = Employee::findOrFail($user->emp_id);
@@ -320,7 +320,7 @@ class ApprovalController extends Controller
         $this->notifyCreator($application, 'Application On Hold', $request->input('remarks'));
         $this->scheduleFollowUp($application, $request->input('follow_up_date'));
 
-        return redirect()->route('approvals.dashboard')
+        return redirect()->route('dashboard')
             ->with('success', 'Application put on hold successfully');
     }
 

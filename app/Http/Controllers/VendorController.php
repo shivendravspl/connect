@@ -25,10 +25,13 @@ class VendorController extends Controller
             ->where('is_active', '1')
             ->orderBy('department_name')
             ->get();
+
         return view('vendors.create', [
             'states' => $states,
             'departments' => $departments,
-            'current_step' => 1 // Default to step 1 for new vendors
+            'current_step' => 1,
+            'vendor' => new Vendor(), // Create empty vendor model
+            'employees' => collect() // Empty collection for employees
         ]);
     }
 
@@ -76,7 +79,7 @@ class VendorController extends Controller
 
     public function edit($id)
     {
-        
+
         $vendor = Vendor::findOrFail($id);
         $states = CoreState::where('is_active', 1)->get();
         $departments = DB::table('core_department')
@@ -155,37 +158,41 @@ class VendorController extends Controller
         return $rules;
     }
 
-   private function handleFileUploads($request, $vendor, $step)
-{
-    $uploadFields = [];
+    private function handleFileUploads($request, $vendor, $step)
+    {
+        $uploadFields = [];
 
-    if ($step == 2) {
-        $uploadFields = [
-            'pan_card_copy' => 'pan_card_copy_path',
-            'aadhar_card_copy' => 'aadhar_card_copy_path',
-            'gst_certificate_copy' => 'gst_certificate_copy_path',
-            'msme_certificate_copy' => 'msme_certificate_copy_path',
-        ];
-    } elseif ($step == 3) {
-        $uploadFields = [
-            'cancelled_cheque_copy' => 'cancelled_cheque_copy_path',
-        ];
-    }
+        if ($step == 2) {
+            $uploadFields = [
+                'pan_card_copy' => 'pan_card_copy_path',
+                'aadhar_card_copy' => 'aadhar_card_copy_path',
+                'gst_certificate_copy' => 'gst_certificate_copy_path',
+                'msme_certificate_copy' => 'msme_certificate_copy_path',
+            ];
+        } elseif ($step == 3) {
+            $uploadFields = [
+                'cancelled_cheque_copy' => 'cancelled_cheque_copy_path',
+            ];
+        }
 
-    foreach ($uploadFields as $requestField => $dbField) {
-        if ($request->hasFile($requestField)) {
-            // Delete old file if exists
-            if ($vendor->$dbField && Storage::exists($vendor->$dbField)) {
-                Storage::delete($vendor->$dbField);
+        foreach ($uploadFields as $requestField => $dbField) {
+            if ($request->hasFile($requestField)) {
+                // Delete old file if exists
+                if ($vendor->$dbField && Storage::disk('public')->exists($vendor->$dbField)) {
+                    Storage::disk('public')->delete($vendor->$dbField);
+                }
+
+                // Store to public disk with original filename
+                $path = $request->file($requestField)->storeAs(
+                    'vendor_documents',
+                    $request->file($requestField)->getClientOriginalName(),
+                    'public'
+                );
+
+                $vendor->update([$dbField => $path]);
             }
-
-            // Store to public disk
-            $path = $request->file($requestField)->store('vendor_documents', 'public');
-            $vendor->update([$dbField => $path]);
         }
     }
-}
-
     public function success($id)
     {
         $vendor = Vendor::findOrFail($id);
@@ -215,7 +222,7 @@ class VendorController extends Controller
             ->with('success', 'Vendor deleted successfully');
     }
 
-    public function showDocument($id, $type)
+   public function showDocument($id, $type)
 {
     $vendor = Vendor::findOrFail($id);
     $validTypes = [
@@ -232,14 +239,16 @@ class VendorController extends Controller
     
     $path = $vendor->{$type.'_copy_path'};
     
-    if (!$path || !Storage::exists($path)) {
+    if (!$path || !Storage::disk('public')->exists($path)) {
         abort(404);
     }
-    
-    // For private storage (storage/app)
-    return response()->file(storage_path('app/'.$path));
-    
-    // OR for public storage (storage/app/public)
-    // return response()->file(storage_path('app/public/'.$path));
+
+    $file = Storage::disk('public')->get($path);
+    $mimeType = Storage::disk('public')->mimeType($path);
+    $fileName = basename($path);
+
+    return response($file, 200)
+        ->header('Content-Type', $mimeType)
+        ->header('Content-Disposition', 'inline; filename="'.$fileName.'"');
 }
 }

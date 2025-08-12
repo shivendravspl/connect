@@ -133,17 +133,17 @@
             <div class="form-group">
                 <label for="vnr_contact_person_id">VNR Contact Person *</label>
                 <select id="vnr_contact_person_id" name="vnr_contact_person_id" class="form-control select2">
-    @if(isset($vendor->vnr_contact_person_id) && isset($employees) && count($employees))
-        @foreach($employees as $employee)
-            <option value="{{ $employee->id }}" 
-                @if($vendor->vnr_contact_person_id == $employee->id) selected @endif>
-                {{ $employee->name }}
-            </option>
-        @endforeach
-    @else
-        <option value="">Select Employee</option>
-    @endif
-</select>
+                    @if(isset($vendor->vnr_contact_person_id) && isset($employees) && count($employees))
+                    @foreach($employees as $employee)
+                    <option value="{{ $employee->id }}"
+                        @if($vendor->vnr_contact_person_id == $employee->id) selected @endif>
+                        {{ $employee->name }}
+                    </option>
+                    @endforeach
+                    @else
+                    <option value="">Select Employee</option>
+                    @endif
+                </select>
             </div>
         </div>
 

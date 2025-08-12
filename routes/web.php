@@ -268,9 +268,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/{id}', [VendorController::class, 'show'])->name('show');
     Route::get('employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
     
-    // Add this new route for document viewing
-    Route::get('/documents/{id}/{type}', [VendorController::class, 'showDocument'])
+    // Document viewing route - consistent parameter naming
+    Route::get('/{id}/documents/{type}', [VendorController::class, 'showDocument'])
          ->name('documents.show');
 });
-
 });

@@ -17,8 +17,8 @@
                     <p>Our team will review your information and contact you if any additional details are required.</p>
                     
                     <div class="mt-4">
-                        <a href="{{ route('home') }}" class="btn btn-primary">
-                            <i class="fas fa-home mr-2"></i> Return to Dashboard
+                        <a href="{{ route('vendors.index') }}" class="btn btn-primary">
+                            <i class="fas fa-list mr-2"></i> Return to Vendors List
                         </a>
                         <a href="{{ route('vendors.edit', $vendor->id) }}" class="btn btn-outline-secondary ml-2">
                             <i class="fas fa-edit mr-2"></i> Edit Information

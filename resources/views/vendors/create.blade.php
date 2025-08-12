@@ -10,24 +10,22 @@
                 </div>
                 <div class="card-body">
                     <!-- Stepper -->
-                    <div class="steps">
-                        @php
-                        // Define completed steps differently
-                        $completedSteps = isset($vendor) && $vendor->id ? range(1, max($vendor->current_step, 3)) : [];
-                        @endphp
+                    <!-- In the stepper section -->
+<div class="steps">
+    @php
+        $maxCompletedStep = isset($vendor) && $vendor->id ? $vendor->current_step : ($current_step - 1);
+    @endphp
 
-                        @foreach([1 => 'Company Information', 2 => 'Legal Information', 3 => 'Banking Information'] as $step => $title)
-                        <div class="step 
-        @if($current_step >= $step) active @endif 
-        @if(in_array($step, $completedSteps)) clickable @endif
-        @if($step <= $vendor->current_step ?? 0) completed @endif"
-                            data-step="{{ $step }}">
-                            <div class="step-number">{{ $step }}</div>
-                            <div class="step-title">{{ $title }}</div>
-                        </div>
-                        @endforeach
-                    </div>
-
+    @foreach([1 => 'Company Information', 2 => 'Legal Information', 3 => 'Banking Information'] as $step => $title)
+        <div class="step 
+            @if($current_step == $step) active @endif
+            @if($step <= $maxCompletedStep) clickable completed @endif"
+            data-step="{{ $step }}">
+            <div class="step-number">{{ $step }}</div>
+            <div class="step-title">{{ $title }}</div>
+        </div>
+    @endforeach
+</div>
                     <form id="vendorForm" enctype="multipart/form-data" novalidate>
                         @csrf
                         <input type="hidden" name="current_step" value="{{ $current_step }}">
@@ -66,6 +64,24 @@
                         </div>
                     </form>
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal (Place this at the bottom of your template, only once per page) -->
+<div class="modal fade" id="documentModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-light">
+                <h5 class="modal-title">Document Viewer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div id="documentFrame" style="height: 70vh;"></div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
@@ -344,55 +360,50 @@
         });
 
         // Add click handler for stepper navigation
-        // Replace your current step click handler with this:
-        $(document).on('click', '.step.clickable', function() {
-            const step = $(this).data('step');
-            const currentStep = parseInt($('input[name="current_step"]').val());
-            const maxCompletedStep = {{ $vendor->current_step ?? 1 }};
+       
+            $(document).on('click', '.step.clickable', function() {
+                const step = $(this).data('step');
+                const currentStep = parseInt($('input[name="current_step"]').val());
+                const maxCompletedStep = {{ isset($vendor) && $vendor->id ? $vendor->current_step : ($current_step - 1) }};
 
+                // Only allow navigation to completed steps
+                if (step <= maxCompletedStep) {
+                    // Save current form data before switching steps
+                    const formData = $('#vendorForm').serializeArray();
 
-            // Only allow navigation to completed steps
-            if (step <= maxCompletedStep) {
-                // Save current form data before switching steps
-                const formData = $('#vendorForm').serializeArray();
+                    // Update UI
+                    $('input[name="current_step"]').val(step);
+                    loadStep(step);
+                    updateStepperUI(step);
 
-                // Update UI
-                $('input[name="current_step"]').val(step);
-                loadStep(step);
-                updateStepperUI(step);
-
-                // Ensure form data is preserved
-                setTimeout(() => {
-                    formData.forEach(field => {
-                        if (field.name !== 'current_step') {
-                            const $field = $(`[name="${field.name}"]`);
-                            if ($field.is(':checkbox, :radio')) {
-                                $field.filter(`[value="${field.value}"]`).prop('checked', true);
-                            } else {
-                                $field.val(field.value);
+                    // Ensure form data is preserved
+                    setTimeout(() => {
+                        formData.forEach(field => {
+                            if (field.name !== 'current_step') {
+                                const $field = $(`[name="${field.name}"]`);
+                                if ($field.is(':checkbox, :radio')) {
+                                    $field.filter(`[value="${field.value}"]`).prop('checked', true);
+                                } else {
+                                    $field.val(field.value);
+                                }
                             }
-                        }
-                    });
+                        });
 
-                    // Reinitialize Select2 if needed
-                    $('.select2').trigger('change');
-                }, 100);
-            }
-        });
+                        // Reinitialize Select2 if needed
+                        $('.select2').trigger('change');
+                    }, 100);
+                }
+            });
+            function loadStep(step) {
+                $('.step-content').addClass('d-none');
+                $(`#step${step}`).removeClass('d-none');
+                clearErrors();
 
-        function loadStep(step) {
-            $('.step-content').addClass('d-none');
-            $(`#step${step}`).removeClass('d-none');
-            clearErrors();
-
-            // Update button visibility
-            const maxCompletedStep = {{ $vendor->current_step ?? 1 }};
-
-            $('.prev-step').toggle(step > 1);
-            $('.next-step').toggle(step < maxCompletedStep);
-            $('.submit-form').toggle(step === maxCompletedStep && step === 3);
-        }
-
+                // Update button visibility
+                $('.prev-step').toggle(step > 1);
+                $('.next-step').toggle(step < 3);
+                $('.submit-form').toggle(step === 3);
+         }
 
         function updateStepperUI(currentStep) {
             const maxCompletedStep = {{ $vendor->current_step ?? 1 }};
@@ -495,5 +506,27 @@
             }, 500);
         }
     });
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+    // Handle document viewing
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('view-document')) {
+            e.preventDefault();
+            const url = e.target.dataset.url;
+            const frame = document.getElementById('documentFrame');
+            frame.innerHTML = `<iframe src="${url}" style="width:100%; height:100%; border:none;"></iframe>`;
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('documentModal'));
+            modal.show();
+        }
+    });
+
+    // Clean up when modal closes
+    document.getElementById('documentModal').addEventListener('hidden.bs.modal', function() {
+        document.getElementById('documentFrame').innerHTML = '';
+    });
+});
 </script>
 @endpush

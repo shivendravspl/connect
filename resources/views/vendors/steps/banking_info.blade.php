@@ -44,9 +44,13 @@
         </div>
         @if(isset($vendor) && $vendor->cancelled_cheque_copy_path)
             <div class="mt-2">
-                <a href="{{ Storage::url($vendor->cancelled_cheque_copy_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">View Uploaded</a>
+                <button type="button" class="btn btn-sm btn-outline-primary view-document"
+                    data-url="{{ route('vendors.documents.show', ['id' => $vendor->id, 'type' => 'cancelled_cheque']) }}">
+                    <i class="fas fa-eye mr-1"></i> View Uploaded
+                </button>
             </div>
         @endif
         <small class="form-text text-muted">Upload clear image/scan of cancelled cheque or passbook front page</small>
     </div>
 </div>
+

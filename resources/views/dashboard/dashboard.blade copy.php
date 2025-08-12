@@ -247,7 +247,7 @@
                         <h4 class="header-title">Approval Dashboard</h4>
                         {{--<div class="dropdown">
                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-filter"></i> Filter
+                                <i class="ri-filter-line"></i> Filter
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="filterDropdown">
                                 <li><a class="dropdown-item" href="#" data-filter="all">All Applications</a></li>
@@ -308,11 +308,11 @@
                                                     <td>{{ $application->created_at->format('d M Y H:i') }}</td>
                                                     <td class="action-btns">
                                                         <a href="{{ route('approvals.show', $application) }}" class="btn btn-sm btn-primary">
-                                                            <i class="fas fa-eye"></i> Review
+                                                            <i class="ri-eye-line"></i> Review
                                                         </a>
                                                         @if($application->status === 'on_hold')
                                                             <button class="btn btn-sm btn-info" data-bs-toggle="tooltip" title="On Hold">
-                                                                <i class="fas fa-pause"></i>
+                                                                <i class="ri-pause-circle-line"></i>
                                                             </button>
                                                         @endif
                                                     </td>
@@ -381,30 +381,30 @@
                         <td class="action-btns">
                             <div class="d-flex flex-wrap">
                                 <a href="{{ route('approvals.show', $application) }}" class="btn btn-sm btn-primary me-1 mb-1">
-                                    <i class="fas fa-eye"></i> View
+                                    <i class="ri-eye-line"></i> View
                                 </a>
                                 
                                 @if($application->status === 'reverted' && $application->created_by === Auth::user()->emp_id)
                                     <a href="{{ route('applications.edit', $application) }}" class="btn btn-sm btn-warning me-1 mb-1">
-                                        <i class="fas fa-edit"></i> Edit
+                                        <i class="ri-edit-line"></i> Edit
                                     </a>
                                 @endif
                                 
                                 @if($application->status === 'approved')
                                     <span class="badge bg-success p-2 me-1 mb-1">
-                                        <i class="fas fa-check-circle"></i> Approved
+                                        <i class="ri-checkbox-circle-fill"></i> Approved
                                     </span>
                                 @endif
                                 
                                 @if($application->status === 'rejected')
                                     <button class="btn btn-sm btn-outline-danger me-1 mb-1" disabled>
-                                        <i class="fas fa-times-circle"></i> Rejected
+                                        <i class="ri-indeterminate-circle-line"></i> Rejected
                                     </button>
                                 @endif
                                 
                                 @if($application->status === 'on_hold')
                                     <button class="btn btn-sm btn-info me-1 mb-1" disabled>
-                                        <i class="fas fa-pause-circle"></i> On Hold
+                                        <i class="ri-pause-circle-fill"></i> On Hold
                                     </button>
                                 @endif
                             </div>

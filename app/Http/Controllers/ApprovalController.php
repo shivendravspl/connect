@@ -442,12 +442,14 @@ class ApprovalController extends Controller
         if ($businessHead && $businessHead->emp_email) {
             Mail::to($businessHead->emp_email)->queue(
                 new ApplicationNotification(
-                    //$application, 'FYI: Application Approved'
                     application: $application,
                     mailSubject: 'Application Approved',
                     remarks: 'Fyi'
                 )
             );
+            Log::info("Business Head notified for application_id: {$application->id}", ['recipient' => $businessHead->emp_email]);
+        } else {
+            Log::warning("No Business Head found or invalid email for application_id: {$application->id}");
         }
     }
 
@@ -528,5 +530,45 @@ class ApprovalController extends Controller
         //     ReminderJob::dispatch($approver, $application)
         //         ->delay(now()->addHours(48));
         // }
+    }
+
+    public function dashboard()
+    {
+        $user = Auth::user();
+        $query = Onboarding::query();
+
+        // For sales team: Show applications they created or need to approve
+        if (!$user->hasPermissionTo('process-mis')) {
+            $query->where(function ($q) use ($user) {
+                $q->where('created_by', $user->emp_id)
+                    ->orWhere('current_approver_id', $user->emp_id)
+                    ->orWhereIn('created_by', function ($subQuery) use ($user) {
+                        $subQuery->select('id')
+                            ->from('core_employee')
+                            ->where('emp_reporting', $user->emp_id);
+                    });
+            });
+        }
+
+        // For MIS team: Show applications in MIS processing stages
+        if ($user->hasPermissionTo('process-mis')) {
+            $query->whereIn('status', [
+                'mis_processing',
+                'document_verified',
+                'agreement_created',
+                'documents_received',
+                'documents_pending',
+                'distributorship_created'
+            ]);
+        }
+
+        $applications = $query->with([
+            'createdBy',
+            'currentApprover',
+            'entityDetails',
+            'territoryDetail'
+        ])->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('approvals.dashboard', compact('applications'));
     }
 }

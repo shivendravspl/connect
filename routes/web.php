@@ -228,7 +228,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/application/{id}/download', [OnboardingController::class, 'downloadApplicationPdf'])->name('application.download');
       // Approval routes
     Route::prefix('approvals')->group(function () {
-        // Route::get('/dashboard', [ApprovalController::class, 'dashboard'])->name('approvals.dashboard');
+        Route::get('/dashboard', [ApprovalController::class, 'dashboard'])->name('approvals.dashboard');
         Route::get('/{application}', [ApprovalController::class, 'show'])->name('approvals.show');
         Route::post('/{application}/approve', [ApprovalController::class, 'approve'])->name('approvals.approve');
         Route::post('/{application}/reject', [ApprovalController::class, 'reject'])->name('approvals.reject');

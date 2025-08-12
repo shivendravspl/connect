@@ -27,7 +27,7 @@
                 </td>
                 <td>{{ $application->created_at->diffInDays($application->updated_at) }}</td>
                 <td>
-                    <a href="{{ route('approvals.show', $application) }}" class="btn btn-sm btn-primary"><i class="fas fa-eye"></i> View</a>
+                    <a href="{{ route('approvals.show', $application) }}" class="btn btn-sm btn-primary"><i class="ri-eye-line"></i> View</a>
                 </td>
             </tr>
             @endforeach

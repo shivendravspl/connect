@@ -45,7 +45,7 @@
                     {{ $application->status == 'distributorship_created' ? $application->created_at->diffInDays($application->updated_at) : 'N/A' }}
                 </td>
                 <td>
-                    <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="fas fa-eye"></i></a>
+                    <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="ri-eye-line"></i></a>
                 </td>
             </tr>
             @empty

@@ -242,28 +242,29 @@ class MISProcessingController extends Controller
         );
 
         $docs = PhysicalDocument::where('application_id', $application->id)->first();
-        if ($docs && $docs->agreement_verified && $docs->security_cheque_verified && $docs->security_deposit_verified) {
+        $allVerified = $docs && $docs->agreement_verified && $docs->security_cheque_verified && $docs->security_deposit_verified;
+
+        if ($allVerified) {
             $application->update([
                 'status' => 'documents_received',
-                'approval_level' => 'mis', // Set approval_level to 'mis'
+                'approval_level' => 'mis',
             ]);
             $this->createDistributorMaster($application);
         } else {
             $application->update([
-                'status' => 'documents_received',
-                'approval_level' => 'mis', // Set approval_level to 'mis'
+                'status' => 'documents_pending',
+                'approval_level' => 'mis',
             ]);
         }
 
         Log::info("Physical documents updated for application_id: {$application->id}", [
             'data' => $request->all(),
             'user_id' => Auth::user()->emp_id,
-            'approval_level' => 'mis',
+            'status' => $allVerified ? 'documents_received' : 'documents_pending',
         ]);
 
         return redirect()->route('mis.dashboard')->with('success', 'Physical document status updated');
     }
-
     private function createDistributorMaster(Onboarding $application)
     {
         $distributor = DistributorMaster::create([

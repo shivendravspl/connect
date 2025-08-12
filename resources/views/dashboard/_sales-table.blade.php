@@ -91,12 +91,12 @@
                 </td>
                 <td>
                     <div class="btn-group">
-                        <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="fas fa-eye"></i></a>
+                        <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="ri-eye-line"></i></a>
                         @if($application->status === 'reverted' && $application->created_by === Auth::user()->emp_id)
-                        <a href="{{ route('applications.edit', $application->id) }}" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Edit"><i class="fas fa-edit"></i></a>
+                        <a href="{{ route('applications.edit', $application->id) }}" class="btn btn-sm btn-warning" data-bs-toggle="tooltip" title="Edit"><i class="ri-edit-line"></i></a>
                         @endif
                         @if($application->status === 'distributorship_created')
-                        <span class="badge bg-success p-2"><i class="fas fa-check-circle"></i> Finalized</span>
+                        <span class="badge bg-success p-2"><i class="ri-checkbox-circle-fill"></i> Finalized</span>
                         @endif
                     </div>
                 </td>

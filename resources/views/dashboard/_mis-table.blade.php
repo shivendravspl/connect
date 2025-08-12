@@ -66,18 +66,18 @@
                 <td>
                     <div class="btn-group">
                         @if($application->status === 'mis_processing')
-                        <a href="{{ route('approvals.verify-documents', $application->id) }}" class="btn btn-sm btn-success" data-bs-toggle="tooltip" title="Start Verification"><i class="fas fa-check"></i></a>
+                        <a href="{{ route('approvals.verify-documents', $application->id) }}" class="btn btn-sm btn-success" data-bs-toggle="tooltip" title="Start Verification"><i class="ri-checkbox-fill"></i></a>
                         @elseif($application->status === 'document_verified')
-                        <a href="{{ route('approvals.upload-agreement', $application->id) }}" class="btn btn-sm btn-info" data-bs-toggle="tooltip" title="Upload Agreement"><i class="fas fa-upload"></i></a>
+                        <a href="{{ route('approvals.upload-agreement', $application->id) }}" class="btn btn-sm btn-info" data-bs-toggle="tooltip" title="Upload Agreement"><i class="ri-upload-fill"></i></a>
                         @elseif($application->status === 'agreement_created' || $application->status === 'documents_received')
-                        <a href="{{ route('approvals.track-documents', $application->id) }}" class="btn btn-sm btn-info" data-bs-toggle="tooltip" title="Update Physical Docs"><i class="fas fa-file"></i></a>
+                        <a href="{{ route('approvals.track-documents', $application->id) }}" class="btn btn-sm btn-info" data-bs-toggle="tooltip" title="Update Physical Docs"><i class="ri-file-2-line"></i></a>
                         @elseif($application->status === 'distributorship_created')
-                        <span class="badge bg-success p-2"><i class="fas fa-check-circle"></i> Finalized</span>
+                        <span class="badge bg-success p-2"><i class="ri-checkbox-circle-line"></i> Finalized</span>
                         @endif
                     </div>
                 </td>
                 <td>
-                    <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="fas fa-eye"></i></a>
+                    <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="ri-eye-line"></i></a>
                 </td>
             </tr>
             <tr class="panel-content" style="display: none;">

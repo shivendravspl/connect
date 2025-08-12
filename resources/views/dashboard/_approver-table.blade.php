@@ -28,11 +28,11 @@
                     @endphp
                     @if($isApprover)
                         <div class="btn-group" role="group">
-                            <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="fas fa-eye">View</i></a>
-                            <button type="button" class="btn btn-sm btn-success action-modal" data-bs-toggle="modal" data-bs-target="#approveModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Approve"><i class="fas fa-check">Approve</i></button>
-                            <button type="button" class="btn btn-sm btn-warning action-modal" data-bs-toggle="modal" data-bs-target="#revertModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Revert"><i class="fas fa-undo">Revert</i></button>
-                            <button type="button" class="btn btn-sm btn-secondary action-modal" data-bs-toggle="modal" data-bs-target="#holdModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Hold"><i class="fas fa-pause">Hold</i></button>
-                            <button type="button" class="btn btn-sm btn-danger action-modal" data-bs-toggle="modal" data-bs-target="#rejectModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Reject"><i class="fas fa-times">Reject</i></button>
+                            <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" data-bs-toggle="tooltip" title="View"><i class="ri-eye-line">View</i></a>
+                            <button type="button" class="btn btn-sm btn-success action-modal" data-bs-toggle="modal" data-bs-target="#approveModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Approve"><i class="ri-checkbox-fill">Approve</i></button>
+                            <button type="button" class="btn btn-sm btn-warning action-modal" data-bs-toggle="modal" data-bs-target="#revertModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Revert"><i class="ri-checkbox-fill">Revert</i></button>
+                            <button type="button" class="btn btn-sm btn-secondary action-modal" data-bs-toggle="modal" data-bs-target="#holdModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Hold"><i class="ri-pause-circle-line">Hold</i></button>
+                            <button type="button" class="btn btn-sm btn-danger action-modal" data-bs-toggle="modal" data-bs-target="#rejectModal" data-application-id="{{ $application->id }}" data-bs-toggle="tooltip" title="Reject"><i class="ri-delete-bin-line">Reject</i></button>
                         </div>
                     @else
                         <span class="badge bg-secondary">Awaiting {{ $application->currentApprover->emp_name ?? 'Approval' }}</span>

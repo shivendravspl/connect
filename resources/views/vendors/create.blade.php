@@ -6,7 +6,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3>Vendor Onboarding</h3>
+                    <h3>Vendor Registrattion Form</h3>
                 </div>
                 <div class="card-body">
                     <!-- Stepper -->

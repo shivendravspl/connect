@@ -40,7 +40,6 @@
                                     <td>
                                         @if($vendor->approval_status == 'approved')
                                             <span class="badge bg-success text-white">Approved</span>
-                                            <br><small>{{ $vendor->is_active ? 'Active' : 'Inactive' }}</small>
                                         @elseif($vendor->approval_status == 'rejected')
                                             <span class="badge bg-danger text-white">Rejected</span>
                                             @if($vendor->rejection_reason)
@@ -76,8 +75,9 @@
                                             @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin']) && in_array($vendor->approval_status, ['approved', 'rejected']))
                                                 <form action="{{ route('vendors.toggle-active', $vendor->id) }}" method="POST" class="d-inline">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-{{ $vendor->is_active ? 'warning' : 'success' }} btn-sm" title="{{ $vendor->is_active ? 'Deactivate' : 'Activate' }}">
-                                                        <i class="ri-{{ $vendor->is_active ? 'close-line' : 'check-line' }}"></i>
+                                                    <button type="submit" class="btn btn-sm {{ $vendor->is_active ? 'btn-success' : 'btn-secondary' }}" title="{{ $vendor->is_active ? 'Active (Click to Deactivate)' : 'Inactive (Click to Activate)' }}">
+                                                        <i class="ri-{{ $vendor->is_active ? 'check-line' : 'close-line' }}"></i>
+                                                        {{ $vendor->is_active ? 'Active' : 'Inactive' }}
                                                     </button>
                                                 </form>
                                             @endif
@@ -170,6 +170,16 @@
     .btn i {
         font-size: 0.875rem;
         vertical-align: middle;
+    }
+
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+
+    .btn-secondary {
+        background-color: #6c757d;
+        border-color: #6c757d;
     }
 </style>
 @endpush

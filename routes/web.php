@@ -208,10 +208,6 @@ Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('
 
 
 
-
-
-
-
 Route::resource('business_nature', \App\Http\Controllers\BusinessNature\BusinessNatureController::class);
 
 Route::resource('legal_status', \App\Http\Controllers\LegalStatus\LegalStatusController::class);
@@ -264,12 +260,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/edit/{id}', [VendorController::class, 'edit'])->name('edit');
     Route::put('/update/{id}', [VendorController::class, 'update'])->name('update');
     Route::delete('/destroy/{id}', [VendorController::class, 'destroy'])->name('destroy');
+    Route::get('/submitted/{id}', [VendorController::class, 'submitted'])->name('submitted');
     Route::get('/success/{id}', [VendorController::class, 'success'])->name('success');
     Route::get('/{id}', [VendorController::class, 'show'])->name('show');
-    Route::get('employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
-    
-    // Document viewing route - consistent parameter naming
-    Route::get('/{id}/documents/{type}', [VendorController::class, 'showDocument'])
-         ->name('documents.show');
+    Route::get('/employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
+    Route::get('/{id}/documents/{type}', [VendorController::class, 'showDocument'])->name('documents.show');
+    Route::post('/{id}/approve', [VendorController::class, 'approve'])->name('approve');
+    Route::post('/{id}/reject', [VendorController::class, 'reject'])->name('reject');
+    Route::post('/{id}/toggle-active', [VendorController::class, 'toggleActive'])->name('toggle-active');
 });
+
 });

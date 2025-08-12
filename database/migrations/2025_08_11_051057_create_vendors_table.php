@@ -44,11 +44,20 @@ return new class extends Migration
             $table->string('ifsc_code')->nullable();
             $table->string('bank_branch')->nullable();
             $table->string('cancelled_cheque_copy_path')->nullable();
+            $table->foreignId('submitted_by');
 
             // Progress tracking
             $table->unsignedTinyInteger('current_step')->default(1); // Track current step
             $table->boolean('is_completed')->default(false);
+             $table->boolean('is_active')->default(false);
+
+            $table->enum('approval_status', ['pending', 'approved', 'rejected'])->nullable();
+            $table->text('rejection_reason')->nullable();
+            $table->foreignId('approved_by')->nullable();
+            $table->timestamp('approved_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
+           
         });
     }
 

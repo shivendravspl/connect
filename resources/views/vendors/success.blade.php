@@ -20,10 +20,12 @@
                         <a href="{{ route('vendors.index') }}" class="btn btn-primary">
                             <i class="fas fa-list mr-2"></i> Return to Vendors List
                         </a>
+                    @if(!$vendor->is_completed)
                         <a href="{{ route('vendors.edit', $vendor->id) }}" class="btn btn-outline-secondary ml-2">
                             <i class="fas fa-edit mr-2"></i> Edit Information
                         </a>
-                    </div>
+                    @endif
+                     </div>
                 </div>
             </div>
         </div>

@@ -83,78 +83,10 @@ class CoreAPIController extends Controller
             $apiData = DB::table('core_apis')->where('api_end_point', $api)->first(['parameters', 'table_name']);
             $parameter = $apiData->parameters ?? null;
             $tableName = $prefix . $apiData->table_name;
-            // Special handling for employee_tools API with application_name parameter
-            if ($api === 'employee_tools') {
-                $applicationName = 'connect';
-                $response = Http::withHeaders([
-                    'api-key' => $apiKey,
-                    'Accept' => 'application/json',
-                ])->get("$baseUrl/api/$api", ['application_name' => $applicationName]);
-
-                if ($response->failed()) {
-                    Log::error("API sync failed for $api: HTTP Status {$response->status()}");
-                    continue;
-                }
-
-                $data = $response->json();
-
-                if (!isset($data['list']) || !is_array($data['list'])) {
-                    Log::error("Invalid API response structure for $api");
-                    continue;
-                }
-
-                // Get ALL employee IDs from API response (regardless of status)
-                $apiEmployeeIds = array_column($data['list'], 'employee_id');
-              
-                // Get existing employee IDs from our database
-                $existingEmployeeIds = DB::table('users')
-                    ->where('type', 'user')
-                    ->whereNotNull('emp_id')
-                    ->pluck('emp_id')
-                    ->toArray();
-  
-                // Find employees in DB but not in API response at all
-                $missingEmployeeIds = array_diff($existingEmployeeIds, $apiEmployeeIds);
-
-                // Disable completely missing employees
-                if (!empty($missingEmployeeIds)) {
-                    DB::table('users')
-                        ->whereIn('emp_id', $missingEmployeeIds)
-                        ->update([
-                            'status' => 'D',
-                            'updated_at' => now()
-                        ]);
-                }
-
-                // Process all employees from API (both active and inactive)
-                foreach ($data['list'] as $employee) {
-                    try {
-                        $userData = [
-                            'name' => $employee['emp_name'] ?? '',
-                            'emp_id' => $employee['employee_id'],
-                            'status' => 'A',
-                            'email' => $employee['emp_email'] ?? null,
-                            'phone' => $employee['emp_contact'] ?? null,
-                            'type' => 'user',
-                            'password' => Hash::make($employee['emp_contact'] ?? 'default123'),
-                            'updated_at' => now(),
-                        ];
-
-                        // Only set created_at for new records
-                        DB::table('users')->updateOrInsert(
-                            ['emp_id' => $employee['employee_id']],
-                            $userData
-                        );
-                    } catch (\Throwable $e) {
-                        Log::error("Failed processing employee {$employee['employee_id']}: {$e->getMessage()}");
-                    }
-                }
-
-                continue;
-            }
-
-            // Normal processing for other APIs
             if ($parameter) {
+
+
+                // Fetch all IDs from the corresponding table
                 $ids = DB::table($tableName)->pluck('id');
 
                 if ($ids->isEmpty()) {
@@ -170,6 +102,7 @@ class CoreAPIController extends Controller
                     $this->processApiResponse($tableName, $response, $api, $parameter, $id);
                 }
             } else {
+                // Simple API call without parameters
                 $response = Http::withHeaders([
                     'api-key' => $apiKey,
                     'Accept' => 'application/json',
@@ -178,8 +111,6 @@ class CoreAPIController extends Controller
                 $this->processApiResponse($tableName, $response, $api);
             }
         }
-
-        return response()->json(['status' => 200, 'msg' => 'APIs synchronized successfully']);
     }
 
     private function processApiResponse($tableName, $response, $api, $parameter = null, $id = null)
@@ -213,37 +144,37 @@ class CoreAPIController extends Controller
             );
 
             // 🟡 Additional logic for distributors
-            // if ($api === 'distributors') {
-            //     $email = $item['email'] ?? null;
-            //     $phone = $item['phone'] ?? null;
+            if ($api === 'distributors') {
+                $email = $item['email'] ?? null;
+                $phone = $item['phone'] ?? null;
 
-            //     try {
-            //         $existingUser = DB::table('users')
-            //             ->where(function ($q) use ($email, $phone) {
-            //                 if ($email) $q->orWhere('email', $email);
-            //                 if ($phone) $q->orWhere('phone', $phone);
-            //             })->first();
+                try {
+                    $existingUser = DB::table('users')
+                        ->where(function ($q) use ($email, $phone) {
+                            if ($email) $q->orWhere('email', $email);
+                            if ($phone) $q->orWhere('phone', $phone);
+                        })->first();
 
-            //         if (!$existingUser) {
-            //             $userId = DB::table('users')->insertGetId([
-            //                 'name' => $item['name'] ?? '',
-            //                 'email' => $email,
-            //                 'phone' => $phone,
-            //                 'type' => 'distributor',
-            //                 'password' => Hash::make($phone ?: 'default123', ['rounds' => 4]),
-            //                 'created_at' => now(),
-            //                 'updated_at' => now(),
-            //             ]);
-            //         } else {
-            //             $userId = $existingUser->id;
-            //         }
+                    if (!$existingUser) {
+                        $userId = DB::table('users')->insertGetId([
+                            'name' => $item['name'] ?? '',
+                            'email' => $email,
+                            'phone' => $phone,
+                            'type' => 'distributor',
+                            'password' => Hash::make($phone ?: 'default123', ['rounds' => 4]),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    } else {
+                        $userId = $existingUser->id;
+                    }
 
-            //         DB::table($tableName)->where('id', $item['id'])->update(['reference_id' => $userId]);
-            //     } catch (\Throwable $e) {
-            //         Log::warning("User insert skipped for distributor ID {$item['id']}: " . $e->getMessage());
-            //         continue;
-            //     }
-            // }
+                    DB::table($tableName)->where('id', $item['id'])->update(['reference_id' => $userId]);
+                } catch (\Throwable $e) {
+                    Log::warning("User insert skipped for distributor ID {$item['id']}: " . $e->getMessage());
+                    continue;
+                }
+            }
         }
 
         return response()->json(['status' => 200, 'msg' => "APIs synchronized successfully" . ($parameter && $id ? " for $parameter=$id" : "")]);

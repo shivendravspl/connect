@@ -25,9 +25,6 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'delete-user', 'group_name' => 'User Access', 'module' => 'Common'],
             ['name' => 'list-user', 'group_name' => 'User Access', 'module' => 'Common'],
 
-            // Distributor Permission
-            ['name' => 'list-distributor', 'group_name' => 'Distributor', 'module' => 'Common'],
-
             // Location Master Permissions
             ['name' => 'list-zone', 'group_name' => 'Location Master', 'module' => 'Common'],
             ['name' => 'list-region', 'group_name' => 'Location Master', 'module' => 'Common'],
@@ -47,6 +44,11 @@ class RolesAndPermissionsSeeder extends Seeder
             ['name' => 'list-company', 'group_name' => 'Companies', 'module' => 'Common'],
             // Core API Permission
             ['name' => 'list-core-api', 'group_name' => 'Core API', 'module' => 'Common'], // Changed to list-core-api
+            
+            ['name' => 'add-distributor', 'group_name' => 'Distributor Entry', 'module' => 'Common', 'guard_name' => 'web'],
+            ['name' => 'edit-distributor', 'group_name' => 'Distributor Entry', 'module' => 'Common', 'guard_name' => 'web'],
+            ['name' => 'delete-distributor', 'group_name' => 'Distributor Entry', 'module' => 'Common', 'guard_name' => 'web'],
+            ['name' => 'list-distributor', 'group_name' => 'Distributor Entry', 'module' => 'Common', 'guard_name' => 'web'],
         ];
 
         // Create permissions

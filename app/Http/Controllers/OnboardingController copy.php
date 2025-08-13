@@ -76,7 +76,6 @@ class OnboardingController extends Controller
         $region_list = [];
         $preselected = [];
         $bu_list = [];
-        $hasAddDistributorPermission = $user->hasRole('Mis User');
 
         $application = $application_id ? Onboarding::with([
             'territoryDetail',
@@ -104,13 +103,15 @@ class OnboardingController extends Controller
                 2 => !$application->territory,
                 3 => !$application->entityDetails,
                 4 => !$application->distributionDetail,
-                5 => !$application->businessPlans->count(),
-                6 => !$application->financialInfo || !$application->existingDistributorships->count(),
+                5 => !$application->businessPlans->count(), // Check count for collection
+                6 =>  !$application->financialInfo || !$application->existingDistributorships->count(),
                 7 => !$application->bankDetail,
                 8 => !$application->declarations->count()
             ];
             for ($i = 2; $i <= $step; $i++) {
+                // Adjust index to match the data-step in the frontend
                 $frontendStep = $i;
+                // Map frontend step to backend relationship name for validation
                 $backendRelationship = match ($frontendStep) {
                     2 => 'entityDetails',
                     3 => 'distributionDetail',
@@ -142,144 +143,158 @@ class OnboardingController extends Controller
                 if ($employee->bu > 0) {
                     $preselected['bu'] = $employee->bu;
                 }
-                $vertical_list = DB::table('core_vertical')
-                    ->pluck('vertical_name', 'id')
-                    ->toArray();
-
-                // Check for add-distributor permission
-                if ($hasAddDistributorPermission) {
-                    // If user has 'add-distributor' permission, fetch all active territories
-                    $territory_list = DB::table('core_territory')
-                        ->where('is_active', 1)
-                        ->pluck('territory_name', 'id')
-                        ->toArray();
+                if ($employee->emp_vertical == '2') {
+                    $crop_type = ['2' => 'Veg Crop'];
+                    $preselected['crop_vertical'] = '2'; // Preselect Veg Crop
+                } elseif ($employee->emp_vertical == '1') {
+                    $crop_type = ['1' => 'Field Crop'];
+                    $preselected['crop_vertical'] = '1'; // Preselect Field Crop
                 } else {
-                    // Existing territory logic for users without the permission
-                    if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
-                        $mapping = DB::select("
-                        SELECT 
-                            bzm.zone_id,
-                            z.zone_name,
-                            zrm.region_id,
-                            r.region_name,
-                            rtm.territory_id,
-                            t.territory_name
-                        FROM 
-                            core_bu_zone_mapping bzm
-                        INNER JOIN 
-                            core_zone z ON bzm.zone_id = z.id
-                        INNER JOIN 
-                            core_zone_region_mapping zrm ON bzm.zone_id = zrm.zone_id
-                        INNER JOIN 
-                            core_region r ON zrm.region_id = r.id
-                        LEFT JOIN 
-                            core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
-                        LEFT JOIN 
-                            core_territory t ON rtm.territory_id = t.id
-                        WHERE 
-                            bzm.business_unit_id = ?
+                    $crop_type = [];
+                }
+
+                // Fetch crops based on emp_vertical
+                if ($employee->emp_vertical) {
+                    $crops = DB::table('core_crop')
+                        ->where('vertical_id', $employee->emp_vertical)
+                        ->where('is_active', 1)
+                        ->select('id', 'crop_name')
+                        ->orderBy('crop_name')
+                        ->get();
+                }
+                // Case 1: territory = 0, region = 0, zone = 0, business unit > 0
+                if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
+                    $mapping = DB::select("
+                    SELECT 
+                        bzm.zone_id,
+                        z.zone_name,
+                        zrm.region_id,
+                        r.region_name,
+                        rtm.territory_id,
+                        t.territory_name
+                    FROM 
+                        core_bu_zone_mapping bzm
+                    INNER JOIN 
+                        core_zone z ON bzm.zone_id = z.id
+                    INNER JOIN 
+                        core_zone_region_mapping zrm ON bzm.zone_id = zrm.zone_id
+                    INNER JOIN 
+                        core_region r ON zrm.region_id = r.id
+                    LEFT JOIN 
+                        core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
+                    LEFT JOIN 
+                        core_territory t ON rtm.territory_id = t.id
+                    WHERE 
+                        bzm.business_unit_id = ?
                     ", [$employee->bu]);
 
-                        $zone_list = collect($mapping)
-                            ->pluck('zone_name', 'zone_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $zone_list = collect($mapping)
+                        ->pluck('zone_name', 'zone_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $region_list = collect($mapping)
-                            ->pluck('region_name', 'region_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $region_list = collect($mapping)
+                        ->pluck('region_name', 'region_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($zone_list) === 1) {
-                            $preselected['zone'] = array_key_first($zone_list);
-                        }
-                        if (count($region_list) === 1) {
-                            $preselected['region'] = array_key_first($region_list);
-                        }
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
-                        $mapping = DB::select("
-                        SELECT 
-                            zrm.zone_id,
-                            z.zone_name,
-                            zrm.region_id,
-                            r.region_name,
-                            rtm.territory_id,
-                            t.territory_name
-                        FROM 
-                            core_zone_region_mapping zrm
-                        INNER JOIN 
-                            core_zone z ON zrm.zone_id = z.id
-                        INNER JOIN 
-                            core_region r ON zrm.region_id = r.id
-                        LEFT JOIN 
-                            core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
-                        LEFT JOIN 
-                            core_territory t ON rtm.territory_id = t.id
-                        WHERE 
-                            zrm.zone_id = ?
+                    if (count($zone_list) === 1) {
+                        $preselected['zone'] = array_key_first($zone_list);
+                    }
+                    if (count($region_list) === 1) {
+                        $preselected['region'] = array_key_first($region_list);
+                    }
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                }
+                // Case 2: territory = 0, region = 0, zone > 0
+                elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
+                    $mapping = DB::select("
+                    SELECT 
+                        zrm.zone_id,
+                        z.zone_name,
+                        zrm.region_id,
+                        r.region_name,
+                        rtm.territory_id,
+                        t.territory_name
+                    FROM 
+                        core_zone_region_mapping zrm
+                    INNER JOIN 
+                        core_zone z ON zrm.zone_id = z.id
+                    INNER JOIN 
+                        core_region r ON zrm.region_id = r.id
+                    LEFT JOIN 
+                        core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
+                    LEFT JOIN 
+                        core_territory t ON rtm.territory_id = t.id
+                    WHERE 
+                        zrm.zone_id = ?
                     ", [$employee->zone]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory == 0 && $employee->region > 0) {
-                        $mapping = DB::select("
-                        SELECT 
-                            r.id as region_id,
-                            r.region_name,
-                            zrm.zone_id,
-                            z.zone_name,
-                            rtm.territory_id,
-                            t.territory_name
-                        FROM 
-                            core_region r
-                        LEFT JOIN 
-                            core_zone_region_mapping zrm ON r.id = zrm.region_id
-                        LEFT JOIN 
-                            core_zone z ON zrm.zone_id = z.id
-                        LEFT JOIN 
-                            core_region_territory_mapping rtm ON r.id = rtm.region_id
-                        LEFT JOIN 
-                            core_territory t ON rtm.territory_id = t.id
-                        WHERE 
-                            r.id = ?
+                    // Preselect the first available territory if only one exists
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                }
+                // Case 3: territory = 0, region > 0
+                elseif ($employee->territory == 0 && $employee->region > 0) {
+                    $mapping = DB::select("
+                    SELECT 
+                        r.id as region_id,
+                        r.region_name,
+                        zrm.zone_id,
+                        z.zone_name,
+                        rtm.territory_id,
+                        t.territory_name
+                    FROM 
+                        core_region r
+                    LEFT JOIN 
+                        core_zone_region_mapping zrm ON r.id = zrm.region_id
+                    LEFT JOIN 
+                        core_zone z ON zrm.zone_id = z.id
+                    LEFT JOIN 
+                        core_region_territory_mapping rtm ON r.id = rtm.region_id
+                    LEFT JOIN 
+                        core_territory t ON rtm.territory_id = t.id
+                    WHERE 
+                        r.id = ?
                     ", [$employee->region]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory > 0) {
-                        $territory = DB::table('core_territory')
-                            ->where('id', $employee->territory)
-                            ->first();
+                    // Preselect the first available territory if only one exists
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                }
+                // Case 4: territory > 0
+                elseif ($employee->territory > 0) {
+                    $territory = DB::table('core_territory')
+                        ->where('id', $employee->territory)
+                        ->first();
 
-                        if ($territory) {
-                            $territory_list = [$territory->id => $territory->territory_name];
-                            $preselected['territory'] = $territory->id;
-                        }
+                    if ($territory) {
+                        $territory_list = [$territory->id => $territory->territory_name];
+                        $preselected['territory'] = $territory->id;
                     }
                 }
 
@@ -289,8 +304,8 @@ class OnboardingController extends Controller
                     $region_list = $territoryData['regions'] ?? [];
                     $zone_list = $territoryData['zones'] ?? [];
                     $bu_list = $territoryData['businessUnits'] ?? [];
-                    $vertical_list = $territoryData['verticals'] ?? [];
-
+                    //dd($bu_list); 
+                    // Preselect first region/zone if available
                     if (!empty($region_list)) {
                         $preselected['region'] = array_key_first($region_list);
                     }
@@ -300,66 +315,37 @@ class OnboardingController extends Controller
                     if (!empty($bu_list)) {
                         $preselected['bu'] = array_key_first($bu_list);
                     }
-                    if (!empty($vertical_list)) {
-                        $preselected['crop_vertical'] = array_key_first($vertical_list);
-                    }
                 }
-
-
-                $crop_type = [
-                    '1' => 'Field Crop',
-                    '2' => 'Veg Crop',
-                    '3' => 'Root Stock',
-                    '4' => 'Fruit Crop',
-                    '5' => 'Common'
-                ];
-
-                // Assuming $vertical_list has only one value like: [2 => "Veg Crop"]
-                $verticalId = array_key_first($vertical_list);
-                $preselected['crop_vertical'] = (string) $verticalId;
-
-                // Fetch crops for selected vertical + always include Common (id=5)
-                $cropsQuery = DB::table('core_crop')
-                    ->where('is_active', 1)
-                    ->select('id', 'crop_name')
-                    ->orderBy('crop_name');
-
-                // If vertical is NOT common (5), filter by vertical_id
-                if ($verticalId != 5) {
-                    $cropsQuery->where('vertical_id', $verticalId);
-                }
-
-                $crops = $cropsQuery->get();
-
-                $states = DB::table('core_state')
-                    ->where('is_active', 1)
-                    ->orderBy('state_name')
-                    ->get();
-
-                $currentStep = $step;
             }
 
-            $currentYear = '2025-26';
-            $financialYears = Year::where('status', 'active')
-                ->where('period', '<', $currentYear)
-                ->orderBy('start_year', 'desc')
-                ->take(3)
+            $states = DB::table('core_state')
+                ->where('is_active', 1)
+                ->orderBy('state_name')
                 ->get();
 
-            return view('applications.create', compact(
-                'application',
-                'bu_list',
-                'zone_list',
-                'region_list',
-                'territory_list',
-                'preselected',
-                'crop_type',
-                'states',
-                'currentStep',
-                'crops',
-                'financialYears'
-            ));
+            $currentStep = $step;
         }
+
+        $currentYear = '2025-26';
+        $financialYears = Year::where('status', 'active')
+            ->where('period', '<', $currentYear)
+            ->orderBy('start_year', 'desc')
+            ->take(3)
+            ->get();
+        //dd($zone_list);
+        return view('applications.create', compact(
+            'application',
+            'bu_list',
+            'zone_list',
+            'region_list',
+            'territory_list',
+            'preselected',
+            'crop_type',
+            'states',
+            'currentStep',
+            'crops',
+            'financialYears'
+        ));
     }
 
     private function getTerritoryData($territoryId)
@@ -371,9 +357,7 @@ class OnboardingController extends Controller
             zrm.zone_id,
             z.zone_name,
             bzm.business_unit_id,
-            b.business_unit_name,
-            v.id as vertical_id,
-            v.vertical_name
+            b.business_unit_name
         FROM 
             core_region_territory_mapping rtm
         JOIN 
@@ -386,8 +370,6 @@ class OnboardingController extends Controller
             core_bu_zone_mapping bzm ON z.id = bzm.zone_id
         LEFT JOIN 
             core_business_unit b ON bzm.business_unit_id = b.id
-        LEFT JOIN 
-            core_vertical v ON r.vertical_id = v.id
         WHERE 
             rtm.territory_id = ?
     ", [$territoryId]);
@@ -395,8 +377,7 @@ class OnboardingController extends Controller
         $data = [
             'regions' => [],
             'zones' => [],
-            'businessUnits' => [],
-            'verticals' => []
+            'businessUnits' => []
         ];
 
         foreach ($result as $row) {
@@ -408,9 +389,6 @@ class OnboardingController extends Controller
             }
             if ($row->business_unit_id && !array_key_exists($row->business_unit_id, $data['businessUnits'])) {
                 $data['businessUnits'][$row->business_unit_id] = $row->business_unit_name;
-            }
-            if ($row->vertical_id && !array_key_exists($row->vertical_id, $data['verticals'])) {
-                $data['verticals'][$row->vertical_id] = $row->vertical_name;
             }
         }
 
@@ -477,27 +455,34 @@ class OnboardingController extends Controller
         $region_list = [];
         $bu_list = [];
         $preselected = [];
-        $hasAddDistributorPermission = $user->hasRole('Mis User');
 
         if ($user->emp_id) {
             $employee = DB::table('core_employee')->where('id', $user->emp_id)->first();
 
             if ($employee) {
-                // Populate vertical_list for pre-selected crop_vertical
-                $vertical_list = DB::table('core_vertical')
-                    ->pluck('vertical_name', 'id')
-                    ->toArray();
-
-                if ($hasAddDistributorPermission) {
-                    // If user has 'add-distributor' permission, fetch all active territories
-                    $territory_list = DB::table('core_territory')
-                        ->where('is_active', 1)
-                        ->pluck('territory_name', 'id')
-                        ->toArray();
+                // Crop vertical logic
+                if ($employee->emp_vertical == '2') {
+                    $crop_type = ['2' => 'Veg Crop'];
+                    $preselected['crop_vertical'] = $application->crop_vertical ?? '2';
+                } elseif ($employee->emp_vertical == '1') {
+                    $crop_type = ['1' => 'Field Crop'];
+                    $preselected['crop_vertical'] = $application->crop_vertical ?? '1';
                 } else {
-                    // Case 1: territory = 0, region = 0, zone = 0, business unit > 0
-                    if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
-                        $mapping = DB::select("
+                    $crop_type = [];
+                }
+
+                // Fetch crops based on emp_vertical
+                if ($employee->emp_vertical) {
+                    $crops = DB::table('core_crop')
+                        ->where('vertical_id', $employee->emp_vertical)
+                        ->where('is_active', 1)
+                        ->select('id', 'crop_name')
+                        ->orderBy('crop_name')
+                        ->get();
+                }
+                // Case 1: territory = 0, region = 0, zone = 0, business unit > 0
+                if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
+                    $mapping = DB::select("
                     SELECT 
                         bzm.zone_id,
                         z.zone_name,
@@ -521,38 +506,38 @@ class OnboardingController extends Controller
                         bzm.business_unit_id = ?
                     ", [$employee->bu]);
 
-                        $zone_list = collect($mapping)
-                            ->pluck('zone_name', 'zone_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $zone_list = collect($mapping)
+                        ->pluck('zone_name', 'zone_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $region_list = collect($mapping)
-                            ->pluck('region_name', 'region_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $region_list = collect($mapping)
+                        ->pluck('region_name', 'region_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($zone_list) === 1) {
-                            $preselected['zone'] = array_key_first($zone_list);
-                        }
-                        if (count($region_list) === 1) {
-                            $preselected['region'] = array_key_first($region_list);
-                        }
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
+                    if (count($zone_list) === 1) {
+                        $preselected['zone'] = array_key_first($zone_list);
                     }
+                    if (count($region_list) === 1) {
+                        $preselected['region'] = array_key_first($region_list);
+                    }
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                }
 
-                    // Territory/region/zone logic
-                    elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
-                        $mapping = DB::select("
+                // Territory/region/zone logic
+                elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
+                    $mapping = DB::select("
                     SELECT 
                         zrm.zone_id,
                         z.zone_name,
@@ -574,17 +559,17 @@ class OnboardingController extends Controller
                         zrm.zone_id = ?
                     ", [$employee->zone]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory == 0 && $employee->region > 0) {
-                        $mapping = DB::select("
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory == 0 && $employee->region > 0) {
+                    $mapping = DB::select("
                     SELECT 
                         r.id as region_id,
                         r.region_name,
@@ -606,33 +591,32 @@ class OnboardingController extends Controller
                         r.id = ?
                     ", [$employee->region]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory > 0) {
-                        $territory = DB::table('core_territory')
-                            ->where('id', $employee->territory)
-                            ->first();
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory > 0) {
+                    $territory = DB::table('core_territory')
+                        ->where('id', $employee->territory)
+                        ->first();
 
-                        if ($territory) {
-                            $territory_list = [$territory->id => $territory->territory_name];
-                            $preselected['territory'] = $application->territory ?? $territory->id;
-                        }
+                    if ($territory) {
+                        $territory_list = [$territory->id => $territory->territory_name];
+                        $preselected['territory'] = $application->territory ?? $territory->id;
                     }
                 }
+
                 // Fetch regions and zones
                 if (isset($preselected['territory']) || $application->territory) {
                     $territoryData = $this->getTerritoryData($application->territory ?? $preselected['territory']);
                     $region_list = $territoryData['regions'] ?? [];
                     $zone_list = $territoryData['zones'] ?? [];
                     $bu_list = $territoryData['businessUnits'] ?? [];
-                    $vertical_list = $territoryData['verticals'] ?? [];
 
                     if (!empty($region_list)) {
                         $preselected['region'] = $application->region ?? array_key_first($region_list);
@@ -643,35 +627,7 @@ class OnboardingController extends Controller
                     if (!empty($bu_list)) {
                         $preselected['bu'] = $application->bu ?? array_key_first($bu_list);
                     }
-                    if (!empty($vertical_list)) {
-                        $preselected['crop_vertical'] = $application->crop_vertical ?? array_key_first($vertical_list);
-                    }
                 }
-
-                $crop_type = [
-                    '1' => 'Field Crop',
-                    '2' => 'Veg Crop',
-                    '3' => 'Root Stock',
-                    '4' => 'Fruit Crop',
-                    '5' => 'Common'
-                ];
-
-                // Assuming $vertical_list has only one value like: [2 => "Veg Crop"]
-                $verticalId = array_key_first($vertical_list);
-                $preselected['crop_vertical'] = (string) $verticalId;
-
-                // Fetch crops for selected vertical + always include Common (id=5)
-                $cropsQuery = DB::table('core_crop')
-                    ->where('is_active', 1)
-                    ->select('id', 'crop_name')
-                    ->orderBy('crop_name');
-
-                // If vertical is NOT common (5), filter by vertical_id
-                if ($verticalId != 5) {
-                    $cropsQuery->where('vertical_id', $verticalId);
-                }
-
-                $crops = $cropsQuery->get();
 
                 // Fetch states
                 $states = Cache::remember('active_states', 60 * 60, function () {
@@ -696,12 +652,9 @@ class OnboardingController extends Controller
         if ($step == 8) {
             return view('applications.review-submit', compact('application', 'years'));
         }
-        \Log::debug('Edit Preselected Values:', $preselected); // Debug
-        \Log::debug('Edit Vertical List:', $vertical_list); // Debug
         return view('applications.edit', compact(
             'application',
             'bu_list',
-            'vertical_list',
             'zone_list',
             'region_list',
             'territory_list',
@@ -2036,7 +1989,6 @@ class OnboardingController extends Controller
 
     private function saveStep8(Request $request, $user, $application_id)
     {
-        // dd($request->all());
         $application = Onboarding::with([
             'territoryDetail',
             'regionDetail',
@@ -2082,24 +2034,6 @@ class OnboardingController extends Controller
         DB::beginTransaction();
 
         try {
-            if ($user->hasRole('Mis User')) {
-                $application->update([
-                    'status' => 'approved',
-                    'current_approver_id' => $user->emp_id,
-                    'approval_level' => 'MIS Auto Approval',
-                    'updated_at' => now()
-                ]);
-
-                DB::commit();
-
-                return [
-                    'success' => true,
-                    'message' => 'Application auto-approved for MIS user!',
-                    'application_id' => $application_id,
-                    'current_step' => 8,
-                    'redirect' => route('applications.show', $application_id)
-                ];
-            }
             // Get approver information
             $creator = Employee::findOrFail($user->emp_id);
 
@@ -2282,7 +2216,6 @@ class OnboardingController extends Controller
 
     public function preview($id)
     {
-       
         try {
             // Load application with all necessary columns
             $application = Onboarding::select([

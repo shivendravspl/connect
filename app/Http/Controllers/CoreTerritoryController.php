@@ -45,7 +45,7 @@ class CoreTerritoryController extends Controller
             'core_territory.is_active',
             'core_business_type.business_type'
         )
-        ->join('core_business_type', 'core_territory.business_type', '=', 'core_business_type.id');
+            ->join('core_business_type', 'core_territory.business_type', '=', 'core_business_type.id');
 
         // Apply filters
         if ($request->filled('status')) {
@@ -66,10 +66,10 @@ class CoreTerritoryController extends Controller
             ->make(true);
     }
 
-       public function getMappingData(Request $request)
+    public function getMappingData(Request $request)
     {
         $territoryId = $request->input('territory_id');
-        
+
         $result = DB::select("
             SELECT 
                 rtm.region_id,
@@ -77,7 +77,9 @@ class CoreTerritoryController extends Controller
                 zrm.zone_id,
                 z.zone_name,
                 bzm.business_unit_id,
-                b.business_unit_name
+                b.business_unit_name,
+                v.id as vertical_id,
+                v.vertical_name
             FROM 
                 core_region_territory_mapping rtm
             JOIN 
@@ -90,6 +92,8 @@ class CoreTerritoryController extends Controller
                 core_bu_zone_mapping bzm ON z.id = bzm.zone_id
             LEFT JOIN 
                 core_business_unit b ON bzm.business_unit_id = b.id
+            LEFT JOIN 
+                core_vertical v ON r.vertical_id = v.id
             WHERE 
                 rtm.territory_id = ?
         ", [$territoryId]);
@@ -97,9 +101,10 @@ class CoreTerritoryController extends Controller
         $data = [
             'regions' => [],
             'zones' => [],
-            'businessUnits' => []
+            'businessUnits' => [],
+            'verticals' => []
         ];
-
+        //dd($result);
         foreach ($result as $row) {
             if ($row->region_id && !array_key_exists($row->region_id, $data['regions'])) {
                 $data['regions'][$row->region_id] = $row->region_name;
@@ -107,15 +112,18 @@ class CoreTerritoryController extends Controller
             if ($row->zone_id && !array_key_exists($row->zone_id, $data['zones'])) {
                 $data['zones'][$row->zone_id] = $row->zone_name;
             }
-             if ($row->business_unit_id && !array_key_exists($row->business_unit_id, $data['businessUnits'])) {
+            if ($row->business_unit_id && !array_key_exists($row->business_unit_id, $data['businessUnits'])) {
                 $data['businessUnits'][$row->business_unit_id] = $row->business_unit_name;
+            }
+            if ($row->vertical_id && !array_key_exists($row->vertical_id, $data['verticals'])) {
+                $data['verticals'][$row->vertical_id] = $row->vertical_name;
             }
         }
 
         return response()->json($data);
     }
 
-      public function get_territory_by_region(Request $request)
+    public function get_territory_by_region(Request $request)
     {
         $region_id = $request->region;
         $territoryList = DB::table('core_region_territory_mapping')
@@ -125,5 +133,4 @@ class CoreTerritoryController extends Controller
             ->get();
         return response()->json(array('territoryList' => $territoryList));
     }
-    
 }

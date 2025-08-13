@@ -906,8 +906,7 @@
             @endif
         </div>
     </div>
-
-    @if(auth()->user()->emp_id === $application->current_approver_id)
+    @if(auth()->user()->emp_id === $application->current_approver_id && !auth()->user()->hasRole('Mis User'))
     <div class="card mt-3">
         <div class="card-header p-2">
             <h5 class="mb-0">Take Action</h5>

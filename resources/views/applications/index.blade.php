@@ -8,11 +8,12 @@
                 <div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
                     <h5 class="mb-0 small font-weight-bold">My Applications</h5>
                     @if(auth()->user()->emp_id)
-                    <a href="{{ route('applications.create') }}" class="btn btn-primary btn-xs py-0 px-1 px-sm-2">
-                        <i class="fas fa-plus fa-xs"></i> <span class="d-none d-sm-inline">New</span>
+                    <a href="{{ route('applications.create') }}" class="btn btn-primary py-1 px-3 fs-6">
+                        <i class="fas fa-plus fa-sm"></i> <span class="d-none d-sm-inline">New</span>
                     </a>
                     @endif
                 </div>
+
 
                 <div class="card-body p-1 p-sm-2">
                     @if($applications->isEmpty())
@@ -91,43 +92,45 @@
         line-height: 1;
         border-radius: 0.15rem;
     }
-    
+
     .fs-10 {
         font-size: 10px;
     }
-    
+
     .small {
         font-size: 0.75rem;
     }
-    
-    .table-sm td, .table-sm th {
+
+    .table-sm td,
+    .table-sm th {
         padding: 0.3rem;
     }
-    
+
     .card {
         border-radius: 0.25rem;
     }
-    
+
     .card-header {
         padding: 0.5rem 0.75rem;
     }
-    
+
     .alert {
         padding: 0.5rem;
         margin-bottom: 0.5rem;
     }
-    
+
     @media (max-width: 576px) {
         .container-fluid {
             padding-left: 0.25rem;
             padding-right: 0.25rem;
         }
-        
+
         .card-body {
             padding: 0.25rem;
         }
-        
-        .table td, .table th {
+
+        .table td,
+        .table th {
             white-space: nowrap;
         }
     }

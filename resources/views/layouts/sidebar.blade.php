@@ -249,13 +249,14 @@
             @endcanany
             @endrole
 
-      
+            @can('list-distributor')                      
                 <li class="nav-item">
                     <a class="nav-link menu-link {{ request()->routeIs('applications.*') ? 'active' : '' }}" 
                     href="{{ route('applications.index') }}">
                         <i class="ri-apps-line"></i> <span>Applications</span>
                     </a>
                 </li>
+            @endcan
        @can('menu-builder')
             <li class="nav-item">
                 <a class="nav-link menu-link {{ request()->routeIs('menu-builder.*') ? 'active' : '' }}" 

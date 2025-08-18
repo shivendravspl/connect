@@ -36,9 +36,47 @@
 <script src="{{ asset('assets/js/app.js') }}"></script>
 <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
 <script>
+    // Define readNotification in global scope
+    function readNotification(id) {
+        $.ajax({
+            url: "{{ route('notificationMarkRead') }}?id=" + id,
+            method: 'POST',
+            dataType: 'json',
+            success: function(data) {
+                if (data.status == 200) {
+                    location.reload();
+                } else {
+                    alert('failed');
+                }
+            }
+        });
+    }
+
+    // Define markAllRead in global scope
+    function markAllRead() {
+        $.ajax({
+            url: "{{ route('markAllRead') }}",
+            method: 'POST',
+            dataType: 'json',
+            success: function(data) {
+                if (data.status == 200) {
+                    location.reload();
+                } else {
+                    alert('failed');
+                }
+            }
+        });
+    }
+
     $(document).ready(function() {
         @if(session('success'))
         toastr.success("{{ session('success') }}");
         @endif
+
+        $.ajaxSetup({
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            }
+        });
     });
 </script>

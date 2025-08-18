@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
 use App\Helpers\helpers;
 use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\JsonResponse;
+use App\Models\Notification;
+
 
 class HomeController extends Controller
 {
@@ -528,5 +531,30 @@ class HomeController extends Controller
             'forwarded_to_mis' => 0,
             'avg_tat' => 0,
         ];
+    }
+
+      public function notificationMarkRead(Request $request): JsonResponse
+    {
+        $notification = Notification::find($request->id);
+        $notification->notification_read = 1;
+        $query = $notification->save();
+        if (!$query) {
+            return response()->json(['status' => 400, 'msg' => 'Something went wrong..!!']);
+        } else {
+            return response()->json(['status' => 200]);
+        }
+    }
+
+    /**
+     * @return JsonResponse
+     */
+    public function markAllRead(): JsonResponse
+    {
+        $query = Notification::where('userid', '=', Auth::user()->id)->update(array('notification_read' => 1));
+        if (!$query) {
+            return response()->json(['status' => 400, 'msg' => 'Something went wrong..!!']);
+        } else {
+            return response()->json(['status' => 200]);
+        }
     }
 }

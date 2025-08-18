@@ -265,8 +265,45 @@
                 </a>
             </li>
         @endcan
-            
-            
+
+        @hasanyrole('Admin|Super Admin|Mis User')
+            <li class="nav-item">
+                <a href="{{ route('vendors.index') }}" 
+                class="nav-link {{ request()->routeIs('vendors.index') ? 'active' : '' }}">
+                    <i class="ri-user-add-line"></i> <span>Vendors</span>
+                </a>
+            </li>
+        @endhasanyrole
+        @hasanyrole('Admin|Super Admin|Mis User')
+            <li class="nav-item">
+                <a href="{{ route('temp-edits') }}" 
+                class="nav-link {{ request()->routeIs('temp-edits') ? 'active' : '' }}">
+                    <i class="ri-user-add-line"></i> <span>Vendors Change Request</span>
+                </a>
+            </li>
+        @endhasanyrole
+       @if(Auth::user()->type === 'vendor')
+    @php
+        $vendor = Auth::user()->vendor; // This will be null if no vendor record exists
+    @endphp
+
+    @if($vendor && $vendor->approval_status === 'approved')
+        <li class="nav-item">
+            <a href="{{ route('vendors.profile') }}"
+               class="nav-link {{ request()->routeIs('vendors.profile') ? 'active' : '' }}">
+                <i class="ri-user-line"></i> <span>My Profile</span>
+            </a>
+        </li>
+    @else
+        <li class="nav-item">
+            <a href="{{ route('vendors.create') }}"
+               class="nav-link {{ request()->routeIs('vendors.create') ? 'active' : '' }}">
+                <i class="ri-user-add-line"></i> <span>Registration</span>
+            </a>
+        </li>
+    @endif
+@endif
+
 
                <!-- Dynamic Menus from Database -->
                 @php

@@ -22,16 +22,15 @@ class ApprovalController extends Controller
     public function show(Onboarding $application)
     {
         $user = Auth::user();
-        // Authorization check: creator, current approver, manager in hierarchy, MIS, or Business Head
         // Authorization checks
         $isCreator = $application->created_by === $user->emp_id;
         $isCurrentApprover = $application->current_approver_id === $user->emp_id;
         $isManager = $application->createdBy && $application->createdBy->emp_reporting === $user->emp_id;
         $isHigherLevelApprover = $this->isHigherLevelApprover($user, $application);
-        $isMIS = $user->hasPermissionTo('process-mis'); // Updated to use Spatie permission
+        $isMIS = $user->hasRole('Mis User');
+        //$isMIS = $user->hasPermissionTo('process-mis'); // Updated to use Spatie permission
         $isBusinessHead = str_contains(strtolower($user->emp_designation), 'business head');
         $isPastApprover = $application->approvalLogs->contains('user_id', $user->emp_id);
-
         // Debug authorization conditions
         Log::debug("Authorization check for application_id: {$application->id}, user_id: {$user->emp_id}", [
             'isCreator' => $isCreator,
@@ -44,8 +43,8 @@ class ApprovalController extends Controller
             'created_by' => $application->created_by,
             'current_approver_id' => $application->current_approver_id,
             'emp_reporting' => optional($application->createdBy)->emp_reporting,
-            'user_emp_department' => $user->employee->emp_department,
-            'user_emp_designation' => $user->employee->emp_designation,
+            'user_emp_department' => $user->employee->emp_department ?? '',
+            'user_emp_designation' => $user->employee->emp_designation ?? '',
         ]);
 
         if (!$isCreator && !$isCurrentApprover && !$isManager && !$isHigherLevelApprover && !$isMIS && !$isBusinessHead && !$isPastApprover) {
@@ -417,7 +416,8 @@ class ApprovalController extends Controller
 
     private function notifyMISTeam($application)
     {
-        $misMembers = User::permission('process-mis')->get();
+        //$misMembers = User::permission('process-mis')->get();
+        $misMembers = User::role('Mis User')->get();
         foreach ($misMembers as $member) {
             if (!empty($member->email)) {
                 Mail::to($member->email)
@@ -538,7 +538,8 @@ class ApprovalController extends Controller
         $query = Onboarding::query();
 
         // For sales team: Show applications they created or need to approve
-        if (!$user->hasPermissionTo('process-mis')) {
+       // if (!$user->hasPermissionTo('process-mis')) {
+       if (!$user->hasRole('Mis User')) {
             $query->where(function ($q) use ($user) {
                 $q->where('created_by', $user->emp_id)
                     ->orWhere('current_approver_id', $user->emp_id)
@@ -551,7 +552,8 @@ class ApprovalController extends Controller
         }
 
         // For MIS team: Show applications in MIS processing stages
-        if ($user->hasPermissionTo('process-mis')) {
+        //if ($user->hasPermissionTo('process-mis')) {
+        if ($user->hasRole('Mis User')) {
             $query->whereIn('status', [
                 'mis_processing',
                 'document_verified',

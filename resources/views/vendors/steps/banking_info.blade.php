@@ -36,21 +36,19 @@
         </div>
     </div>
     
-    <div class="form-group">
-        <label for="cancelled_cheque_copy">Cancelled Check Copy/Passbook Front Page *</label>
-        <div class="custom-file">
-            <input type="file" class="custom-file-input" id="cancelled_cheque_copy" name="cancelled_cheque_copy" required>
-            <label class="custom-file-label" for="cancelled_cheque_copy">Choose file</label>
-        </div>
-        @if(isset($vendor) && $vendor->cancelled_cheque_copy_path)
-            <div class="mt-2">
-                <button type="button" class="btn btn-sm btn-outline-primary view-document"
-                    data-url="{{ route('vendors.documents.show', ['id' => $vendor->id, 'type' => 'cancelled_cheque']) }}">
-                    <i class="fas fa-eye mr-1"></i> View Uploaded
-                </button>
-            </div>
-        @endif
-        <small class="form-text text-muted">Upload clear image/scan of cancelled cheque or passbook front page</small>
-    </div>
+  
+
+     <div class="form-group">
+                <label for="cancelled_cheque_copy" class="form-label">Cancelled Check Copy/Passbook Front Page *</label>
+                <div class="input-group">
+                    <input type="file" class="form-control" id="cancelled_cheque_copy" name="cancelled_cheque_copy">
+                    @if(isset($vendor) && $vendor->cancelled_cheque_copy_path)
+                    <button type="button" class="btn btn-outline-primary view-document"
+                        data-url="{{ route('vendors.documents.show', ['id' => $vendor->id, 'type' => 'cancelled_cheque']) }}">
+                        View Uploaded
+                    </button>
+                    @endif
+                </div>
+     </div>
 </div>
 

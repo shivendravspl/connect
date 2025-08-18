@@ -116,6 +116,37 @@
             box-shadow: -10px 0 50px rgba(0, 0, 0, 0.1);
         }
 
+        .vendor-registration {
+            position: absolute;
+            top: 2rem;
+            right: 1rem;
+            z-index: 10;
+        }
+
+        .vendor-registration p {
+            margin: 0;
+            color: var(--connect-dark);
+            font-size: 0.9rem;
+        }
+
+        .vendor-registration a {
+            color: var(--connect-primary);
+            text-decoration: none;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+            border: 2px solid var(--connect-primary);
+            margin-left: 0.5rem;
+        }
+
+        .vendor-registration a:hover {
+            background: var(--connect-primary);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
         .login-form-container {
             max-width: 400px;
             width: 100%;
@@ -358,6 +389,20 @@
             .login-form-container {
                 padding: 1rem;
             }
+
+            .vendor-registration {
+                top: 1rem;
+                right: 1rem;
+            }
+
+            .vendor-registration p {
+                font-size: 0.8rem;
+            }
+
+            .vendor-registration a {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
         }
     </style>
 </head>
@@ -377,6 +422,10 @@
         </div>
 
         <div class="right-panel">
+            <div class="vendor-registration">
+                    <a href="{{ route('register') }}">Vendor Registration</a>
+            </div>
+
             <div class="login-form-container">
                 <div class="form-header">
                     <h2>Welcome Back!</h2>
@@ -459,11 +508,6 @@
                     <button class="login-btn" type="submit" tabindex="5">
                         Sign In
                     </button>
-                    <div class="register-link">
-                        <p>Don't have an account?
-                            <a href="{{ route('register') }}">Register</a>
-                        </p>
-                    </div>
                 </form>
             </div>
         </div>

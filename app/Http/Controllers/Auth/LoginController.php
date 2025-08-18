@@ -27,7 +27,7 @@ class LoginController extends Controller
     {
         $login = $request->input('login');
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'phone';
-\Log::info('Login attempt with field: ' . $field . ', value: ' . $login);
+        \Log::info('Login attempt with field: ' . $field . ', value: ' . $login);
         return [
             $field => $login,
             'password' => $request->input('password'),
@@ -36,8 +36,8 @@ class LoginController extends Controller
 
     protected function validateLogin(Request $request)
     {
-          \Log::info("Form Token: " . $request->_token);
-         \Log::info("Session Token: " . csrf_token());
+        \Log::info("Form Token: " . $request->_token);
+        \Log::info("Session Token: " . csrf_token());
         $request->validate([
             'login' => [
                 'required',

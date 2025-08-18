@@ -16,7 +16,7 @@ class User extends Authenticatable
     protected $guard_name = 'web';
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
-    
+
     /**
      * The attributes that are mass assignable.
      *
@@ -27,6 +27,8 @@ class User extends Authenticatable
         'email',
         'phone',
         'password',
+        'status',
+        'type',
     ];
 
     /**
@@ -52,8 +54,13 @@ class User extends Authenticatable
         ];
     }
 
-     public function employee()
+    public function employee()
     {
-        return $this->belongsTo(Employee::class, 'emp_id','id');
+        return $this->belongsTo(Employee::class, 'emp_id', 'id');
+    }
+
+    public function vendor()
+    {
+        return $this->hasOne(Vendor::class, 'submitted_by', 'id');
     }
 }

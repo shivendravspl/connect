@@ -30,7 +30,7 @@ use App\Mail\TestEmail;
 use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\MISProcessingController;
 use App\Http\Controllers\VendorController;
-
+use App\Http\Controllers\VendorApprovalController;
 
 
 
@@ -50,6 +50,10 @@ Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard')->m
 Route::get('/dashboard/status-counts', [HomeController::class, 'statusCounts'])
     ->name('dashboard.status-counts')
     ->middleware('auth');
+Route::post('notificationMarkRead', [HomeController::class, 'notificationMarkRead'])->name('notificationMarkRead')->middleware('auth');
+Route::post('markAllRead', [HomeController::class, 'markAllRead'])->name('markAllRead')->middleware('auth');
+
+
 
 Route::middleware('auth')->group(function () {
     // Change Password Routes (accessible to all authenticated users)
@@ -253,21 +257,33 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/get-territory-data', [CoreTerritoryController::class, 'getMappingData']);
     Route::get('/dashboard/dynamic-data', [App\Http\Controllers\HomeController::class, 'dynamicData'])->name('dashboard.dynamic-data');
 
- Route::prefix('vendors')->name('vendors.')->group(function () {
+Route::prefix('vendors')->name('vendors.')->group(function () {
+    // Routes handled by VendorController
+    Route::post('/store-section/{vendor}', [VendorController::class, 'storeSection'])->name('store.section');
     Route::get('/list', [VendorController::class, 'index'])->name('index');
     Route::get('/create', [VendorController::class, 'create'])->name('create');
     Route::post('/store', [VendorController::class, 'store'])->name('store');
+    Route::get('/profile', [VendorController::class, 'profile'])->name('profile');
     Route::get('/edit/{id}', [VendorController::class, 'edit'])->name('edit');
     Route::put('/update/{id}', [VendorController::class, 'update'])->name('update');
+    Route::get('/edit/{vendor}/section/{section}', [VendorController::class, 'editSection'])->name('edit.section');
     Route::delete('/destroy/{id}', [VendorController::class, 'destroy'])->name('destroy');
     Route::get('/submitted/{id}', [VendorController::class, 'submitted'])->name('submitted');
     Route::get('/success/{id}', [VendorController::class, 'success'])->name('success');
     Route::get('/{id}', [VendorController::class, 'show'])->name('show');
     Route::get('/employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
     Route::get('/{id}/documents/{type}', [VendorController::class, 'showDocument'])->name('documents.show');
-    Route::post('/{id}/approve', [VendorController::class, 'approve'])->name('approve');
-    Route::post('/{id}/reject', [VendorController::class, 'reject'])->name('reject');
     Route::post('/{id}/toggle-active', [VendorController::class, 'toggleActive'])->name('toggle-active');
 });
 
+Route::middleware(['auth'])->group(function () {
+    // Routes handled by VendorApprovalController
+    Route::get('/temp-edits', [VendorApprovalController::class, 'tempEdits'])->name('temp-edits');
+    Route::get('/temp-edits/{id}', [VendorApprovalController::class, 'showTempEdit'])->name('temp-edits.show');
+    Route::patch('/temp-edits/approve/{id}', [VendorApprovalController::class, 'approveTempEdit'])->name('temp-edits.approve');
+    Route::patch('/temp-edits/reject/{id}', [VendorApprovalController::class, 'rejectTempEdit'])->name('temp-edits.reject');
+    Route::get('/temp-edits/document/{id}/{type}', [VendorApprovalController::class, 'showTempDocument'])->name('temp-document');
+    Route::post('/{id}/approve', [VendorApprovalController::class, 'approve'])->name('approve');
+    Route::post('/{id}/reject', [VendorApprovalController::class, 'reject'])->name('reject');
+});
 });

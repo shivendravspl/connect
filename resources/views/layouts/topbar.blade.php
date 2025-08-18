@@ -1,3 +1,11 @@
+   @php
+    $notification = \App\Models\Notification::where('userid', auth()->id())
+        ->where('notification_read', 0)
+        ->orderBy('id', 'DESC')
+        ->get();
+    $notificationCount = $notification->count();
+    $isAdmin = auth()->user()->hasAnyRole('Admin');
+@endphp
    <header id="page-topbar">
        <div class="layout-width">
            <div class="navbar-header">
@@ -52,9 +60,88 @@
                        </button>
                    </div>
 
-                   <div id="notification-sidebar" class="notification-sidebar">
-                        <div id="notification-container"></div>
+                     <div class="dropdown topbar-head-dropdown ms-1 header-item" id="notificationDropdown">
+                    <button type="button"
+                            class="btn btn-icon btn-topbar material-shadow-none btn-ghost-secondary rounded-circle"
+                            id="page-header-notifications-dropdown" data-bs-toggle="dropdown"
+                            data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
+                        <i class='bx bx-bell fs-22'></i>
+                        @if($notificationCount > 0)
+                            <span
+                                class="position-absolute topbar-badge fs-10 translate-middle badge rounded-pill bg-danger">{{$notificationCount}}<span
+                                    class="visually-hidden">unread messages</span></span>
+                        @endif
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end p-0"
+                         aria-labelledby="page-header-notifications-dropdown">
+
+                        <div class="dropdown-head bg-primary rounded-top">
+                            <div class="p-3">
+                                <div class="row align-items-center">
+                                    <div class="col">
+                                        <h6 class="m-0 fs-16 fw-semibold text-white"> Notifications </h6>
+                                    </div>
+                                    @if($notificationCount > 0)
+                                        <div class="col-auto dropdown-tabs">
+                                            <span
+                                                class="badge bg-light text-body fs-13"> {{$notificationCount}} New</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+
+                        </div>
+
+                        <div class="tab-content position-relative" id="notificationItemsTabContent">
+                            <div class="tab-pane fade show active py-2 ps-2" id="all-noti-tab" role="tabpanel">
+                                <div data-simplebar style="max-height: 300px;" class="pe-2">
+                                    @foreach ($notification as $item)
+
+                                        <div
+                                            class="text-reset notification-item d-block dropdown-item position-relative">
+                                            <div class="d-flex">
+                                                <div class="flex-grow-1">
+                                                    <a href="javascript:void(0);" class="stretched-link"
+                                                       onclick="readNotification({{ $item->id }})">
+                                                        <h6 class="mt-0 mb-1 fs-13 fw-semibold">{{ $item->title }}</h6>
+                                                    </a>
+                                                    <div class="fs-13 text-muted">
+                                                        <p class="mb-1">{{ $item->description }}</p>
+                                                    </div>
+                                                    <p class="mb-0 fs-11 fw-medium text-uppercase text-muted"
+                                                       style="float:right;">
+                                                        <span><i class="mdi mdi-clock-outline"></i> {{ \Carbon\Carbon::parse($item->created_at)->diffForHumans() }}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    @endforeach
+                                    {{--<div class="my-3 text-center view-all">
+                                        <button type="button" class="btn btn-soft-success waves-effect waves-light">
+                                            View
+                                            All Notifications <i class="ri-arrow-right-line align-middle"></i>
+                                        </button>
+                                    </div>--}}
+                                </div>
+
+                            </div>
+
+
+                            <div class="notification-actions" id="notification-actions">
+                                <div class="d-flex text-muted justify-content-center">
+                                    Select
+                                    <div id="select-content" class="text-body fw-semibold px-1">0</div>
+                                    Result
+                                    <button type="button" class="btn btn-link link-danger p-0 ms-3"
+                                            data-bs-toggle="modal" data-bs-target="#removeNotificationModal">Remove
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+                </div>
 
                     @if (Auth::check())
                    <div class="dropdown ms-sm-3 header-item topbar-user">

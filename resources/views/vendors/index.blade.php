@@ -7,14 +7,19 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Vendor List</h5>
-                    <a href="{{ route('vendors.create') }}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-plus"></i> Add New Vendor
-                    </a>
+                    @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'Mis User']))
+                        <a href="{{ route('vendors.create') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus"></i> Add New Vendor
+                        </a>
+                    @endif
                 </div>
                 <div class="card-body">
                     @if(session('success'))
                         <div class="alert alert-success">{{ session('success') }}</div>
                     @endif
+                    @if(session('info'))
+                    <div class="alert alert-info">{{ session('info') }}</div>
+                @endif
                     
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -62,7 +67,7 @@
                                                 </a>
                                             @endif
                                             @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin']) && $vendor->is_completed && $vendor->approval_status == 'pending')
-                                                <form action="{{ route('vendors.approve', $vendor->id) }}" method="POST" class="d-inline">
+                                                <form action="{{ route('approve', $vendor->id) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-success btn-sm" title="Approve" onclick="return confirm('Are you sure you want to approve this vendor?')">
                                                         <i class="ri-edit-circle-line"></i>
@@ -101,7 +106,7 @@
                                                 <h5 class="modal-title" id="rejectModalLabel{{ $vendor->id }}">Reject Vendor</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
-                                            <form action="{{ route('vendors.reject', $vendor->id) }}" method="POST">
+                                            <form action="{{ route('reject', $vendor->id) }}" method="POST">
                                                 @csrf
                                                 <div class="modal-body">
                                                     <div class="form-group">

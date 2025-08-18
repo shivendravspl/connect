@@ -33,7 +33,7 @@
                         <td>{{ ucfirst(str_replace('_', ' ', $application->status)) }}</td>
                         <td>
                             <a href="{{ route('approvals.show', $application) }}" class="btn btn-primary btn-sm">View</a>
-                            @if (in_array($application->status, ['mis_processing', 'document_verified', 'agreement_created', 'documents_received', 'documents_pending']) && Auth::user()->hasPermissionTo('process-mis'))
+                            @if (in_array($application->status, ['mis_processing', 'document_verified', 'agreement_created', 'documents_received', 'documents_pending']) && Auth::user()->hasRole('Mis User'))
                                 @if ($application->status == 'mis_processing')
                                     <a href="{{ route('approvals.verify-documents', $application) }}" class="btn btn-info btn-sm">Verify Documents</a>
                                 @elseif ($application->status == 'document_verified')

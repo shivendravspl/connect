@@ -65,4 +65,14 @@ class Vendor extends Model
     {
         return $this->belongsTo(Employee::class, 'vnr_contact_person_id'); // Assuming it's an employee
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'submitted_by', 'id');
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class, 'vnr_contact_department_id');
+    }
 }

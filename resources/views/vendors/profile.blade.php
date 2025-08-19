@@ -233,11 +233,11 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="d-flex justify-content-start mt-2">
+                    {{--<div class="d-flex justify-content-start mt-2">
                         <a href="{{ route('vendors.index') }}" class="btn btn-sm btn-secondary py-0 px-2">
                             <i class="ri-arrow-left-line ri-sm"></i> Back to List
                         </a>
-                    </div>
+                    </div>--}}
                 </div>
             </div>
         </div>

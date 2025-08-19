@@ -274,7 +274,7 @@
                 </a>
             </li>
         @endhasanyrole
-        @hasanyrole('Admin|Super Admin|Mis User')
+        @hasanyrole('Admin|Super Admin')
             <li class="nav-item">
                 <a href="{{ route('temp-edits') }}" 
                 class="nav-link {{ request()->routeIs('temp-edits') ? 'active' : '' }}">

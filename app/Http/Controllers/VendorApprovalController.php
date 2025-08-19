@@ -150,6 +150,7 @@ class VendorApprovalController extends Controller
 		}
 
 		$vendor = Vendor::findOrFail($id);
+		
 		$vendor->update([
 			'approval_status' => 'approved',
 			'is_active' => true,

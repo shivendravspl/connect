@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
 
 
 class VendorController extends Controller
@@ -77,10 +78,14 @@ class VendorController extends Controller
 
         $step = $request->input('current_step', 1);
         $vendorId = $request->input('vendor_id');
-
+        
         $rules = $this->getValidationRules($step, $vendorId);
         if ($vendorId) {
             $rules['vendor_email'] = 'required|email|unique:vendors,vendor_email,' . $vendorId;
+        }
+
+        if ($step == 1) {
+            $rules['contact_number'] = 'required|digits:10|unique:users,phone';
         }
 
         $validated = $request->validate($rules);
@@ -94,6 +99,28 @@ class VendorController extends Controller
             $validated['is_active'] = false;
             $vendor = Vendor::create($validated);
         }
+
+         if ($step == 1) {
+        $contactNumber = $validated['contact_number'];
+
+        $existingUser = User::where('phone', $contactNumber)->first();
+            if (!$existingUser) {
+                User::create([
+                    'name' => $validated['contact_person_name'],
+                    'email' => $validated['vendor_email'],
+                    'phone' => $contactNumber,
+                    'password' =>  Hash::make($contactNumber),
+                    'status' => 'P', // default pending
+                    'type' => 'vendor',
+                ]);
+            }else{
+            return response()->json([
+                'success' => false,
+                'message' => 'The phone number is already registered.'
+            ], 422);
+            }
+        }
+
 
         $this->handleFileUploads($request, $vendor, $step);
 
@@ -168,55 +195,55 @@ class VendorController extends Controller
         ]);
     }
 
-    public function approve(Request $request, $id)
-    {
-        $user = Auth::user();
-        if (!$user->hasAnyRole(['Super Admin', 'Admin'])) {
-            abort(403, 'Unauthorized action.');
-        }
+    // public function approve(Request $request, $id)
+    // {
+    //     $user = Auth::user();
+    //     if (!$user->hasAnyRole(['Super Admin', 'Admin'])) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
 
-        $vendor = Vendor::findOrFail($id);
-        $vendor->update([
-            'approval_status' => 'approved',
-            'is_active' => true,
-            'approved_by' => $user->id,
-            'approved_at' => now(),
-            'rejection_reason' => null
-        ]);
+    //     $vendor = Vendor::findOrFail($id);
+    //     $vendor->update([
+    //         'approval_status' => 'approved',
+    //         'is_active' => true,
+    //         'approved_by' => $user->id,
+    //         'approved_at' => now(),
+    //         'rejection_reason' => null
+    //     ]);
 
-        if ($vendor->submitted_by) {
-            User::where('id', $vendor->submitted_by)
-                ->where('status', 'P') // only if status is Pending
-                ->update(['status' => 'A']);
-        }
+    //     if ($vendor->submitted_by) {
+    //         User::where('id', $vendor->submitted_by)
+    //             ->where('status', 'P') // only if status is Pending
+    //             ->update(['status' => 'A']);
+    //     }
 
-        return redirect()->route('vendors.index')
-            ->with('success', 'Vendor approved successfully');
-    }
+    //     return redirect()->route('vendors.index')
+    //         ->with('success', 'Vendor approved successfully');
+    // }
 
-    public function reject(Request $request, $id)
-    {
-        $user = Auth::user();
-        if (!$user->hasAnyRole(['Super Admin', 'Admin'])) {
-            abort(403, 'Unauthorized action.');
-        }
+    // public function reject(Request $request, $id)
+    // {
+    //     $user = Auth::user();
+    //     if (!$user->hasAnyRole(['Super Admin', 'Admin'])) {
+    //         abort(403, 'Unauthorized action.');
+    //     }
 
-        $request->validate([
-            'rejection_reason' => 'required|string'
-        ]);
+    //     $request->validate([
+    //         'rejection_reason' => 'required|string'
+    //     ]);
 
-        $vendor = Vendor::findOrFail($id);
-        $vendor->update([
-            'approval_status' => 'rejected',
-            'is_active' => false,
-            'approved_by' => $user->id,
-            'approved_at' => now(),
-            'rejection_reason' => $request->rejection_reason
-        ]);
+    //     $vendor = Vendor::findOrFail($id);
+    //     $vendor->update([
+    //         'approval_status' => 'rejected',
+    //         'is_active' => false,
+    //         'approved_by' => $user->id,
+    //         'approved_at' => now(),
+    //         'rejection_reason' => $request->rejection_reason
+    //     ]);
 
-        return redirect()->route('vendors.index')
-            ->with('success', 'Vendor rejected successfully');
-    }
+    //     return redirect()->route('vendors.index')
+    //         ->with('success', 'Vendor rejected successfully');
+    // }
 
     private function getValidationRules($step, $vendorId = null)
     {
@@ -528,41 +555,6 @@ class VendorController extends Controller
         }
 
         return redirect()->route('vendors.profile')->with('info', 'No changes detected.');
-    }
-
-
-    private function handleSectionFileUploads($request, &$tempData, $section)
-    {
-        $uploadFields = [];
-
-        switch ($section) {
-            case 'legal':
-                $uploadFields = [
-                    'pan_card_copy' => 'pan_card_copy_path',
-                    'aadhar_card_copy' => 'aadhar_card_copy_path',
-                    'gst_certificate_copy' => 'gst_certificate_copy_path',
-                    'msme_certificate_copy' => 'msme_certificate_copy_path',
-                ];
-                break;
-            case 'banking':
-                $uploadFields = [
-                    'cancelled_cheque_copy' => 'cancelled_cheque_copy_path',
-                ];
-                break;
-        }
-
-        foreach ($uploadFields as $inputName => $field) {
-            if ($request->hasFile($inputName)) {
-                $vendor = Vendor::find($tempData['vendor_id']);
-                if ($vendor->$field && Storage::disk('public')->exists($vendor->$field)) {
-                    // Store old file path temporarily to avoid overwriting until approved
-                    $tempData[$field] = $vendor->$field;
-                }
-                $file = $request->file($inputName);
-                $path = $file->store('vendor_temp_documents', 'public');
-                $tempData[$field] = $path;
-            }
-        }
     }
 
     private function getSectionValidationRules($section, $vendorId)

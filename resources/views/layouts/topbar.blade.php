@@ -118,12 +118,12 @@
                                         </div>
 
                                     @endforeach
-                                    {{--<div class="my-3 text-center view-all">
-                                        <button type="button" class="btn btn-soft-success waves-effect waves-light">
+                                    <div class="my-3 text-center view-all">
+                                        <button type="button" class="btn btn-soft-success waves-effect waves-light" onclick="markAllRead()">
                                             View
                                             All Notifications <i class="ri-arrow-right-line align-middle"></i>
                                         </button>
-                                    </div>--}}
+                                    </div>
                                 </div>
 
                             </div>

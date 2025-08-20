@@ -9,7 +9,7 @@
                     <h5 class="mb-0">Vendor List</h5>
                     @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'Mis User']))
                         <a href="{{ route('vendors.create') }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-plus"></i> Add New Vendor
+                            <i class="ri-add-box-fill"></i>
                         </a>
                     @endif
                 </div>
@@ -150,7 +150,7 @@
     }
     
     .badge {
-        font-size: 0.85rem;
+        font-size: 0.65rem;
         font-weight: 500;
         padding: 0.35em 0.65em;
     }
@@ -167,16 +167,10 @@
         background-color: #dc3545 !important;
     }
     
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.875rem;
+    .btn-sm {   
+        font-size: 0.640rem;
     }
     
-    .btn i {
-        font-size: 0.875rem;
-        vertical-align: middle;
-    }
-
     .btn-success {
         background-color: #28a745;
         border-color: #28a745;

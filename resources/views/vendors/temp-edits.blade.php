@@ -6,7 +6,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="mb-0">Pending Vendor Edit Approvals</h3>
+                    <h5 class="mb-0">Pending Vendor Edit Approvals</h5>
                 </div>
                 <div class="card-body">
                     @if(session('success'))

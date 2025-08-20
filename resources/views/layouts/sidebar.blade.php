@@ -50,7 +50,7 @@
                 </div>
             </li>
 
-            @role('Super Admin')
+            @hasanyrole('Admin|Super Admin')
                    <li class="nav-item">
                         <a class="nav-link menu-link {{ request()->routeIs('page-builder.*') ? 'active' : '' }}" href="#sidebarFormBuilder" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('page-builder.*') ? 'true' : 'false' }}" aria-controls="sidebarFormBuilder">
                             <i class="ri-survey-line"></i> <span>Form Builder</span>
@@ -134,6 +134,12 @@
                         </li>
                         <li class="nav-item">
                             <a href="{{ route('core_api.index') }}" class="nav-link {{ request()->routeIs('core_api*') ? 'active' : '' }}" data-key="t-analytics">Core API</a>
+                        </li>
+                         <li class="nav-item">
+                            <a href="{{ route('item-groups.index') }}" class="nav-link {{ request()->routeIs('item-groups*') ? 'active' : '' }}" data-key="t-analytics">Item Groups</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('items.index') }}" class="nav-link {{ request()->routeIs('items*') ? 'active' : '' }}" data-key="t-analytics">Items Master</a>
                         </li>
                     </ul>
                 </div>

@@ -31,6 +31,10 @@ use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\MISProcessingController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\VendorApprovalController;
+use App\Http\Controllers\ItemGroupController;
+use App\Http\Controllers\ItemController;
+
+
 
 
 
@@ -103,13 +107,13 @@ Route::middleware('auth')->group(function () {
 
     // Category Routes (restricted to list-category permission)
     Route::middleware('permission:list-category')->group(function () {
-        Route::resource('categories', CoreCategoryController::class)->only(['index']); 
+        Route::resource('categories', CoreCategoryController::class)->only(['index']);
         Route::get('/categories/export', [CoreCategoryController::class, 'export'])->name('categories.export');
     });
 
     // Crop Routes (restricted to list-crop permission)
     Route::middleware('permission:list-crop')->group(function () {
-        Route::resource('crops', CoreCropController::class)->only(['index']); 
+        Route::resource('crops', CoreCropController::class)->only(['index']);
         Route::get('/crops/export', [CoreCropController::class, 'export'])->name('crops.export');
         Route::post('crops/getCropList', [CoreCropController::class, 'getCropList'])->name('crops.getCropList');
     });
@@ -153,9 +157,9 @@ Route::middleware('auth')->group(function () {
         Route::post('importAPISData', [CoreAPIController::class, 'importAPISData'])->name('importAPISData');
     });
 
-     //============================Builder=================================================
+    //============================Builder=================================================
     Route::resource('page-builder', \App\Http\Controllers\PageBuilderController::class);
-     Route::get('page-builder.page', [\App\Http\Controllers\PageBuilderController::class, 'formGenerate'])->name('page-builder.page');
+    Route::get('page-builder.page', [\App\Http\Controllers\PageBuilderController::class, 'formGenerate'])->name('page-builder.page');
     Route::post('add_form_element', [\App\Http\Controllers\PageBuilderController::class, 'addFormElement'])->name('add_form_element');
     Route::post('get_form_element_details', [\App\Http\Controllers\PageBuilderController::class, 'getFormElementDetails'])->name('get_form_element_details');
     Route::post('form_element_update', [\App\Http\Controllers\PageBuilderController::class, 'updateFormElement'])->name('form_element_update');
@@ -168,39 +172,39 @@ Route::middleware('auth')->group(function () {
     Route::post('menu-builder/show_menu', [\App\Http\Controllers\MenuController::class, 'show_menu'])->name('menu-builder.show_menu');
     Route::post('get_source_table_columns', [\App\Http\Controllers\PageBuilderController::class, 'getSourceTableColumns'])->name('get_source_table_columns');
 
-     // In your routes file
+    // In your routes file
     Route::post('/get-regions', [EmployeeController::class, 'getRegionsByTerritory']);
     Route::post('/get-zones', [EmployeeController::class, 'getZonesByRegion']);
 
-            // Add API routes for filter dependencies
-        Route::get('api/get-territory-regions/{territoryId}', function($territoryId) {
-            $regions = DB::table('core_region_territory_mapping')
-                ->where('territory_id', $territoryId)
-                ->join('core_region', 'core_region_territory_mapping.region_id', '=', 'core_region.id')
-                ->where('core_region.is_active', 1)
-                ->pluck('core_region.region_name', 'core_region.id')
-                ->toArray();
-            return response()->json(['regions' => $regions]);
-        });
-        
-        Route::get('api/get-region-zones/{regionId}', function($regionId) {
-            $zones = DB::table('core_zone_region_mapping')
-                ->where('region_id', $regionId)
-                ->join('core_zone', 'core_zone_region_mapping.zone_id', '=', 'core_zone.id')
-                ->where('core_zone.is_active', 1)
-                ->pluck('core_zone.zone_name', 'core_zone.id')
-                ->toArray();
-            
-            return response()->json(['zones' => $zones]);
-        });
+    // Add API routes for filter dependencies
+    Route::get('api/get-territory-regions/{territoryId}', function ($territoryId) {
+        $regions = DB::table('core_region_territory_mapping')
+            ->where('territory_id', $territoryId)
+            ->join('core_region', 'core_region_territory_mapping.region_id', '=', 'core_region.id')
+            ->where('core_region.is_active', 1)
+            ->pluck('core_region.region_name', 'core_region.id')
+            ->toArray();
+        return response()->json(['regions' => $regions]);
+    });
 
-        // Add these new API routes
-        Route::post('get_zone_by_bu', [CoreZoneController::class, 'get_zone_by_bu'])->name('get_zone_by_bu');
-         Route::post('get_region_by_zone', [CoreRegionController::class, 'get_region_by_zone'])->name('get_region_by_zone');
-         Route::post('get_territory_by_region', [CoreTerritoryController::class, 'get_territory_by_region'])->name('get_territory_by_region');
+    Route::get('api/get-region-zones/{regionId}', function ($regionId) {
+        $zones = DB::table('core_zone_region_mapping')
+            ->where('region_id', $regionId)
+            ->join('core_zone', 'core_zone_region_mapping.zone_id', '=', 'core_zone.id')
+            ->where('core_zone.is_active', 1)
+            ->pluck('core_zone.zone_name', 'core_zone.id')
+            ->toArray();
 
-         Route::get('get-regions-by-zone', [App\Http\Controllers\HomeController::class, 'getRegionsByZone'])->name('get.regions.by.zone');
-         Route::get('get-territories-by-region', [App\Http\Controllers\HomeController::class, 'getTerritoriesByRegion'])->name('get.territories.by.region');
+        return response()->json(['zones' => $zones]);
+    });
+
+    // Add these new API routes
+    Route::post('get_zone_by_bu', [CoreZoneController::class, 'get_zone_by_bu'])->name('get_zone_by_bu');
+    Route::post('get_region_by_zone', [CoreRegionController::class, 'get_region_by_zone'])->name('get_region_by_zone');
+    Route::post('get_territory_by_region', [CoreTerritoryController::class, 'get_territory_by_region'])->name('get_territory_by_region');
+
+    Route::get('get-regions-by-zone', [App\Http\Controllers\HomeController::class, 'getRegionsByZone'])->name('get.regions.by.zone');
+    Route::get('get-territories-by-region', [App\Http\Controllers\HomeController::class, 'getTerritoriesByRegion'])->name('get.territories.by.region');
 });
 
 // Password Reset Routes (public)
@@ -222,15 +226,15 @@ Route::view('view_distributor', 'page_builder.distributor1')->name('view_distrib
 // routes/web.php
 
 Route::middleware(['auth'])->group(function () {
-  // Application routes
+    // Application routes
     Route::resource('applications', OnboardingController::class);
     Route::post('/applications/save-step/{stepNumber}', [OnboardingController::class, 'saveStep'])->name('applications.save-step');
     Route::post('/applications/remove-document/{application_id}', [OnboardingController::class, 'removeDocument'])->name('applications.remove-document');
-    
+
     Route::get('/get-districts/{state_id}', [OnboardingController::class, 'getDistricts']);
     Route::get('/application/{id}/preview', [OnboardingController::class, 'preview'])->name('application.preview');
     Route::get('/application/{id}/download', [OnboardingController::class, 'downloadApplicationPdf'])->name('application.download');
-      // Approval routes
+    // Approval routes
     Route::prefix('approvals')->group(function () {
         Route::get('/dashboard', [ApprovalController::class, 'dashboard'])->name('approvals.dashboard');
         Route::get('/{application}', [ApprovalController::class, 'show'])->name('approvals.show');
@@ -240,15 +244,15 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/{application}/hold', [ApprovalController::class, 'hold'])->name('approvals.hold');
     });
 
-     // MIS processing routes
+    // MIS processing routes
     Route::prefix('mis')->group(function () {
-    Route::get('/{application}/verify-documents', [MISProcessingController::class, 'showDocumentVerification'])->name('approvals.verify-documents');
-    Route::post('/{application}/verify-documents', [MISProcessingController::class, 'verifyDocuments'])->name('approvals.submit-verification');
-    Route::get('/{application}/upload-agreement', [MISProcessingController::class, 'showAgreementUpload'])->name('approvals.upload-agreement');
-    Route::post('/{application}/generate-agreement', [MISProcessingController::class, 'generateAgreement'])->name('approvals.generate-agreement');
-    Route::get('/{application}/track-documents', [MISProcessingController::class, 'showPhysicalDocumentTracking'])->name('approvals.track-documents');
-    Route::post('/{application}/track-documents', [MISProcessingController::class, 'trackPhysicalDocuments'])->name('approvals.submit-documents');
-});
+        Route::get('/{application}/verify-documents', [MISProcessingController::class, 'showDocumentVerification'])->name('approvals.verify-documents');
+        Route::post('/{application}/verify-documents', [MISProcessingController::class, 'verifyDocuments'])->name('approvals.submit-verification');
+        Route::get('/{application}/upload-agreement', [MISProcessingController::class, 'showAgreementUpload'])->name('approvals.upload-agreement');
+        Route::post('/{application}/generate-agreement', [MISProcessingController::class, 'generateAgreement'])->name('approvals.generate-agreement');
+        Route::get('/{application}/track-documents', [MISProcessingController::class, 'showPhysicalDocumentTracking'])->name('approvals.track-documents');
+        Route::post('/{application}/track-documents', [MISProcessingController::class, 'trackPhysicalDocuments'])->name('approvals.submit-documents');
+    });
 
     // Route::get('/test-email', function() {
     //     Mail::to('vnrit156t@gmail.com')->send(new \App\Mail\TestEmail());
@@ -257,33 +261,45 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/get-territory-data', [CoreTerritoryController::class, 'getMappingData']);
     Route::get('/dashboard/dynamic-data', [App\Http\Controllers\HomeController::class, 'dynamicData'])->name('dashboard.dynamic-data');
 
-Route::prefix('vendors')->name('vendors.')->group(function () {
-    // Routes handled by VendorController
-    Route::post('/store-section/{vendor}', [VendorController::class, 'storeSection'])->name('store.section');
-    Route::get('/list', [VendorController::class, 'index'])->name('index');
-    Route::get('/create', [VendorController::class, 'create'])->name('create');
-    Route::post('/store', [VendorController::class, 'store'])->name('store');
-    Route::get('/profile', [VendorController::class, 'profile'])->name('profile');
-    Route::get('/edit/{id}', [VendorController::class, 'edit'])->name('edit');
-    Route::put('/update/{id}', [VendorController::class, 'update'])->name('update');
-    Route::get('/edit/{vendor}/section/{section}', [VendorController::class, 'editSection'])->name('edit.section');
-    Route::delete('/destroy/{id}', [VendorController::class, 'destroy'])->name('destroy');
-    Route::get('/submitted/{id}', [VendorController::class, 'submitted'])->name('submitted');
-    Route::get('/success/{id}', [VendorController::class, 'success'])->name('success');
-    Route::get('/{id}', [VendorController::class, 'show'])->name('show');
-    Route::get('/employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
-    Route::get('/{id}/documents/{type}', [VendorController::class, 'showDocument'])->name('documents.show');
-    Route::post('/{id}/toggle-active', [VendorController::class, 'toggleActive'])->name('toggle-active');
-});
+    Route::prefix('vendors')->name('vendors.')->group(function () {
+        // Routes handled by VendorController
+        Route::post('/store-section/{vendor}', [VendorController::class, 'storeSection'])->name('store.section');
+        Route::get('/list', [VendorController::class, 'index'])->name('index');
+        Route::get('/create', [VendorController::class, 'create'])->name('create');
+        Route::post('/store', [VendorController::class, 'store'])->name('store');
+        Route::get('/profile', [VendorController::class, 'profile'])->name('profile');
+        Route::get('/edit/{id}', [VendorController::class, 'edit'])->name('edit');
+        Route::put('/update/{id}', [VendorController::class, 'update'])->name('update');
+        Route::get('/edit/{vendor}/section/{section}', [VendorController::class, 'editSection'])->name('edit.section');
+        Route::delete('/destroy/{id}', [VendorController::class, 'destroy'])->name('destroy');
+        Route::get('/submitted/{id}', [VendorController::class, 'submitted'])->name('submitted');
+        Route::get('/success/{id}', [VendorController::class, 'success'])->name('success');
+        Route::get('/{id}', [VendorController::class, 'show'])->name('show');
+        Route::get('/employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
+        Route::get('/{id}/documents/{type}', [VendorController::class, 'showDocument'])->name('documents.show');
+        Route::post('/{id}/toggle-active', [VendorController::class, 'toggleActive'])->name('toggle-active');
+    });
 
-Route::middleware(['auth'])->group(function () {
-    // Routes handled by VendorApprovalController
-    Route::get('/temp-edits', [VendorApprovalController::class, 'tempEdits'])->name('temp-edits');
-    Route::get('/temp-edits/{id}', [VendorApprovalController::class, 'showTempEdit'])->name('temp-edits.show');
-    Route::patch('/temp-edits/approve/{id}', [VendorApprovalController::class, 'approveTempEdit'])->name('temp-edits.approve');
-    Route::patch('/temp-edits/reject/{id}', [VendorApprovalController::class, 'rejectTempEdit'])->name('temp-edits.reject');
-    Route::get('/temp-edits/document/{id}/{type}', [VendorApprovalController::class, 'showTempDocument'])->name('temp-document');
-    Route::post('/{id}/approve', [VendorApprovalController::class, 'approve'])->name('approve');
-    Route::post('/{id}/reject', [VendorApprovalController::class, 'reject'])->name('reject');
-});
+    Route::middleware(['auth'])->group(function () {
+        // Routes handled by VendorApprovalController
+        Route::get('/temp-edits', [VendorApprovalController::class, 'tempEdits'])->name('temp-edits');
+        Route::get('/temp-edits/{id}', [VendorApprovalController::class, 'showTempEdit'])->name('temp-edits.show');
+        Route::patch('/temp-edits/approve/{id}', [VendorApprovalController::class, 'approveTempEdit'])->name('temp-edits.approve');
+        Route::patch('/temp-edits/reject/{id}', [VendorApprovalController::class, 'rejectTempEdit'])->name('temp-edits.reject');
+        Route::get('/temp-edits/document/{id}/{type}', [VendorApprovalController::class, 'showTempDocument'])->name('temp-document');
+        Route::post('/{id}/approve', [VendorApprovalController::class, 'approve'])->name('approve');
+        Route::post('/{id}/reject', [VendorApprovalController::class, 'reject'])->name('reject');
+    });
+
+    Route::middleware(['auth'])->group(function () {
+          Route::get('/items/export', [ItemController::class, 'exportItems'])->name('items.export');
+        Route::get('/categories/export', [ItemController::class, 'exportCategories'])->name('categories.export');
+        Route::resource('item-groups', ItemGroupController::class);
+        Route::resource('items', ItemController::class);
+
+        Route::delete('categories/{category}', [ItemController::class, 'destroyCategory'])->name('categories.destroy');
+        Route::get('items/{item}/categories', [ItemController::class, 'getItemCategories'])->name('items.categories.get');
+        Route::post('items/{item}/categories', [ItemController::class, 'updateItemCategories'])->name('items.categories.update');
+      
+    });
 });

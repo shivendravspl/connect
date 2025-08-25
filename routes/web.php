@@ -78,6 +78,8 @@ Route::middleware('auth')->group(function () {
         Route::resource('users', UserController::class);
         Route::post('getUserList', [UserController::class, 'getUserList'])->name('getUserList');
         Route::post('/users/export', [UserController::class, 'export'])->name('users.export');
+        Route::put('/users/{user}/password', [UserController::class, 'changePassword'])->name('users.password');
+
     });
 
     // Role and Permission Routes (restricted to list-role permission)

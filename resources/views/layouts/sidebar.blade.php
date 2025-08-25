@@ -42,8 +42,9 @@
         <ul class="navbar-nav" id="navbar-nav">
             <!--<li class="menu-title"><span data-key="t-menu">Menu</span></li>-->
             <li class="nav-item">
-                <a class="nav-link menu-link" href="#sidebarDashboards" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarDashboards">
-                    <i class="ri-dashboard-2-line"></i> <span data-key="t-dashboards">Dashboards</span>
+                 <a class="nav-link menu-link" href="{{ route('dashboard') }}">
+                    <i class="ri-dashboard-2-line"></i>
+                    <span data-key="t-dashboards">Dashboards</span>
                 </a>
                 <div class="collapse menu-dropdown" id="sidebarDashboards">
                     <ul class="nav nav-sm flex-column"></ul>

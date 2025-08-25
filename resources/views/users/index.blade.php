@@ -22,64 +22,22 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <div class="row align-items-end">
-                        <!-- Filters -->
-                        <div class="col-md-2">
-                            <label for="bu" class="form-label">Business Unit</label>
-                            <select name="bu" id="bu" class="form-select form-select-sm">
-                                @foreach ($bu_list as $key => $value)
-                                    <option value="{{ $key }}">{{ $value }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label for="filter_zone" class="form-label">Zone</label>
-                            <select class="form-control form-control-sm" id="filter_zone">
-                                <option value="">All Zones</option>
-                                @foreach($zone_list as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label for="filter_region" class="form-label">Region</label>
-                            <select class="form-control form-control-sm" id="filter_region">
-                                <option value="">All Regions</option>
-                                @foreach($region_list as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label for="filter_territory" class="form-label">Territory</label>
-                            <select class="form-control form-control-sm" id="filter_territory">
-                                <option value="">All Territories</option>
-                                @foreach($territory_list as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-2">
-                            <label for="filter_crop_vertical" class="form-label">Crop Vertical</label>
-                            <select class="form-control form-control-sm" id="filter_crop_vertical">
-                                <option value="">All Crop Verticals</option>
-                                @foreach($crop_type as $id => $name)
-                                    <option value="{{ $id }}">{{ $name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-2 text-end">
-                            <button class="btn btn-success btn-sm export-users" title="Export to Excel">
-                                <i class="fas fa-file-excel me-1"></i> Export
-                            </button>
-                        </div>
-                    </div>
-                </div>
+    <div class="row align-items-center">
+        <div class="col-md-6">
+            <h5 class="card-title mb-0">User Management</h5>
+        </div>
+        <div class="col-md-6">
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn btn-success btn-sm export-users" title="Export to Excel">
+                    <i class="fas fa-file-excel me-1"></i> Export
+                </button>
+                {{--<button class="btn btn-primary btn-sm add-user" title="Add New User">
+                    <i class="fas fa-plus me-1"></i> Add User
+                </button>--}}
+            </div>
+        </div>
+    </div>
+</div>
 
                 <div class="card-body">
                     <div class="table-responsive">
@@ -91,10 +49,6 @@
                                     <th>Email</th>
                                     <th>Phone</th>
                                     <th>Roles</th>
-                                    <th>Territory</th>
-                                    <th>Region</th>
-                                    <th>Zone</th>
-                                    <th>Crop Vertical</th>
                                     <th>Created At</th>
                                     <th>Actions</th>
                                 </tr>
@@ -134,18 +88,8 @@
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="mb-2">
-                            <label for="password" class="form-label">Password</label>
-                            <input type="password" class="form-control form-control-sm" id="password" name="password">
-                            <div class="invalid-feedback"></div>
-                        </div>
-                        <div class="mb-2">
-                            <label for="password_confirmation" class="form-label">Confirm Password</label>
-                            <input type="password" class="form-control form-control-sm" id="password_confirmation" name="password_confirmation">
-                            <div class="invalid-feedback"></div>
-                        </div>
-                        <div class="mb-2">
                             <label for="roles" class="form-label">Roles</label>
-                            <select class="form-select select2 form-control-sm" id="roles" name="roles[]" multiple required>
+                            <select class="form-select select2 form-control-sm" id="roles" name="roles[]" multiple>
                                 @foreach($roles as $role)
                                     <option value="{{ $role->id }}">{{ $role->name }}</option>
                                 @endforeach
@@ -156,6 +100,39 @@
                     <div class="modal-footer p-2">
                         <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
                         <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal fade" id="changePasswordModal" tabindex="-1" aria-labelledby="changePasswordModalLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-light p-2">
+                    <h5 class="modal-title" id="changePasswordModalLabel">Change Password</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="change-password-form" method="POST">
+                    @csrf
+                    <input type="hidden" name="_method" value="PUT">
+                    <input type="hidden" name="user_id" id="password_user_id">
+                    <div class="modal-body p-3">
+                        <div class="mb-2">
+                            <label for="new_password" class="form-label">New Password</label>
+                            <input type="password" class="form-control form-control-sm" id="new_password" name="password" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="mb-2">
+                            <label for="password_confirmation" class="form-label">Confirm Password</label>
+                            <input type="password" class="form-control form-control-sm" id="password_confirmation" name="password_confirmation" required>
+                            <div class="invalid-feedback"></div>
+                        </div>
+                    </div>
+                    <div class="modal-footer p-2">
+                        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-primary btn-sm">Update Password</button>
                     </div>
                 </form>
             </div>
@@ -187,7 +164,7 @@
 <style>
     #user-table.dataTable {
         font-size: 0.82rem;
-        width: 100% !important; /* Ensure table takes full width */
+        width: 100% !important;
     }
 
     #user-table.dataTable thead th {
@@ -196,15 +173,15 @@
         letter-spacing: 0.5px;
         background-color: #f3f6f9;
         color: #333;
-        white-space: nowrap; /* Prevent header text wrapping */
+        white-space: nowrap;
     }
 
     #user-table.dataTable tbody td {
         font-size: 0.82rem;
         vertical-align: middle;
-        white-space: nowrap; /* Prevent cell content wrapping */
+        white-space: nowrap;
         overflow: hidden;
-        text-overflow: ellipsis; /* Handle overflow gracefully */
+        text-overflow: ellipsis;
     }
 
     #user-table .badge {
@@ -247,7 +224,7 @@
     }
 
     .table-responsive {
-        overflow-x: auto; /* Enable horizontal scrolling if needed */
+        overflow-x: auto;
     }
 
     #user-table.dataTable tbody tr:nth-child(even) {
@@ -363,8 +340,8 @@
         const table = $('#user-table').DataTable({
             processing: true,
             serverSide: true,
-            responsive: true, // Enable responsive behavior
-            autoWidth: false, // Disable auto-width to prevent misalignment
+            responsive: true,
+            autoWidth: false,
             ajax: {
                 url: "{{ route('getUserList') }}",
                 type: "POST",
@@ -394,106 +371,30 @@
                         return data ? data.map(role => `<span class="badge bg-primary">${role}</span>`).join(' ') : '-';
                     }
                 },
-                { data: 'territory_name', name: 'core_territory.territory_name', width: '10%' },
-                { data: 'region_name', name: 'core_region.region_name', width: '10%' },
-                { data: 'zone_name', name: 'core_zone.zone_name', width: '10%' },
-                { data: 'crop_vertical_name', name: 'core_employee.emp_vertical', width: '10%' },
                 { data: 'created_at', name: 'created_at', width: '10%' },
-                { data: 'action', name: 'action', orderable: false, searchable: false, width: '10%' }
+                { 
+                    data: 'action', 
+                    name: 'action', 
+                    orderable: false, 
+                    searchable: false, 
+                    width: '15%',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-info edit-user" data-id="${row.id}" title="Edit">
+                                    <i class="bx bx-pencil fs-14"></i>
+                                </button>
+                                <button class="btn btn-sm btn-warning change-password" data-id="${row.id}" title="Change Password">
+                                    <i class="bx bx-lock fs-14"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger delete-user" data-id="${row.id}" title="Delete">
+                                    <i class="bx bx-trash fs-14"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
             ]
-        });
-
-        // Hierarchical filter functions
-        function getZoneByBU(bu) {
-            const zoneSelect = $('#filter_zone');
-            $.ajax({
-                url: "{{ route('get_zone_by_bu') }}",
-                data: { bu: bu },
-                type: 'POST',
-                dataType: 'json',
-                beforeSend: function() {
-                    zoneSelect.prop('disabled', true);
-                },
-                success: function(data) {
-                    zoneSelect.empty().append('<option value="">All Zones</option>');
-                    $.each(data.zoneList, function(index, zone) {
-                        zoneSelect.append(
-                            `<option value="${zone.id}">${zone.zone_name}</option>`
-                        );
-                    });
-                    zoneSelect.prop('disabled', false);
-                    $('#filter_region').empty().append('<option value="">All Regions</option>');
-                    $('#filter_territory').empty().append('<option value="">All Territories</option>');
-                    table.ajax.reload();
-                }
-            });
-        }
-
-        function getRegionByZone(zone) {
-            const regionSelect = $('#filter_region');
-            $.ajax({
-                url: "{{ route('get_region_by_zone') }}",
-                data: { zone: zone },
-                type: 'POST',
-                dataType: 'json',
-                beforeSend: function() {
-                    regionSelect.prop('disabled', true);
-                },
-                success: function(data) {
-                    regionSelect.empty().append('<option value="">All Regions</option>');
-                    $.each(data.regionList, function(index, region) {
-                        regionSelect.append(
-                            `<option value="${region.id}">${region.region_name}</option>`
-                        );
-                    });
-                    regionSelect.prop('disabled', false);
-                    $('#filter_territory').empty().append('<option value="">All Territories</option>');
-                    table.ajax.reload();
-                }
-            });
-        }
-
-        function getTerritoryByRegion(region) {
-            const territorySelect = $('#filter_territory');
-            $.ajax({
-                url: "{{ route('get_territory_by_region') }}",
-                data: { region: region },
-                type: 'POST',
-                dataType: 'json',
-                beforeSend: function() {
-                    territorySelect.prop('disabled', true);
-                },
-                success: function(data) {
-                    territorySelect.empty().append('<option value="">All Territories</option>');
-                    $.each(data.territoryList, function(index, territory) {
-                        territorySelect.append(
-                            `<option value="${territory.id}">${territory.territory_name}</option>`
-                        );
-                    });
-                    territorySelect.prop('disabled', false);
-                    table.ajax.reload();
-                }
-            });
-        }
-
-        // Filter change handlers
-        $(document).on("change", "#bu", function() {
-            var bu = $(this).val();
-            getZoneByBU(bu);
-        });
-
-        $(document).on("change", "#filter_zone", function() {
-            var zone = $(this).val();
-            getRegionByZone(zone);
-        });
-
-        $(document).on("change", "#filter_region", function() {
-            var region = $(this).val();
-            getTerritoryByRegion(region);
-        });
-
-        $('#filter_zone, #filter_crop_vertical, #filter_territory, #filter_region').change(function() {
-            table.ajax.reload();
         });
 
         // Add user button click handler
@@ -506,8 +407,6 @@
             $('#userModalLabel').text('Add User');
             form.attr('action', '{{ route("users.store") }}');
             form.find('input[name="_method"]').val('POST');
-            $('#email, #phone').removeAttr('required');
-            $('#password, #password_confirmation').attr('required', 'required');
             $('#userModal').modal('show');
         });
 
@@ -523,8 +422,6 @@
             $('#userModalLabel').text('Edit User');
             form.attr('action', '{{ url("users") }}/' + userId);
             form.find('input[name="_method"]').val('PUT');
-            $('#email, #phone').removeAttr('required');
-            $('#password, #password_confirmation').removeAttr('required');
 
             $.ajax({
                 url: "{{ url('users') }}/" + userId + "/edit",
@@ -536,7 +433,6 @@
                         $('#name').val(user.name || '');
                         $('#email').val(user.email || '');
                         $('#phone').val(user.phone || '');
-                        $('#password, #password_confirmation').val('');
                         if (userData.userRoles) {
                             $('#roles').val(userData.userRoles).trigger('change');
                         }
@@ -553,7 +449,21 @@
             });
         });
 
-        // Form submission handler
+        // Change password button click handler
+        $(document).on('click', '.change-password', function() {
+            const userId = $(this).data('id');
+            const form = $('#change-password-form');
+            
+            form[0].reset();
+            form.find('.is-invalid').removeClass('is-invalid');
+            form.find('.invalid-feedback').text('').hide();
+            
+            $('#password_user_id').val(userId);
+            form.attr('action', '{{ url("users") }}/' + userId + '/password');
+            $('#changePasswordModal').modal('show');
+        });
+
+        // Form submission handler for user form
         $('#user-form').on('submit', function(e) {
             e.preventDefault();
             const form = $(this);
@@ -580,6 +490,42 @@
                         const errors = xhr.responseJSON.errors;
                         $.each(errors, function(field, messages) {
                             const input = form.find(`[name="${field}"], [name="${field}[]"]`);
+                            input.addClass('is-invalid');
+                            input.siblings('.invalid-feedback').text(messages[0]).show();
+                        });
+                    } else {
+                        alert('An error occurred. Please try again.');
+                    }
+                }
+            });
+        });
+
+        // Form submission handler for password change form
+        $('#change-password-form').on('submit', function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const url = form.attr('action');
+            const method = form.find('input[name="_method"]').val() || 'PUT';
+
+            form.find('.is-invalid').removeClass('is-invalid');
+            form.find('.invalid-feedback').text('').hide();
+
+            $.ajax({
+                url: url,
+                type: method,
+                data: form.serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        $('#changePasswordModal').modal('hide');
+                        alert(response.message);
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Password change AJAX error:', xhr.responseJSON);
+                    if (xhr.status === 422) {
+                        const errors = xhr.responseJSON.errors;
+                        $.each(errors, function(field, messages) {
+                            const input = form.find(`[name="${field}"]`);
                             input.addClass('is-invalid');
                             input.siblings('.invalid-feedback').text(messages[0]).show();
                         });

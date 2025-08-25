@@ -34,7 +34,7 @@ class OnboardingController extends Controller
         $applications = Onboarding::where('created_by', $empId)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-
+//dd($applications);
         return view('applications.index', compact('applications'));
     }
 

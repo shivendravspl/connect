@@ -35,8 +35,8 @@
                                 @foreach($applications as $application)
                                 <tr>
                                     <td class="py-1 px-1">{{ $application->application_code }}</td>
-                                    <td class="py-1 px-1">{{ $application->establishment_name ?? 'N/A' }}</td>
-                                    <td class="py-1 px-1 d-none d-sm-table-cell">{{ $application->territory }}</td>
+                                    <td class="py-1 px-1">{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
+                                    <td class="py-1 px-1 d-none d-sm-table-cell">{{ isset($application->territory) ? DB::table('core_territory')->where('id', $application->territory)->value('territory_name') ?? 'N/A' : 'N/A' }}</td>
                                     <td class="py-1 px-1">
                                         <span class="badge bg-{{ $application->status_badge }}" style="font-size: 0.65rem;">
                                             {{ ucfirst($application->status) }}

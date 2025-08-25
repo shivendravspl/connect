@@ -24,33 +24,8 @@ class UserController extends Controller
         $user = Auth::user();
         $employeeId = $user->emp_id;
 
-        // Get crop vertical based on employee
-        $employeeVertical = Employee::where('id', $employeeId)->value('emp_vertical');
-        $crop_type = [];
-
-        if ($employeeVertical == '2') {
-            $crop_type = ['2' => 'Veg Crop'];
-        } elseif ($employeeVertical == '1') {
-            $crop_type = ['1' => 'Field Crop'];
-        }
-
-        // Get filtered lists based on user role
-        $bu_list = $this->getFilteredBusinessUnits($user, $employeeId);
-        $zone_list = $this->getFilteredZones($user, $employeeId);
-        $region_list = $this->getFilteredRegions($user, $employeeId);
-        $territory_list = $this->getFilteredTerritories($user, $employeeId);
-
-        return view('users.index', compact(
-            'roles',
-            'territory_list',
-            'region_list',
-            'zone_list',
-            'crop_type',
-            'bu_list'
-        ));
+        return view('users.index', compact('roles'));
     }
-
-    // Helper methods moved to controller (or better, to a dedicated service class)
 
     /**
      * Get business units filtered by user permissions
@@ -184,20 +159,9 @@ class UserController extends Controller
                 'users.phone',
                 'users.created_at',
                 'users.emp_id',
-                DB::raw('COALESCE(core_territory.territory_name, "-") AS territory_name'),
-                DB::raw('COALESCE(core_region.region_name, "-") AS region_name'),
-                DB::raw('COALESCE(core_zone.zone_name, "-") AS zone_name'),
-                DB::raw('CASE 
-                    WHEN core_employee.emp_vertical = 1 THEN "Field Crop" 
-                    WHEN core_employee.emp_vertical = 2 THEN "Veg Crop" 
-                    ELSE "-" 
-                END AS crop_vertical_name'),
                 DB::raw('GROUP_CONCAT(roles.name) AS roles')
             ])
                 ->leftJoin('core_employee', 'users.emp_id', '=', 'core_employee.id')
-                ->leftJoin('core_territory', 'core_employee.territory', '=', 'core_territory.id')
-                ->leftJoin('core_region', 'core_employee.region', '=', 'core_region.id')
-                ->leftJoin('core_zone', 'core_employee.zone', '=', 'core_zone.id')
                 ->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
                 ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
                 ->groupBy(
@@ -207,32 +171,7 @@ class UserController extends Controller
                     'users.phone',
                     'users.created_at',
                     'users.emp_id',
-                    'core_territory.territory_name',
-                    'core_region.region_name',
-                    'core_zone.zone_name',
-                    'core_employee.emp_vertical'
                 );
-
-            // Apply filters
-            if ($request->has('bu_id') && $request->bu_id && $request->bu_id !== 'All') {
-                $users->where('core_employee.bu', $request->bu_id);
-            }
-
-            if ($request->has('territory_id') && $request->territory_id) {
-                $users->where('core_employee.territory', $request->territory_id);
-            }
-
-            if ($request->has('region_id') && $request->region_id) {
-                $users->where('core_employee.region', $request->region_id);
-            }
-
-            if ($request->has('zone_id') && $request->zone_id) {
-                $users->where('core_employee.zone', $request->zone_id);
-            }
-
-            if ($request->has('crop_vertical') && $request->crop_vertical) {
-                $users->where('core_employee.emp_vertical', $request->crop_vertical);
-            }
 
             return DataTables::of($users)
                 ->addColumn('roles', function ($user) {
@@ -261,14 +200,7 @@ class UserController extends Controller
                                 ->orWhereRaw('LOWER(users.name) LIKE ?', ["%$search%"])
                                 ->orWhereRaw('LOWER(users.email) LIKE ?', ["%$search%"])
                                 ->orWhereRaw('LOWER(users.phone) LIKE ?', ["%$search%"])
-                                ->orWhereRaw('LOWER(users.created_at) LIKE ?', ["%$search%"])
-                                ->orWhereRaw('LOWER(core_territory.territory_name) LIKE ?', ["%$search%"])
-                                ->orWhereRaw('LOWER(core_region.region_name) LIKE ?', ["%$search%"])
-                                ->orWhereRaw('LOWER(core_zone.zone_name) LIKE ?', ["%$search%"])
-                                ->orWhereRaw('core_employee.emp_vertical IN (1, 2) AND (
-                              (core_employee.emp_vertical = 1 AND LOWER(?) LIKE ?) OR 
-                              (core_employee.emp_vertical = 2 AND LOWER(?) LIKE ?)
-                          )', ['Field Crop', "%$search%", 'Veg Crop', "%$search%"]);
+                                ->orWhereRaw('LOWER(users.created_at) LIKE ?', ["%$search%"]);
                         });
                     }
                 })
@@ -380,6 +312,35 @@ class UserController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error updating user.',
+            ], 500);
+        }
+    }
+
+    // Add this method to your UserController
+    public function changePassword(Request $request, User $user)
+    {
+        try {
+            $request->validate([
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            $user->update([
+                'password' => Hash::make($request->password),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password updated successfully.',
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error updating password.',
             ], 500);
         }
     }

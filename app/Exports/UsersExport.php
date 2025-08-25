@@ -36,44 +36,16 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             'users.phone',
             'users.created_at',
             'users.emp_id',
-            DB::raw('COALESCE(core_territory.territory_name, "-") AS territory_name'),
-            DB::raw('COALESCE(core_region.region_name, "-") AS region_name'),
-            DB::raw('COALESCE(core_zone.zone_name, "-") AS zone_name'),
-            DB::raw('CASE 
-                WHEN core_employee.emp_vertical = 1 THEN "Field Crop" 
-                WHEN core_employee.emp_vertical = 2 THEN "Veg Crop" 
-                ELSE "-" 
-            END AS crop_vertical_name'),
             DB::raw('GROUP_CONCAT(roles.name) AS roles')
         ])
         ->leftJoin('core_employee', 'users.emp_id', '=', 'core_employee.id')
-        ->leftJoin('core_territory', 'core_employee.territory', '=', 'core_territory.id')
-        ->leftJoin('core_region', 'core_employee.region', '=', 'core_region.id')
-        ->leftJoin('core_zone', 'core_employee.zone', '=', 'core_zone.id')
         ->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
         ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
-        ->groupBy('users.id', 'users.name', 'users.email', 'users.phone', 'users.created_at', 'users.emp_id', 
-                 'core_territory.territory_name', 'core_region.region_name', 'core_zone.zone_name', 'core_employee.emp_vertical');
+        ->groupBy('users.id', 'users.name', 'users.email', 'users.phone', 'users.created_at', 'users.emp_id');
 
         // Apply filters
         if ($this->request->has('bu_id') && $this->request->bu_id && $this->request->bu_id !== 'All') {
             $query->where('core_employee.bu', $this->request->bu_id);
-        }
-
-        if ($this->request->has('territory_id') && $this->request->territory_id) {
-            $query->where('core_employee.territory', $this->request->territory_id);
-        }
-
-        if ($this->request->has('region_id') && $this->request->region_id) {
-            $query->where('core_employee.region', $this->request->region_id);
-        }
-
-        if ($this->request->has('zone_id') && $this->request->zone_id) {
-            $query->where('core_employee.zone', $this->request->zone_id);
-        }
-
-        if ($this->request->has('crop_vertical') && $this->request->crop_vertical) {
-            $query->where('core_employee.emp_vertical', $this->request->crop_vertical);
         }
 
         // Apply search filter
@@ -84,14 +56,8 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
                   ->orWhereRaw('LOWER(users.name) LIKE ?', ["%$search%"])
                   ->orWhereRaw('LOWER(users.email) LIKE ?', ["%$search%"])
                   ->orWhereRaw('LOWER(users.phone) LIKE ?', ["%$search%"])
-                  ->orWhereRaw('LOWER(users.created_at) LIKE ?', ["%$search%"])
-                  ->orWhereRaw('LOWER(core_territory.territory_name) LIKE ?', ["%$search%"])
-                  ->orWhereRaw('LOWER(core_region.region_name) LIKE ?', ["%$search%"])
-                  ->orWhereRaw('LOWER(core_zone.zone_name) LIKE ?', ["%$search%"])
-                  ->orWhereRaw('core_employee.emp_vertical IN (1, 2) AND (
-                      (core_employee.emp_vertical = 1 AND LOWER(?) LIKE ?) OR 
-                      (core_employee.emp_vertical = 2 AND LOWER(?) LIKE ?)
-                  )', ['Field Crop', "%$search%", 'Veg Crop', "%$search%"]);
+                  ->orWhereRaw('LOWER(users.created_at) LIKE ?', ["%$search%"]);
+                  
             });
         }
 
@@ -106,10 +72,6 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             'Email',
             'Phone',
             'Roles',
-            'Territory',
-            'Region',
-            'Zone',
-            'Crop Vertical',
             'Created At',
         ];
     }
@@ -122,10 +84,6 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             $user->email ?: '-',
             $user->phone ?: '-',
             $user->roles ?: '-',
-            $user->territory_name,
-            $user->region_name,
-            $user->zone_name,
-            $user->crop_vertical_name,
             $user->created_at ? $user->created_at->format('Y-m-d') : '-',
         ];
     }
@@ -133,7 +91,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
     public function styles(Worksheet $sheet)
     {
         $sheet->freezePane('A2');
-        $sheet->getStyle('A1:J1')->applyFromArray([
+        $sheet->getStyle('A1:F1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -157,7 +115,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             ],
         ]);
 
-        foreach (range('A', 'J') as $columnID) {
+        foreach (range('A', 'F') as $columnID) {
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
     }

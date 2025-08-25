@@ -84,9 +84,21 @@ class VendorController extends Controller
             $rules['vendor_email'] = 'required|email|unique:vendors,vendor_email,' . $vendorId;
         }
 
-        if ($step == 1) {
-            $rules['contact_number'] = 'required|digits:10|unique:users,phone';
-        }
+       if ($step == 1) {
+    if ($vendorId) {
+        $vendor = Vendor::findOrFail($vendorId);
+
+        // If vendor already linked to a user
+        $linkedUser = User::where('phone', $vendor->contact_number)->first();
+        $ignoreUserId = $linkedUser?->id ?? null;
+
+        $rules['contact_number'] = 'required|digits:10|unique:users,phone,' . $ignoreUserId;
+    } else {
+        $rules['contact_number'] = 'required|digits:10|unique:users,phone';
+    }
+}
+
+
 
         $validated = $request->validate($rules);
 
@@ -101,25 +113,29 @@ class VendorController extends Controller
         }
 
          if ($step == 1) {
-        $contactNumber = $validated['contact_number'];
+    $contactNumber = $validated['contact_number'];
 
-        $existingUser = User::where('phone', $contactNumber)->first();
-            if (!$existingUser) {
-                User::create([
-                    'name' => $validated['contact_person_name'],
-                    'email' => $validated['vendor_email'],
-                    'phone' => $contactNumber,
-                    'password' =>  Hash::make($contactNumber),
-                    'status' => 'P', // default pending
-                    'type' => 'vendor',
-                ]);
-            }else{
-            return response()->json([
-                'success' => false,
-                'message' => 'The phone number is already registered.'
-            ], 422);
-            }
-        }
+    $existingUser = User::where('phone', $contactNumber)->first();
+
+    if (!$existingUser) {
+        User::create([
+            'name' => $validated['contact_person_name'],
+            'email' => $validated['vendor_email'],
+            'phone' => $contactNumber,
+            'password' => Hash::make($contactNumber),
+            'status' => 'P',
+            'type' => 'vendor',
+        ]);
+    } elseif ($vendorId && $existingUser->id == $ignoreUserId) {
+        // allow if it's the same user already linked → just skip creation
+    } else {
+        return response()->json([
+            'success' => false,
+            'message' => 'The phone number is already registered.'
+        ], 422);
+    }
+}
+
 
 
         $this->handleFileUploads($request, $vendor, $step);

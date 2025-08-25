@@ -33,6 +33,8 @@ use App\Http\Controllers\VendorController;
 use App\Http\Controllers\VendorApprovalController;
 use App\Http\Controllers\ItemGroupController;
 use App\Http\Controllers\ItemController;
+use App\Http\Controllers\IndentController;
+
 
 
 
@@ -292,7 +294,7 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::middleware(['auth'])->group(function () {
-          Route::get('/items/export', [ItemController::class, 'exportItems'])->name('items.export');
+        Route::get('/items/export', [ItemController::class, 'exportItems'])->name('items.export');
         Route::get('/categories/export', [ItemController::class, 'exportCategories'])->name('categories.export');
         Route::resource('item-groups', ItemGroupController::class);
         Route::resource('items', ItemController::class);
@@ -300,6 +302,12 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('categories/{category}', [ItemController::class, 'destroyCategory'])->name('categories.destroy');
         Route::get('items/{item}/categories', [ItemController::class, 'getItemCategories'])->name('items.categories.get');
         Route::post('items/{item}/categories', [ItemController::class, 'updateItemCategories'])->name('items.categories.update');
-      
+
+        Route::post('indents/{indent}/save-header', [IndentController::class, 'saveHeaderUpdate'])->name('indents.saveHeader');
+        Route::post('indents/save-header', [IndentController::class, 'saveHeader'])->name('indents.createHeader');
+        Route::resource('indents', IndentController::class);
+        Route::post('indents/{indent}/submit', [IndentController::class, 'submit'])->name('indents.submit');
+        Route::post('indents/{indent}/approve', [IndentController::class, 'approve'])->name('indents.approve');
+        Route::post('indents/{indent}/reject', [IndentController::class, 'reject'])->name('indents.reject');
     });
 });

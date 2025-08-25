@@ -3,10 +3,10 @@
 @section('content')
 <div class="container-fluid">
     <div class="row">
-        <div class="col-md-8">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h2>Item Details: {{ $item->name }}</h2>
+                    <h5>Item Details: {{ $item->name }}</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -33,59 +33,23 @@
                                     <td>{{ $item->uom }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Stock Range:</th>
-                                    <td>{{ $item->min_stock }} - {{ $item->max_stock }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Price per Unit:</th>
-                                    <td>{{ $item->price_per_unit ? '₹' . $item->price_per_unit : 'N/A' }}</td>
-                                </tr>
-                                <tr>
                                     <th>Status:</th>
                                     <td>
-                                        <span class="badge badge-{{ $item->is_active ? 'success' : 'secondary' }}">
+                                        <span class="badge bg-{{ $item->is_active ? 'success' : 'secondary' }}">
                                             {{ $item->is_active ? 'Active' : 'Inactive' }}
                                         </span>
                                     </td>
                                 </tr>
                             </table>
                         </div>
-                        <div class="col-md-6">
-                            <h5>Seed Specific Details</h5>
-                            <table class="table table-bordered">
-                                <tr>
-                                    <th width="40%">Variety:</th>
-                                    <td>{{ $item->variety ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Seed Type:</th>
-                                    <td>{{ $item->seed_type ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Germination Rate:</th>
-                                    <td>{{ $item->germination_rate ? $item->germination_rate . '%' : 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Shelf Life:</th>
-                                    <td>{{ $item->shelf_life_months ? $item->shelf_life_months . ' months' : 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Crop Duration:</th>
-                                    <td>{{ $item->crop_duration_days ? $item->crop_duration_days . ' days' : 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Disease Resistance:</th>
-                                    <td>{{ $item->disease_resistance ?? 'N/A' }}</td>
-                                </tr>
-                            </table>
-                        </div>
+                        
                     </div>
 
                     <div class="mt-4">
-                        <a href="{{ route('items.edit', $item) }}" class="btn btn-primary">
-                            <i class="fas fa-edit"></i> Edit Item
+                        <a href="{{ route('items.edit', $item) }}" class="btn btn-sm btn-primary">
+                            <i class="ri-pencil-fill"></i>
                         </a>
-                        <a href="{{ route('items.index') }}" class="btn btn-secondary">
+                        <a href="{{ route('items.index') }}" class="btn btn-sm btn-secondary">
                             Back to List
                         </a>
                     </div>
@@ -93,10 +57,10 @@
             </div>
         </div>
 
-        <div class="col-md-4">
+        <div class="col-md-6">
             <div class="card">
                 <div class="card-header">
-                    <h3>Indent History</h3>
+                    <h5>Indent History</h5>
                 </div>
                 <div class="card-body">
                     @if($item->indentItems->count() > 0)

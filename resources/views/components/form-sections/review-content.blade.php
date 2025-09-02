@@ -29,14 +29,14 @@
             <td class="label">Zone:</td>
             <td class="value">{{ $application->zoneDetail->zone_name ?? 'N/A' }}</td>
         </tr>
-        <tr>
+        {{--<tr>
             <td class="label">District:</td>
             <td class="value">{{ $application->district && isset($districts[$application->district]) ? $districts[$application->district]->district_name : 'N/A' }}</td>
         </tr>
         <tr>
             <td class="label">State:</td>
             <td class="value">{{ $application->state && isset($states[$application->state]) ? $states[$application->state]->state_name : 'N/A' }}</td>
-        </tr>
+        </tr>--}}
         <tr>
             <td class="label">Business Unit:</td>
             <td class="value">{{ $application->businessUnit->business_unit_name ?? 'Not Assigned' }}</td>

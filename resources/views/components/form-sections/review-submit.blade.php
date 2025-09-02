@@ -20,8 +20,8 @@
                     N/A
                 @endif
             </p>
-            <p><strong>State:</strong> {{ $application->state ? \DB::table('core_state')->where('id', $application->state)->value('state_name') : 'N/A' }}</p>
-            <p><strong>District:</strong> {{ $application->district ? \DB::table('core_district')->where('id', $application->district)->value('district_name') : 'N/A' }}</p>
+            {{--<p><strong>State:</strong> {{ $application->state ? \DB::table('core_state')->where('id', $application->state)->value('state_name') : 'N/A' }}</p>
+            <p><strong>District:</strong> {{ $application->district ? \DB::table('core_district')->where('id', $application->district)->value('district_name') : 'N/A' }}</p>--}}
         </div>
     </div>
 

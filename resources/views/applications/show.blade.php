@@ -138,14 +138,14 @@
                             <th>Crop Vertical</th>
                             <td>{{ isset($application->crop_vertical) && $application->crop_vertical === '1' ? 'Field Crop' : 'Veg Crop' }}</td>
                         </tr>
-                        <tr>
+                        {{--<tr>
                             <th>State</th>
                             <td>{{ isset($application->state) ? DB::table('core_state')->where('id', $application->state)->value('state_name') ?? 'N/A' : 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>District</th>
                             <td>{{ isset($application->district) ? DB::table('core_district')->where('id', $application->district)->value('district_name') ?? 'N/A' : 'N/A' }}</td>
-                        </tr>
+                        </tr>--}}
                     </tbody>
                 </table>
             </div>
@@ -963,7 +963,7 @@
 
     <!-- Take Action -->
     @if(auth()->user()->emp_id === $application->current_approver_id && !auth()->user()->hasRole('Mis User'))
-    <div class="card mb-3">
+    {{--<div class="card mb-3">
         <div class="card-header p-2">
             <h5 class="mb-0">Take Action</h5>
         </div>
@@ -1059,7 +1059,7 @@ Rem                    <div class="modal-body p-2">
                 </form>
             </div>
         </div>
-    </div>
+    </div> --}}
     @endif
 </div>
 @endsection

@@ -25,7 +25,7 @@ class OnboardingController extends Controller
     public function index()
     {
         $user = Auth::user();
-        if ($user->emp_id || $user->hasAnyRole(['Admin', 'Super Admin'])) {
+        if ($user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin'])) {
             $applications = Onboarding::orderBy('created_at', 'desc')
                 ->paginate(10);
         } else {
@@ -40,7 +40,7 @@ class OnboardingController extends Controller
     {
         $user = Auth::user();
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin', 'Mis User'])) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin', 'Mis User', 'Mis Admin'])) {
             return DB::table('core_business_unit')
                 ->where('is_active', '1')
                 ->where('business_type', '1')
@@ -74,7 +74,7 @@ class OnboardingController extends Controller
         $region_list = [];
         $preselected = [];
         $bu_list = [];
-        $hasAddDistributorPermission = $user->hasAnyRole(['Mis User', 'Admin', 'Super Admin']);
+        $hasAddDistributorPermission = $user->hasAnyRole(['Mis User', 'Admin', 'Super Admin', 'Mis Admin']);
         $crop_type = [
             '1' => 'Field Crop',
             '2' => 'Veg Crop',
@@ -358,8 +358,8 @@ class OnboardingController extends Controller
                 $crops = $cropsQuery->get();
             }
 
-            $currentYear = now()->month >= 4 ? now()->year . '-' . (now()->year + 1) 
-            : (now()->year - 1) . '-' . now()->year;
+            $currentYear = now()->month >= 4 ? now()->year . '-' . (now()->year + 1)
+                : (now()->year - 1) . '-' . now()->year;
 
             $financialYears = Year::where('status', 'active')
                 ->where('period', '<', $currentYear)
@@ -496,7 +496,10 @@ class OnboardingController extends Controller
     {
         $user = Auth::user();
         // Manual authorization: Check if user's emp_id matches application's created_by
-        if (!$user->emp_id || $user->emp_id !== $application->created_by) {
+        if (
+            !$user->emp_id || ($user->emp_id !== $application->created_by
+                && !$user->hasAnyRole(['Admin', 'Mis Admin', 'Super Admin']))
+        ) {
             abort(403, 'You are not authorized to edit this application.');
         }
 
@@ -534,7 +537,7 @@ class OnboardingController extends Controller
         $region_list = [];
         $bu_list = [];
         $preselected = [];
-        $hasAddDistributorPermission = $user->hasAnyRole(['Mis User', 'Admin', 'Super Admin']);
+        $hasAddDistributorPermission = $user->hasAnyRole(['Mis User', 'Admin', 'Super Admin', 'Mis Admin']);
 
 
         if ($user->emp_id) {
@@ -767,32 +770,32 @@ class OnboardingController extends Controller
         ];
 
         // Debug completedStepsData
-        \Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unknown'), [
-            'step1' => [
-                'territory' => !empty($application->territory),
-                'crop_vertical' => !empty($application->crop_vertical),
-                'region' => !empty($application->region),
-                'zone' => !empty($application->zone),
-                'business_unit' => !empty($application->business_unit),
-                'district' => !empty($application->district),
-                'state' => !empty($application->state),
-                'completed' => $completedStepsData[1]
-            ],
-            'step2' => $completedStepsData[2],
-            'step3' => $completedStepsData[3],
-            'step4' => $completedStepsData[4],
-            'step5' => $completedStepsData[5],
-            'step6' => $completedStepsData[6],
-            'step7' => $completedStepsData[7],
-            'step8' => $completedStepsData[8]
-        ]);
+        // \Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unknown'), [
+        //     'step1' => [
+        //         'territory' => !empty($application->territory),
+        //         'crop_vertical' => !empty($application->crop_vertical),
+        //         'region' => !empty($application->region),
+        //         'zone' => !empty($application->zone),
+        //         'business_unit' => !empty($application->business_unit),
+        //         'district' => !empty($application->district),
+        //         'state' => !empty($application->state),
+        //         'completed' => $completedStepsData[1]
+        //     ],
+        //     'step2' => $completedStepsData[2],
+        //     'step3' => $completedStepsData[3],
+        //     'step4' => $completedStepsData[4],
+        //     'step5' => $completedStepsData[5],
+        //     'step6' => $completedStepsData[6],
+        //     'step7' => $completedStepsData[7],
+        //     'step8' => $completedStepsData[8]
+        // ]);
 
         if ($step == 8) {
             return view('applications.review-submit', compact('application', 'years'));
         }
 
-        \Log::debug('Edit Preselected Values:', $preselected);
-        \Log::debug('Edit Vertical List:', $vertical_list);
+        // \Log::debug('Edit Preselected Values:', $preselected);
+        // \Log::debug('Edit Vertical List:', $vertical_list);
 
         // Pass $initialFrontendStep as $currentStep
         return view('applications.edit', compact(
@@ -995,7 +998,7 @@ class OnboardingController extends Controller
         if (!$application_id) {
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
-        \Log::info('saveStep2 Request Data:', $request->all());
+        //\Log::info('saveStep2 Request Data:', $request->all());
         DB::beginTransaction();
         try {
             // Fetch existing entity details
@@ -1485,7 +1488,7 @@ class OnboardingController extends Controller
             return ['success' => true, 'message' => 'Entity details and documents saved successfully', 'application_id' => $application_id, 'current_step' => 3];
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error saving entity details: ' . $e->getMessage());
+            //\Log::error('Error saving entity details: ' . $e->getMessage());
             return ['success' => false, 'error' => 'An error occurred while saving entity details and documents.', 'status' => 500];
         }
     }
@@ -2173,7 +2176,7 @@ class OnboardingController extends Controller
         DB::beginTransaction();
 
         try {
-            if ($user->hasAnyRole(['Mis User', 'Admin', 'Super Admin'])) {
+            if ($user->hasAnyRole(['Mis User', 'Admin', 'Super Admin', 'Mis Admin'])) {
                 $application->update([
                     'status' => 'approved',
                     'current_approver_id' => $user->emp_id,
@@ -2250,8 +2253,11 @@ class OnboardingController extends Controller
     public function destroy(Onboarding $application)
     {
         $user = Auth::user();
-        if ($application->status !== 'draft' || $application->created_by !== $user->emp_id) {
-            Log::warning("Unauthorized delete attempt by emp_id: {$user->emp_id} for application_id: {$application->id}");
+        if ($application->status !== 'draft' || (
+            $application->created_by !== $user->emp_id &&
+            !$user->hasAnyRole(['Admin', 'Mis Admin', 'Super Admin'])
+        )) {
+            //Log::warning("Unauthorized delete attempt by emp_id: {$user->emp_id} for application_id: {$application->id}");
             abort(403, 'Unauthorized action');
         }
 

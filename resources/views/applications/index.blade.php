@@ -7,7 +7,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
                     <h5 class="mb-0 small font-weight-bold">My Applications</h5>
-                    @if(auth()->user()->emp_id || auth()->user()->hasAnyRole(['Admin', 'Super Admin']))
+                    @if(auth()->user()->emp_id && auth()->user()->hasAnyRole(['Admin', 'Super Admin','Mis User']))
                     <a href="{{ route('applications.create') }}" class="btn btn-sm btn-primary py-1 px-3 fs-6">
                         <i class="fas fa-plus fa-sm"></i> <span class="d-none d-sm-inline">New</span>
                     </a>
@@ -53,14 +53,14 @@
                                                 <i class="bx bx-show fs-10 d-flex justify-content-center align-items-center"></i>
                                             </a>
 
-                                            @if(in_array($application->status, ['draft', 'reverted']) && $application->created_by === Auth::user()->emp_id)
+                                            @if(in_array($application->status, ['draft', 'reverted']) && ($application->created_by === Auth::user()->emp_id || auth()->user()->hasAnyRole(['Admin', 'Super Admin','Mis Admin'])))
                                             <!-- Edit button -->
                                             <a href="{{ route('applications.edit', $application) }}" class="btn btn-info btn-action p-0" title="Edit">
                                                 <i class="bx bx-pencil fs-10 d-flex justify-content-center align-items-center"></i>
                                             </a>
                                             @endif
 
-                                            @if($application->status === 'draft' && $application->created_by === Auth::user()->emp_id)
+                                            @if($application->status === 'draft' && ($application->created_by === Auth::user()->emp_id || auth()->user()->hasAnyRole(['Admin', 'Super Admin','Mis Admin']) ) )
                                             <!-- Delete button -->
                                             <form action="{{ route('applications.destroy', $application) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this application?');">
                                                 @csrf

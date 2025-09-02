@@ -9,80 +9,69 @@ class Employee extends Model
 {
     use HasFactory;
 
-    protected $table = 'core_employee'; // Specify the table name if different
+    protected $table = 'core_employee';
+
+    // Primary key is varchar, so we override defaults
+    protected $primaryKey = 'id';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
+        'company_id',
+        'company_name',
+        'employee_id',
         'emp_code',
-        'title',
         'emp_name',
+        'emp_status',
+        'emp_reporting',
+        'emp_doj',
         'emp_email',
         'emp_contact',
-        'emp_desig_id',
-        'emp_designation',
-        'emp_desig_code',
-        'emp_dept_id',
-        'emp_department',
-        'emp_department_code',
-        'emp_company_id',
-        'emp_company',
-        'emp_company_code',
-        'emp_reporting',
-        'status',
+        'emp_gender',
+        'emp_title',
+        'emp_married',
+        'emp_function',
         'emp_vertical',
-        'emp_vertical_name',
-        'focus_department',
-        'territory',
-        'region',
-        'zone',
-        'bu'
+        'emp_department',
+        'emp_sub_department',
+        'emp_section',
+        'emp_designation',
+        'emp_grade',
+        'emp_territory',
+        'emp_region',
+        'emp_zone',
+        'emp_bu',
+        'emp_state',
+        'emp_city',
     ];
 
     /**
-     * Define the relationship with Territory
+     * Relations
      */
     public function territory()
     {
-        return $this->belongsTo(CoreTerritory::class, 'territory');
+        return $this->belongsTo(CoreTerritory::class, 'emp_territory');
     }
 
-    /**
-     * Define the relationship with Region
-     */
     public function region()
     {
-        return $this->belongsTo(CoreRegion::class, 'region');
+        return $this->belongsTo(CoreRegion::class, 'emp_region');
     }
 
-    /**
-     * Define the relationship with Zone
-     */
     public function zone()
     {
-        return $this->belongsTo(CoreZone::class, 'zone');
+        return $this->belongsTo(CoreZone::class, 'emp_zone');
     }
 
-    /**
-     * Get the user account for this employee.
-     */
-    public function user()
+    public function bu()
     {
-        return $this->hasOne(User::class, 'emp_id');
+        return $this->belongsTo(CoreBusinessUnit::class, 'emp_bu');
     }
 
-    /**
-     * Get the manager to whom this employee reports.
-     */
-    public function manager()
+    public function department()
     {
-        return $this->belongsTo(Employee::class, 'emp_reporting');
-    }
-
-    /**
-     * Get the employees who report to this employee.
-     */
-    public function subordinates()
-    {
-        return $this->hasMany(Employee::class, 'emp_reporting');
+        return $this->belongsTo(Department::class, 'emp_department');
     }
 
     public function reportingManager()
@@ -90,23 +79,37 @@ class Employee extends Model
         return $this->belongsTo(Employee::class, 'emp_reporting');
     }
 
+    public function subordinates()
+    {
+        return $this->hasMany(Employee::class, 'emp_reporting');
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'emp_id');
+    }
+
+    /**
+     * Helpers for role/designation logic
+     */
     public function isGeneralManager()
     {
-        return str_contains($this->emp_designation, 'General Manager');
+        return $this->designation && str_contains($this->designation->name ?? '', 'General Manager');
     }
 
     public function isZonalManager()
     {
-        return str_contains($this->emp_designation, 'Zonal Business Manager');
+        return $this->designation && str_contains($this->designation->name ?? '', 'Zonal Business Manager');
     }
 
     public function isRegionalManager()
     {
-        return str_contains($this->emp_designation, 'Regional Business Manager');
+        return $this->designation && str_contains($this->designation->name ?? '', 'Regional Business Manager');
     }
 
     public function isMisTeam()
     {
-        return $this->emp_department_code === 'MIS';
+        return $this->department && $this->department->code === 'MIS';
     }
+
 }

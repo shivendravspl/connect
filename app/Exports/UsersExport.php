@@ -39,7 +39,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             'users.emp_id',
             DB::raw('GROUP_CONCAT(roles.name) AS roles')
         ])
-        ->leftJoin('core_employee', 'users.emp_id', '=', 'core_employee.id')
+        ->leftJoin('core_employee', 'users.emp_id', '=', 'core_employee.employee_id')
         ->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
         ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
         ->groupBy('users.id', 'users.name', 'users.email',  'users.status','users.phone', 'users.created_at', 'users.emp_id');

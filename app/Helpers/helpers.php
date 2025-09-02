@@ -22,9 +22,9 @@ class helpers
         }
 
         $buId = DB::table('core_employee')
-            ->where('id', $employeeId)
-            ->where('zone', 0)
-            ->value('bu');
+            ->where('employee_id', $employeeId)
+            ->where('emp_zone', 0)
+            ->value('emp_bu');
 
         if ($buId > 0) {
             return DB::table('core_business_unit')
@@ -49,9 +49,9 @@ class helpers
         }
 
         $zoneId = DB::table('core_employee')
-            ->where('id', $employeeId)
-            ->where('region', 0)
-            ->value('zone');
+            ->where('employee_id', $employeeId)
+            ->where('emp_region', 0)
+            ->value('emp_zone');
         if ($zoneId > 0) {
             return DB::table('core_zone')
                 ->where('id', $zoneId)
@@ -77,9 +77,9 @@ class helpers
         }
 
         $regionId = DB::table('core_employee')
-            ->where('id', $employeeId)
-            ->where('territory', 0)
-            ->value('region');
+            ->where('employee_id', $employeeId)
+            ->where('emp_territory', 0)
+            ->value('emp_region');
 
         if ($regionId > 0) {
             return DB::table('core_region')
@@ -102,7 +102,7 @@ class helpers
                 ->prepend('All Territory', 'All')->toArray();
         }
         
-        $territoryId = DB::table('core_employee')->where('id', $employeeId)->value('territory');
+        $territoryId = DB::table('core_employee')->where('employee_id', $employeeId)->value('emp_territory');
 
         if ($territoryId > 0) {
             return DB::table('core_territory')

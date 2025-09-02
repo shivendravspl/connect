@@ -8,7 +8,7 @@ trait LocationHierarchyTrait
 {
     protected function getLocationHierarchy($emp_id)
     {
-        $employee = DB::table('core_employee')->where('id', $emp_id)->first();
+        $employee = DB::table('core_employee')->where('employee_id', $emp_id)->first();
         $territory_list = [];
         $zone_list = [];
         $region_list = [];

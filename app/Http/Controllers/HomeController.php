@@ -167,8 +167,8 @@ class HomeController extends Controller
             ->leftJoin('core_region', 'rtm.region_id', '=', 'core_region.id')
             ->leftJoin('core_zone_region_mapping as zrm', 'core_region.id', '=', 'zrm.region_id')
             ->leftJoin('core_zone', 'zrm.zone_id', '=', 'core_zone.id')
-            ->leftJoin('core_employee', 'onboardings.created_by', '=', 'core_employee.id')
-            ->leftJoin('core_employee as ca', 'onboardings.current_approver_id', '=', 'ca.id')
+            ->leftJoin('core_employee', 'onboardings.created_by', '=', 'core_employee.employee_id')
+            ->leftJoin('core_employee as ca', 'onboardings.current_approver_id', '=', 'ca.employee_id')
             ->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.application_id');
 
         $employee_details = $user->employee;
@@ -335,7 +335,7 @@ class HomeController extends Controller
             ->leftJoin('core_region', 'rtm.region_id', '=', 'core_region.id')
             ->leftJoin('core_zone_region_mapping as zrm', 'core_region.id', '=', 'zrm.region_id')
             ->leftJoin('core_zone', 'zrm.zone_id', '=', 'core_zone.id')
-            ->leftJoin('core_employee', 'onboardings.created_by', '=', 'core_employee.id')
+            ->leftJoin('core_employee', 'onboardings.created_by', '=', 'core_employee.employee_id')
             ->leftJoin('core_employee as ca', 'onboardings.current_approver_id', '=', 'ca.id')
             ->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.application_id');
 

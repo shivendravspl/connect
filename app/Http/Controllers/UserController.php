@@ -45,9 +45,9 @@ class UserController extends Controller
         }
 
         $buId = DB::table('core_employee')
-            ->where('id', $employeeId)
-            ->where('zone', 0)
-            ->value('bu');
+            ->where('employee_id', $employeeId)
+            ->where('emp_zone', 0)
+            ->value('emp_bu');
 
         if ($buId > 0) {
             return DB::table('core_business_unit')
@@ -77,9 +77,9 @@ class UserController extends Controller
         }
 
         $zoneId = DB::table('core_employee')
-            ->where('id', $employeeId)
-            ->where('region', 0)
-            ->value('zone');
+            ->where('employee_id', $employeeId)
+            ->where('emp_region', 0)
+            ->value('emp_zone');
 
         if ($zoneId > 0) {
             return DB::table('core_zone')
@@ -109,9 +109,9 @@ class UserController extends Controller
         }
 
         $regionId = DB::table('core_employee')
-            ->where('id', $employeeId)
-            ->where('territory', 0)
-            ->value('region');
+            ->where('employee_id', $employeeId)
+            ->where('emp_territory', 0)
+            ->value('emp_region');
 
         if ($regionId > 0) {
             return DB::table('core_region')
@@ -139,8 +139,8 @@ class UserController extends Controller
         }
 
         $territoryId = DB::table('core_employee')
-            ->where('id', $employeeId)
-            ->value('territory');
+            ->where('employee_id', $employeeId)
+            ->value('emp_territory');
 
         if ($territoryId > 0) {
             return DB::table('core_territory')
@@ -165,7 +165,7 @@ class UserController extends Controller
                 'users.emp_id',
                 DB::raw('GROUP_CONCAT(roles.name) AS roles')
             ])
-                ->leftJoin('core_employee', 'users.emp_id', '=', 'core_employee.id')
+                ->leftJoin('core_employee', 'users.emp_id', '=', 'core_employee.employee_id')
                 ->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
                 ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
                 ->groupBy(

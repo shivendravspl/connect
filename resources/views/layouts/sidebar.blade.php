@@ -284,7 +284,7 @@
     </li>
     @endcan
 
-    @hasanyrole('Admin|Super Admin|Mis User')
+    @hasanyrole('Admin|Super Admin')
     <li class="nav-item">
         <a href="{{ route('vendors.index') }}"
             class="nav-link {{ request()->routeIs('vendors.index') ? 'active' : '' }}">

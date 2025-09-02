@@ -7,7 +7,7 @@
                     <option value="">Select Territory</option>
                     @foreach($territory_list as $id => $name)
                         <option value="{{ $id }}"
-                            {{ (isset($application) && $application->territory == $id) || (isset($preselected['territory']) && $preselected['territory'] == $id) ? 'selected' : '' }}>
+                            {{ (isset($application) && $application->exists && $application->territory == $id) || (isset($preselected['territory']) && $preselected['territory'] == $id) ? 'selected' : '' }}>
                             {{ $name }}
                         </option>
                     @endforeach
@@ -19,9 +19,9 @@
             <div class="form-group mb-2">
                 <label class="form-label small">Region *</label>
                 <input type="text" class="form-control form-control-sm" id="region_display" readonly
-                    value="{{ isset($application) && $application->region && isset($region_list[$application->region]) ? $region_list[$application->region] : (isset($preselected['region']) && isset($region_list[$preselected['region']]) ? $region_list[$preselected['region']] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->region && isset($region_list[$application->region]) ? $region_list[$application->region] : (isset($preselected['region']) && isset($region_list[$preselected['region']]) ? $region_list[$preselected['region']] : '') }}">
                 <input type="hidden" name="region" id="region_id"
-                    value="{{ isset($application) && $application->region ? $application->region : (isset($preselected['region']) ? $preselected['region'] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->region ? $application->region : (isset($preselected['region']) ? $preselected['region'] : '') }}">
             </div>
         </div>
 
@@ -29,27 +29,27 @@
             <div class="form-group mb-2">
                 <label class="form-label small">Zone *</label>
                 <input type="text" class="form-control form-control-sm" id="zone_display" readonly
-                    value="{{ isset($application) && $application->zone && isset($zone_list[$application->zone]) ? $zone_list[$application->zone] : (isset($preselected['zone']) && isset($zone_list[$preselected['zone']]) ? $zone_list[$preselected['zone']] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->zone && isset($zone_list[$application->zone]) ? $zone_list[$application->zone] : (isset($preselected['zone']) && isset($zone_list[$preselected['zone']]) ? $zone_list[$preselected['zone']] : '') }}">
                 <input type="hidden" name="zone" id="zone_id"
-                    value="{{ isset($application) && $application->zone ? $application->zone : (isset($preselected['zone']) ? $preselected['zone'] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->zone ? $application->zone : (isset($preselected['zone']) ? $preselected['zone'] : '') }}">
             </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
                 <label class="form-label small">Business Unit *</label>
                 <input type="text" class="form-control form-control-sm" id="bu_display" readonly
-                    value="{{ isset($application) && $application->business_unit && isset($bu_list[$application->business_unit]) ? $bu_list[$application->business_unit] : (isset($preselected['bu']) && isset($bu_list[$preselected['bu']]) ? $bu_list[$preselected['bu']] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->business_unit && isset($bu_list[$application->business_unit]) ? $bu_list[$application->business_unit] : (isset($preselected['bu']) && isset($bu_list[$preselected['bu']]) ? $bu_list[$preselected['bu']] : '') }}">
                 <input type="hidden" name="business_unit" id="bu_id"
-                    value="{{ isset($application) && $application->business_unit ? $application->business_unit : (isset($preselected['bu']) ? $preselected['bu'] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->business_unit ? $application->business_unit : (isset($preselected['bu']) ? $preselected['bu'] : '') }}">
             </div>
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
                 <label class="form-label small">Crop Vertical *</label>
                 <input type="text" class="form-control form-control-sm" id="crop_vertical_display" readonly
-                    value="{{ isset($application) && $application->crop_vertical && isset($vertical_list[$application->crop_vertical]) ? $vertical_list[$application->crop_vertical] : (isset($preselected['crop_vertical']) && isset($vertical_list[$preselected['crop_vertical']]) ? $vertical_list[$preselected['crop_vertical']] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->crop_vertical && isset($vertical_list[$application->crop_vertical]) ? $vertical_list[$application->crop_vertical] : (isset($preselected['crop_vertical']) && isset($vertical_list[$preselected['crop_vertical']]) ? $vertical_list[$preselected['crop_vertical']] : '') }}">
                 <input type="hidden" name="crop_vertical" id="crop_vertical"
-                    value="{{ isset($application) && $application->crop_vertical ? $application->crop_vertical : (isset($preselected['crop_vertical']) ? $preselected['crop_vertical'] : '') }}">
+                    value="{{ isset($application) && $application->exists && $application->crop_vertical ? $application->crop_vertical : (isset($preselected['crop_vertical']) ? $preselected['crop_vertical'] : '') }}">
             </div>
         </div>
     </div>

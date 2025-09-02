@@ -38,7 +38,7 @@ Route::get('/', function () {
 });
 
 Auth::routes();
-
+Route::get('/connect_login', [\App\Http\Controllers\ExtLoginController::class, 'login']);
 // Redirect /home to /dashboard for consistency
 Route::get('/home', function () {
     return redirect()->route('dashboard');

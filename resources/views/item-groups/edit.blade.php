@@ -6,7 +6,7 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header">
-                    <h2>Edit Item Group: {{ $itemGroup->name }}</h2>
+                    <h5>Edit Item Group: {{ $itemGroup->name }}</h5>
                 </div>
                 <div class="card-body">
                     <form action="{{ route('item-groups.update', $itemGroup) }}" method="POST">

@@ -76,9 +76,9 @@
                         @if($indent->status == 'draft')
                             <form action="{{ route('indents.submit', $indent) }}" method="POST" class="d-inline">
                                 @csrf
-                                <button type="submit" class="btn btn-primary">Submit for Approval</button>
+                                <button type="submit" class="btn btn-sm btn-primary">Submit for Approval</button>
                             </form>
-                            <a href="{{ route('indents.edit', $indent) }}" class="btn btn-secondary">Edit</a>
+                            <a href="{{ route('indents.edit', $indent) }}" class="btn btn-sm btn-secondary"><i class="ri-pencil-fill align-bottom"></i></a>
                         @endif
                         
                         @if(Auth::user()->can_approve_indents && $indent->status == 'submitted')
@@ -119,7 +119,7 @@
                                     <td>{{ $item->quantity }}</td>
                                     <td>{{ $item->item->uom }}</td>
                                     <td>{{ $item->required_date->format('d M, Y') }}</td>
-                                    <td>{{ $item->specification ?? '-' }}</td>
+                                    <td>{{ $item->remarks ?? '-' }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>

@@ -23,7 +23,7 @@
             @if($detailsField)
                 <div class="form-group mt-2" id="{{ $questionKey }}_details_container" style="display: {{ old($questionKey, $declarationsData[$questionKey]['has_issue'] ?? '0') == '1' ? 'block' : 'none' }};">
                     <label for="{{ $detailsField }}" class="form-label">Please specify:</label>
-                    <textarea class="form-control" id="{{ $detailsField }}" name="{{ $detailsField }}" rows="2">{{ old($detailsField, $declarationsData[$questionKey][$detailsField] ?? '') }}</textarea>
+                    <textarea class="form-control" id="{{ $detailsField }}" name="{{ $detailsField }}" rows="1">{{ old($detailsField, $declarationsData[$questionKey][$detailsField] ?? '') }}</textarea>
                 </div>
             @elseif($detailsFields)
                 <div class="form-group mt-2" id="{{ $questionKey }}_details_container" style="display: {{ old($questionKey, $declarationsData[$questionKey]['has_issue'] ?? '0') == '1' ? 'block' : 'none' }};">

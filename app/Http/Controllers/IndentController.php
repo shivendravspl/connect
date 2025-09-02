@@ -9,7 +9,8 @@ use App\Models\Department;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+
 
 class IndentController extends Controller
 {
@@ -98,7 +99,7 @@ class IndentController extends Controller
             'items.*.item_id' => 'required|exists:items,id',
             'items.*.quantity' => 'required|numeric|min:0.01',
             'items.*.required_date' => 'required|date|after_or_equal:indent_date',
-            'items.*.remarks' => 'nullable|string|max:500',
+            'items.*.specification' => 'nullable|string|max:500',
         ]);
 
         try {
@@ -111,11 +112,10 @@ class IndentController extends Controller
                     'item_id' => $itemData['item_id'],
                     'quantity' => $itemData['quantity'],
                     'required_date' => $itemData['required_date'],
-                    'remarks' => $itemData['remarks'] ?? null,
+                    'remarks' => $itemData['specification'] ?? null,
                     'status' => 'pending'
                 ]);
             }
-
             if ($request->ajax() || $request->expectsJson()) {
                 return response()->json([
                     'success' => true,
@@ -168,36 +168,7 @@ class IndentController extends Controller
 
         $indent->update(['status' => 'submitted']);
 
-        return back()->with('success', 'Indent submitted for approval!');
-    }
-
-    public function approve(Indent $indent)
-    {
-        if ($indent->status !== 'submitted') {
-            return back()->with('error', 'Only submitted indents can be approved.');
-        }
-
-        $indent->update([
-            'status' => 'approved',
-            'approved_by' => Auth::id(),
-            'approved_at' => now(),
-        ]);
-
-        return back()->with('success', 'Indent approved successfully!');
-    }
-
-    public function reject(Request $request, Indent $indent)
-    {
-        $request->validate([
-            'rejection_reason' => 'required|string|max:500',
-        ]);
-
-        $indent->update([
-            'status' => 'rejected',
-            'rejection_reason' => $request->rejection_reason,
-        ]);
-
-        return back()->with('success', 'Indent rejected successfully!');
+        return redirect()->route('indents.index')->with('success', 'Indent submitted for approval!');
     }
 
     public function saveHeader(Request $request)
@@ -321,6 +292,129 @@ class IndentController extends Controller
                 'success' => false,
                 'message' => 'Error updating indent header: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function approvalIndex()
+    {
+        // Get indents that are submitted for approval
+        $indents = Indent::with(['requestedBy', 'department', 'items.item'])
+            ->where('status', 'submitted')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        return view('indents.approval-index', compact('indents'));
+    }
+
+    public function approvalShow(Indent $indent)
+    {
+        if ($indent->status !== 'submitted') {
+            return redirect()->route('indents.approval.index')
+                ->with('error', 'This indent is not pending approval.');
+        }
+
+        $indent->load(['requestedBy', 'department', 'items.item', 'orderByUser']);
+        return view('indents.approval-show', compact('indent'));
+    }
+
+    public function approveIndent(Request $request, Indent $indent)
+    {
+        if ($indent->status !== 'submitted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only submitted indents can be approved.'
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|exists:indent_items,id',
+            'items.*.quantity_approve' => 'required|numeric|min:0',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Update each item with approved quantity
+            foreach ($validated['items'] as $itemData) {
+                $indentItem = $indent->items()->findOrFail($itemData['id']);
+                $indentItem->update([
+                    'quantity_approve' => $itemData['quantity_approve'],
+                    'status' => $itemData['quantity_approve'] > 0 ? 'approved' : 'rejected'
+                ]);
+            }
+
+            // Update indent status
+            $indent->update([
+                'status' => 'approved',
+                'approved_by' => Auth::id(),
+                'approved_at' => now(),
+            ]);
+
+            DB::commit();
+
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Indent approved successfully!'
+                ]);
+            }
+
+            return redirect()->route('indents.approval.index')
+                ->with('success', 'Indent approved successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to approve indent: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to approve indent: ' . $e->getMessage());
+        }
+    }
+
+    public function rejectIndent(Request $request, Indent $indent)
+    {
+        if ($indent->status !== 'submitted') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only submitted indents can be rejected.'
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+
+        try {
+            $indent->update([
+                'status' => 'rejected',
+                'rejection_reason' => $validated['rejection_reason'],
+                'approved_by' => Auth::id(),
+                'approved_at' => now(),
+            ]);
+
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Indent rejected successfully!'
+                ]);
+            }
+
+            return redirect()->route('indents.approval.index')
+                ->with('success', 'Indent rejected successfully!');
+        } catch (\Exception $e) {
+            if ($request->ajax() || $request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to reject indent: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Failed to reject indent: ' . $e->getMessage());
         }
     }
 }

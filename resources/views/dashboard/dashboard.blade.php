@@ -309,19 +309,20 @@
 </div>
 @if(Auth::check() && Auth::user()->hasAnyRole(['Super Admin', 'Admin', 'Mis User']))
 
-<div class="min-vh-100 d-flex align-items-center"
-    <div class="container py-5">
 
-        <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-12">
                     <div class="card">
-                        <div class="card-body p-2">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
-                                    <i class="fas fa-filter"></i> Filters
+                        <div class="card-header align-items-center d-flex">
+                            <h4 class="card-title mb-0 flex-grow-1">Search for using filter</h4>
+                            <div class="flex-shrink-0">
+                                <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                                    <i class="ri-filter-2-line"></i> Filters
                                 </button>
                             </div>
+                        </div>
+                        <div class="card-body p-2">
+                          
                             <form id="filter-form" method="GET">
                                 <div class="collapse show" id="filterCollapse">
                                     <div class="row g-1">
@@ -420,7 +421,7 @@
                                             <label class="form-label">To</label>
                                             <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] }}">
                                         </div>
-                                        <div class="col-12 mt-1 d-flex justify-content-end gap-1">
+                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 mt-1 d-flex gap-1 mt-4">
                                             <button type="submit" class="btn btn-sm btn-primary">Apply</button>
                                             <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
                                         </div>
@@ -434,10 +435,141 @@
 
             <div class="row mb-2">
                 <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <h4 class="header-title">Key Performance Indicators</h4>
-                            <div class="row g-2" id="kpi-container">
+                    <div class="crm-widget">
+                        <div class="card-header align-items-center d-flex">
+                                    <h4 class="card-title mb-0 flex-grow-1">Key Performance Indicators</h4>
+                                    <div class="flex-shrink-0">
+                                        <div class="dropdown card-header-dropdown">
+                                            <a class="text-reset dropdown-btn" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                <span class="text-muted fs-16"><i class="mdi mdi-dots-vertical align-middle"></i></span>
+                                            </a>
+                                            <div class="dropdown-menu dropdown-menu-end">
+                                                <a class="dropdown-item" href="#">Today</a>
+                                                <a class="dropdown-item" href="#">Last Week</a>
+                                                <a class="dropdown-item" href="#">Last Month</a>
+                                                <a class="dropdown-item" href="#">Current Year</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="row " id="kpi-container">
+                                        @if ($data['counts']['total'] == 0)
+                                            <div class="col-12 no-data-message text-center">No applications found based on current filters.</div>
+                                        @else
+                                        <div class="col-xl-3 col-md-6">    
+                                        <div class="card card-animate mb-3">
+                                            <div class="py-4 px-3">
+                                                <h5 class="text-muted text-uppercase fs-13">Total Forms <i class="ri-file-text-line text-success fs-18 float-end align-middle"> <span id="kpi-trend-total-submitted"> {{ $data['kpi_trends']['total_submitted'] }}%</span></i></h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i style="font-size:28px;" class="ri-space-ship-line display-6 text-muted cfs-22"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['counts']['total'] }}" id="kpi-total-submitted">{{ $data['counts']['total'] }}</span></h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end col -->
+                                        <div class="col-xl-3 col-md-6">    
+                                        <div class="card card-animate mb-3">
+                                            <div class="mt-3 mt-md-0 py-4 px-3">
+                                                <h5 class="text-muted text-uppercase fs-13">Avg. TAT <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"> <span id="kpi-trend-avg-tat">{{ $data['kpi_trends']['avg_tat'] }} Days</span></i></h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i style="font-size:28px;" class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $tatData['total']['avg_tat'] }}"  id="kpi-avg-tat">{{ $tatData['total']['avg_tat'] }} Days</span></h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end col -->
+                                        <div class="col-xl-3 col-md-6">    
+                                        <div class="card card-animate mb-3">
+                                            <div class="mt-3 mt-md-0 py-4 px-3">
+                                                <h5 class="text-muted text-uppercase fs-13">Appointments <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-appointments-completed"> {{ $data['kpi_trends']['appointments_completed'] }}%</span></i></h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i style="font-size:28px;" class="ri-file-user-line display-6 text-muted cfs-22"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="32.89" id="kpi-appointments-completed">{{ $data['counts']['distributors_created'] }}</h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end col -->
+                                        <div class="col-xl-3 col-md-6">    
+                                        <div class="card card-animate mb-3">
+                                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                                <h5 class="text-muted text-uppercase fs-13">In Process <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"><span id="kpi-trend-in-process">—</span></i></h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i style="font-size:28px;" class="ri-loader-4-line display-6 text-muted cfs-22"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['counts']['in_process'] }}" id="kpi-in-process">{{ $data['counts']['in_process'] }}</span></h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end col -->
+                                        <div class="col-xl-3 col-md-6">    
+                                        <div class="card card-animate mb-3">
+                                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                                <h5 class="text-muted text-uppercase fs-13">Reverted <i class="ri-device-recover-line text-danger fs-18 float-end align-middle"> <span id="kpi-reverted">{{ $data['counts']['reverted'] }}</span></i></h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i style="font-size:28px;" class="ri-device-recover-line display-6 text-muted cfs-22"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['kpi_trends']['reverted'] }}" id="kpi-trend-reverted"> {{ $data['kpi_trends']['reverted'] }}</span></h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end col -->
+                                        <div class="col-xl-3 col-md-6">    
+                                        <div class="card card-animate mb-3">
+                                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                                <h5 class="text-muted text-uppercase fs-13">Rejected <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-rejected">{{ $data['counts']['rejected'] }}</span></i></h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i style="font-size:28px;" class="ri-close-circle-line display-6 text-muted cfs-22"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['kpi_trends']['rejected'] }}" id="kpi-trend-rejected"> {{ $data['kpi_trends']['rejected'] }}</span></h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end col -->
+                                        <div class="col-xl-3 col-md-6">    
+                                        <div class="card card-animate mb-3">
+                                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                                <h5 class="text-muted text-uppercase fs-13">To MIS <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-forwarded-to-mis"> {{ $data['kpi_trends']['forwarded_to_mis'] }}%</span></i></h5>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i style="font-size:28px;" class="ri-service-line display-6 text-muted cfs-22"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1 ms-3">
+                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['kpi_trends']['forwarded_to_mis'] }}" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] }} </span></h2>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        </div><!-- end col -->
+                                        @endif
+                                    </div><!-- end row -->
+                                </div>
+
+
+
+                       <!-- <div class="card-body">
+                            <div class="row g-2 12345" id="kpi-container">
                                 @if ($data['counts']['total'] == 0)
                                 <div class="col-12 no-data-message">No applications found based on current filters.</div>
                                 @else
@@ -506,7 +638,7 @@
                                 </div>
                                 @endif
                             </div>
-                        </div>
+                        </div>-->
                     </div>
                 </div>
             </div>
@@ -566,11 +698,14 @@
                                 <div class="tab-pane fade" id="master-tab">
                                     <div class="row">
                                         <div class="col-12">
+                                            <div class="card mb-0">
+                                                <div class="card-header">
                                             <h5 class="header-title">Turnaround Time (TAT) Analysis</h5>
+                                                </div>
                                             @if ($tatData['total']['avg_tat'] == 0 && $tatData['total']['max_tat'] == 0)
                                             <div class="no-data-message">No TAT data available.</div>
                                             @else
-                                            <div class="table-responsive">
+                                            <div class="card-body table-responsive">
                                                 <table class="table table-sm tat-table table-hover">
                                                     <thead>
                                                         <tr>
@@ -621,13 +756,19 @@
                                                 </table>
                                             </div>
                                             @endif
-                                            <h5 class="header-title mt-2">Applications</h5>
+                                            </div>
+                                            <divv class="card">
+                                                <div class="card-header">
+                                            <h5 class="header-title">Applications</h5>
+                                            </div>
+                                            <div class="card-body">
                                             <div id="master-table-container">
                                                 @if ($masterReportApplications->isEmpty())
                                                 <div class="no-data-message">No applications found.</div>
                                                 @else
                                                 @include('dashboard._master-table', ['masterReportApplications' => $masterReportApplications])
                                                 @endif
+                                            </div>
                                             </div>
                                         </div>
                                     </div>
@@ -637,10 +778,7 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-    </div>
-</div>
+  
 @else
 <div class="container">
     <div class="row justify-content-center">
@@ -788,19 +926,116 @@
                 // Update KPI values dynamically
                 const kpiContainer = $('#kpi-container');
                 if (data.counts.total === 0) {
-                    kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
+                    kpiContainer.html('<div class="col-12 no-data-message text-center">No applications found based on current filters.</div>');
                 } else {
                     kpiContainer.html(`
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="card kpi-card">
-                                <div class="card-body">
-                                    <h6 class="small">Total Forms</h6>
-                                    <div class="kpi-value" id="kpi-total-submitted">${data.counts.total || 0}</div>
-                                    <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 ${data.kpi_trends.total_submitted || 0}%</span>
+                    <div class="col-xl-3 col-md-6">    
+                        <div class="card card-animate mb-3">
+                            <div class="py-4 px-3">
+                                <h5 class="text-muted text-uppercase fs-13">Total Forms <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"> <span id="kpi-trend-total-submitted"> ${data.kpi_trends.total_submitted || 0}%</span></i> </h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i style="font-size:28px;" class="ri-file-text-line display-6 text-muted cfs-22"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['counts']['total'] }}" id="kpi-total-submitted">${data.counts.total || 0}</span></h2>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
+                    </div>
+                    <div class="col-xl-3 col-md-6">    
+                        <div class="card card-animate mb-3">
+                            <div class="mt-3 mt-md-0 py-4 px-3">
+                                <h5 class="text-muted text-uppercase fs-13">Avg. TAT <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-avg-tat">${data.kpi_trends.avg_tat || 0} Days</span></i></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i style="font-size:28px;" class="ri-exchange-dollar-line display-6 text-muted cfs-22"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $tatData['total']['avg_tat'] }}"  id="kpi-avg-tat">${data.tat.total?.avg_tat || 0} Days</span></h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div><!-- end col -->
+                    <div class="col-xl-3 col-md-6">    
+                        <div class="card card-animate mb-3">
+                            <div class="mt-3 mt-md-0 py-4 px-3">
+                                <h5 class="text-muted text-uppercase fs-13">Appointments <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-appointments-completed">${data.kpi_trends.appointments_completed || 0}%</span></i></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i style="font-size:28px;" class="ri-file-user-line display-6 text-muted cfs-22"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="32.89" id="kpi-appointments-completed">${data.counts.distributors_created || 0}</h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- end col -->
+                        <div class="col-xl-3 col-md-6">    
+                        <div class="card card-animate mb-3">
+                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                <h5 class="text-muted text-uppercase fs-13">In Process <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"><span id="kpi-trend-in-process">—</span></i></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i style="font-size:28px;" class="ri-loader-4-line display-6 text-muted cfs-22"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="${data.counts.in_process || 0}" id="kpi-in-process">${data.counts.in_process || 0}</span></h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div><!-- end col -->
+                        <div class="col-xl-3 col-md-6">    
+                        <div class="card card-animate mb-3">
+                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                <h5 class="text-muted text-uppercase fs-13">Reverted <i class="ri-arrow-down-circle-line text-success fs-18 float-end align-middle"><span id="kpi-reverted"> ${data.counts.reverted || 0}</span></i></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i style="font-size:28px;" class="ri-device-recover-line display-6 text-muted cfs-22"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="${data.kpi_trends.reverted || 0}" id="kpi-trend-reverted"> ${data.kpi_trends.reverted || 0}</span></h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div><!-- end col -->
+                        <div class="col-xl-3 col-md-6">    
+                        <div class="card card-animate mb-3">
+                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                <h5 class="text-muted text-uppercase fs-13">Rejected <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-rejected">${data.counts.rejected || 0}</span></i></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i style="font-size:28px;" class="ri-close-circle-line display-6 text-muted cfs-22"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="${data.kpi_trends.rejected || 0}" id="kpi-trend-rejected"> ${data.kpi_trends.rejected || 0}</span></h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div><!-- end col -->
+                        <div class="col-xl-3 col-md-6">    
+                        <div class="card card-animate mb-3">
+                            <div class="mt-3 mt-lg-0 py-4 px-3">
+                                <h5 class="text-muted text-uppercase fs-13">To MIS <i class="ri-arrow-down-circle-line text-success fs-18 float-end align-middle"> <span  id="kpi-trend-forwarded-to-mis"> ${data.kpi_trends.forwarded_to_mis || 0}%</span></i></h5>
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0">
+                                        <i style="font-size:28px;" class="ri-service-line display-6 text-muted cfs-22"></i>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h2 class="mb-0 cfs-22 "><span style="font-size:20px;" class="counter-value" data-target="${data.counts.forwarded_to_mis || 0}" id="kpi-forwarded-to-mis"> ${data.counts.forwarded_to_mis || 0}</span></h2>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        </div><!-- end col -->
+                     
+                        <!--<div class="col-6 col-sm-4 col-md-3 col-lg-2">
                             <div class="card kpi-card">
                                 <div class="card-body">
                                     <h6 class="small">Avg. TAT</h6>
@@ -853,7 +1088,7 @@
                                     <span class="kpi-trend-up" id="kpi-trend-forwarded-to-mis">🔼 ${data.kpi_trends.forwarded_to_mis || 0}%</span>
                                 </div>
                             </div>
-                        </div>
+                        </div>-->
                     `);
                 }
 

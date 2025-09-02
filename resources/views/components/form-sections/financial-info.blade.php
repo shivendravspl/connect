@@ -122,7 +122,7 @@
                     <div class="col-md-2">
                         @if($index > 0)
                         <button type="button" class="btn btn-danger btn-sm remove-distributorship" style="margin-top: 30px;">
-                            <i class="fas fa-trash"></i> Remove
+                            <i class="ri-delete-bin-line"></i>
                         </button>
                         @endif
                     </div>
@@ -175,7 +175,7 @@
                         </div>
                         <div class="col-md-2">
                             <button type="button" class="btn btn-sm btn-danger remove-distributorship" style="margin-top: 30px;">
-                                <i class="fas fa-trash"></i> Remove
+                                <i class="ri-delete-bin-line"></i>
                             </button>
                         </div>
                     </div>

@@ -1,55 +1,53 @@
 <!-- Step 3: Distribution Details -->
-<div id="distribution-details" class="form-section p-2">    
+<div id="distribution-details" class="form-section p-2">
     <div class="row g-2">
-        <div class="col-md-12">
+        <div class="col-md-6">
             <div class="form-group mb-2">
                 <label for="area_covered" class="form-label small">Area to be covered *</label>
                 <select id="area_covered" name="area_covered[]" class="form-select form-select-sm" style="width: 100%;" multiple required>
                     @php
-                        // Get areas from old input or database
-                        $selectedAreas = old('area_covered', $application->distributionDetail->area_covered ?? []);
+                    // Get areas from old input or database
+                    $selectedAreas = old('area_covered', $application->distributionDetail->area_covered ?? []);
 
-                        // Handle malformed JSON or string
-                        if (is_string($selectedAreas)) {
-                            $decoded = json_decode($selectedAreas, true);
-                            if (is_array($decoded)) {
-                                if (count($decoded) === 1 && strpos($decoded[0], ',') !== false) {
-                                    $selectedAreas = array_map('trim', explode(',', $decoded[0]));
-                                } else {
-                                    $selectedAreas = $decoded;
-                                }
-                            } else {
-                                $selectedAreas = array_map('trim', explode(',', $selectedAreas));
-                            }
-                        } elseif (!is_array($selectedAreas)) {
-                            $selectedAreas = [];
-                        }
+                    // Handle malformed JSON or string
+                    if (is_string($selectedAreas)) {
+                    $decoded = json_decode($selectedAreas, true);
+                    if (is_array($decoded)) {
+                    if (count($decoded) === 1 && strpos($decoded[0], ',') !== false) {
+                    $selectedAreas = array_map('trim', explode(',', $decoded[0]));
+                    } else {
+                    $selectedAreas = $decoded;
+                    }
+                    } else {
+                    $selectedAreas = array_map('trim', explode(',', $selectedAreas));
+                    }
+                    } elseif (!is_array($selectedAreas)) {
+                    $selectedAreas = [];
+                    }
 
-                        // Fetch active districts from core_district
-                        $districts = DB::table('core_district')->where('is_active', 1)->pluck('district_name');
-                        \Log::info('Available districts:', $districts->toArray());
-                        \Log::info('Selected areas:', (array)$selectedAreas);
+                    // Fetch active districts from core_district
+                    $districts = DB::table('core_district')->where('is_active', 1)->pluck('district_name');
+                    \Log::info('Available districts:', $districts->toArray());
+                    \Log::info('Selected areas:', (array)$selectedAreas);
                     @endphp
-                    
+
                     @if($districts->isEmpty())
-                        <option value="" disabled>No active districts available</option>
+                    <option value="" disabled>No active districts available</option>
                     @else
-                        @foreach($districts as $district)
-                            <option value="{{ $district }}" {{ in_array($district, (array)$selectedAreas) ? 'selected' : '' }}>
-                                {{ $district }}
-                            </option>
-                        @endforeach
+                    @foreach($districts as $district)
+                    <option value="{{ $district }}" {{ in_array($district, (array)$selectedAreas) ? 'selected' : '' }}>
+                        {{ $district }}
+                    </option>
+                    @endforeach
                     @endif
                 </select>
                 @error('area_covered.*')
-                    <div class="text-danger">{{ $message }}</div>
+                <div class="text-danger">{{ $message }}</div>
                 @enderror
             </div>
         </div>
-    </div>
-    
-    <div class="row g-2">
-        <div class="col-12">
+
+        <div class="col-6">
             <div class="form-group mb-3">
                 <label for="appointment_type" class="form-label small">Appointment Type *</label>
                 <select class="form-select form-select-sm" id="appointment_type" name="appointment_type" required>
@@ -58,44 +56,43 @@
                     <option value="addition" {{ old('appointment_type', $application->distributionDetail->appointment_type ?? '') == 'addition' ? 'selected' : '' }}>Addition in current distributor area</option>
                 </select>
                 @error('appointment_type')
-                    <div class="text-danger small">{{ $message }}</div>
+                <div class="text-danger small">{{ $message }}</div>
                 @enderror
             </div>
         </div>
     </div>
+
     
+
     <div id="replacement-details" class="replacement-section bg-light p-2 rounded mb-2" style="display: none;">
         <div class="row g-2">
-            <div class="col-12">
+            <div class="col-md-6">
                 <div class="form-group mb-2">
                     <label for="replacement_reason" class="form-label small">Reason for Replacement *</label>
-                    <textarea class="form-control form-control-sm" id="replacement_reason" name="replacement_reason" rows="2">{{ old('replacement_reason', $application->distributionDetail->replacement_reason ?? '') }}</textarea>
+                    <textarea class="form-control form-control-sm" id="replacement_reason" name="replacement_reason" rows="1">{{ old('replacement_reason', $application->distributionDetail->replacement_reason ?? '') }}</textarea>
                     @error('replacement_reason')
-                        <div class="text-danger">{{ $message }}</div>
+                    <div class="text-danger">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
-        </div>
-        
-        <div class="row g-2">
-            <div class="col-12">
+             <div class="col-md-6">
                 <div class="form-group mb-2">
                     <label for="outstanding_recovery" class="form-label small">Commitment to Recover Outstanding *</label>
-                    <textarea class="form-control form-control-sm" id="outstanding_recovery" name="outstanding_recovery" rows="2">{{ old('outstanding_recovery', $application->distributionDetail->outstanding_recovery ?? '') }}</textarea>
+                    <textarea class="form-control form-control-sm" id="outstanding_recovery" name="outstanding_recovery" rows="1">{{ old('outstanding_recovery', $application->distributionDetail->outstanding_recovery ?? '') }}</textarea>
                     @error('outstanding_recovery')
-                        <div class="text-danger small">{{ $message }}</div>
+                    <div class="text-danger small">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
         </div>
-        
+
         <div class="row g-2">
             <div class="col-12 col-md-6">
                 <div class="form-group mb-3">
                     <label for="previous_firm_name" class="form-label small">Name of Previous Firm *</label>
                     <input type="text" class="form-control form-control-sm" id="previous_firm_name" name="previous_firm_name" value="{{ old('previous_firm_name', $application->distributionDetail->previous_firm_name ?? '') }}">
                     @error('previous_firm_name')
-                        <div class="text-danger">{{ $message }}</div>
+                    <div class="text-danger">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
@@ -104,13 +101,13 @@
                     <label for="previous_firm_code" class="form-label small">Code of Previous Firm *</label>
                     <input type="text" class="form-control form-control-sm" id="previous_firm_code" name="previous_firm_code" value="{{ old('previous_firm_code', $application->distributionDetail->previous_firm_code ?? '') }}">
                     @error('previous_firm_code')
-                        <div class="text-danger">{{ $message }}</div>
+                    <div class="text-danger">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
         </div>
     </div>
-    
+
     <div id="new-area-details" class="new-area-section bg-light p-2 rounded mb-2">
         <div class="row g-2">
             <div class="col-12">
@@ -118,7 +115,7 @@
                     <label for="earlier_distributor" class="form-label small">If New area, who was the earlier distributor covering that area *</label>
                     <input type="text" class="form-control form-control-sm" id="earlier_distributor" name="earlier_distributor" value="{{ old('earlier_distributor', $application->distributionDetail->earlier_distributor ?? 'None') }}">
                     @error('earlier_distributor')
-                        <div class="text-danger small">{{ $message }}</div>
+                    <div class="text-danger small">{{ $message }}</div>
                     @enderror
                 </div>
             </div>
@@ -140,7 +137,7 @@
         });
 
         // Log selections for debugging
-        $('#area_covered').on('select2:select select2:unselect', function (e) {
+        $('#area_covered').on('select2:select select2:unselect', function(e) {
             console.log('Selected area_covered:', $(this).val());
             $(this).trigger('change');
         });
@@ -156,7 +153,7 @@
         $('select[name="appointment_type"]').change(function() {
             const type = $(this).val();
             $('.replacement-section, .new-area-section').hide();
-            
+
             if (type === 'replacement') {
                 $('#replacement-details').show();
                 $('#replacement_reason, #outstanding_recovery, #previous_firm_name, #previous_firm_code').prop('required', true);
@@ -170,7 +167,7 @@
                 $('#replacement_reason, #outstanding_recovery, #previous_firm_name, #previous_firm_code, #earlier_distributor').prop('required', false);
             }
         }).trigger('change');
-        
+
         // Initialize with correct section
         const appointmentType = '{{ old("appointment_type", $application->distributionDetail->appointment_type ?? "new_area") }}';
         if (appointmentType === 'replacement') {

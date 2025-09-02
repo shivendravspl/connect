@@ -14,6 +14,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Employee;
+use App\Models\Permission;
+
+
 
 
 class UserController extends Controller
@@ -156,6 +159,7 @@ class UserController extends Controller
                 'users.id',
                 'users.name',
                 'users.email',
+                'users.status',
                 'users.phone',
                 'users.created_at',
                 'users.emp_id',
@@ -168,6 +172,7 @@ class UserController extends Controller
                     'users.id',
                     'users.name',
                     'users.email',
+                    'users.status',
                     'users.phone',
                     'users.created_at',
                     'users.emp_id',
@@ -219,6 +224,7 @@ class UserController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required_without:phone|email|max:255|unique:users,email|nullable',
                 'phone' => 'required_without:email|string|max:15|unique:users,phone|regex:/^[0-9]{10,15}$/|nullable',
+                'user_status' => 'required|in:A,P,D',
                 'password' => 'required|string|min:8|confirmed',
                 'roles' => 'required|array',
                 'roles.*' => 'exists:roles,id',
@@ -226,6 +232,7 @@ class UserController extends Controller
                 'email.required_without' => 'Either email or phone is required.',
                 'phone.required_without' => 'Either phone or email is required.',
                 'phone.regex' => 'The phone number must be a valid number (10-15 digits).',
+                'user_status.in' => 'Status must be either Active , Pending or Disabled.',
                 'roles.*' => 'One or more selected roles are invalid.',
             ]);
 
@@ -233,6 +240,7 @@ class UserController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
+                'status' => $request->user_status,
                 'password' => Hash::make($request->password),
             ]);
 
@@ -269,11 +277,13 @@ class UserController extends Controller
 
     public function update(Request $request, User $user)
     {
+        //dd($request->all());
         try {
             $request->validate([
                 'name' => 'required|string|max:255',
                 'email' => 'required_without:phone|email|max:255|unique:users,email,' . $user->id . '|nullable',
                 'phone' => 'required_without:email|string|max:15|unique:users,phone,' . $user->id . '|regex:/^[0-9]{10,15}$/|nullable',
+                'user_status' => 'required|in:A,P,D',
                 'password' => 'nullable|string|min:8|confirmed',
                 'roles' => 'required|array',
                 'roles.*' => 'exists:roles,id',
@@ -281,6 +291,7 @@ class UserController extends Controller
                 'email.required_without' => 'Either email or phone is required.',
                 'phone.required_without' => 'Either phone or email is required.',
                 'phone.regex' => 'The phone number must be a valid number (10-15 digits).',
+                'user_status.in' => 'Status must be either Active , Pending or Disabled.',
                 'roles.*' => 'One or more selected roles are invalid.',
             ]);
 
@@ -288,6 +299,7 @@ class UserController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'phone' => $request->phone,
+                'status' => $request->user_status,
             ];
 
             if ($request->filled('password')) {
@@ -370,4 +382,25 @@ class UserController extends Controller
             return response()->json(['error' => 'Failed to export users'], 500);
         }
     }
+
+     public function give_permission($id)
+    {
+        $permission_list = Permission::orderBy('group_name')->get();
+        $grouped_results = $permission_list->mapToGroups(function ($item, $key) {
+            return [$item->group_name => ['name' => $item->name, 'id' => $item->id]];
+        });
+        $permissions = $grouped_results->toArray();
+
+        $userPermissions = DB::table('model_has_permissions')->where('model_id', $id)->pluck('permission_id', 'permission_id')->all();
+        $user = User::find($id);
+        return view('users.give_permission', compact('permissions', 'userPermissions', 'user'));
+    }
+
+     public function set_user_permission(Request $request, $id)
+    {
+        $user = User::find($id);
+        $user->syncPermissions($request->input('permission'));
+        return redirect()->back()->with('success', 'Permission Added Successfully.');
+    }
+
 }

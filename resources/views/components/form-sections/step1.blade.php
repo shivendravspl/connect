@@ -1,6 +1,6 @@
 <div id="basic-details" class="form-section">
-    <div class="row g-2">
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+    <div class="row g-2 p-2">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
                 <label for="territory" class="form-label small">Territory *</label>
                 <select class="form-control form-control-sm select2-territory" id="territory" name="territory" required>
@@ -15,7 +15,7 @@
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
                 <label class="form-label small">Region *</label>
                 <input type="text" class="form-control form-control-sm" id="region_display" readonly
@@ -25,7 +25,7 @@
             </div>
         </div>
 
-        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
                 <label class="form-label small">Zone *</label>
                 <input type="text" class="form-control form-control-sm" id="zone_display" readonly
@@ -34,7 +34,7 @@
                     value="{{ isset($application) && $application->zone ? $application->zone : (isset($preselected['zone']) ? $preselected['zone'] : '') }}">
             </div>
         </div>
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
                 <label class="form-label small">Business Unit *</label>
                 <input type="text" class="form-control form-control-sm" id="bu_display" readonly
@@ -43,10 +43,7 @@
                     value="{{ isset($application) && $application->business_unit ? $application->business_unit : (isset($preselected['bu']) ? $preselected['bu'] : '') }}">
             </div>
         </div>
-    </div>
-
-    <div class="row g-2">
-          <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
                 <label class="form-label small">Crop Vertical *</label>
                 <input type="text" class="form-control form-control-sm" id="crop_vertical_display" readonly
@@ -55,37 +52,9 @@
                     value="{{ isset($application) && $application->crop_vertical ? $application->crop_vertical : (isset($preselected['crop_vertical']) ? $preselected['crop_vertical'] : '') }}">
             </div>
         </div>
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-            <div class="form-group mb-2">
-                <label for="dis_state" class="form-label small">State *</label>
-                <select class="form-control form-control-sm" id="dis_state" name="state" required>
-                    <option value="">Select State</option>
-                    @foreach($states as $state)
-                        <option value="{{ $state->id }}"
-                            {{ isset($application) && $application->state == $state->id ? 'selected' : '' }}>
-                            {{ $state->state_name }}
-                        </option>
-                    @endforeach
-                </select>
-            </div>
-        </div>
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-            <div class="form-group mb-2">
-                <label for="district" class="form-label small">District *</label>
-                <select class="form-control form-control-sm" id="district" name="district" required>
-                    <option value="">Select District</option>
-                    @if(isset($application) && $application->district)
-                        @php
-                            $district = DB::table('core_district')->where('id', $application->district)->first();
-                        @endphp
-                        @if($district)
-                            <option value="{{ $district->id }}" selected>{{ $district->district_name }}</option>
-                        @endif
-                    @endif
-                </select>
-            </div>
-        </div>
     </div>
+
+   
 </div>
 
 @push('scripts')
@@ -204,45 +173,7 @@
                     $cropVerticalId.val('');
                 }
             });
-        }
-
-        // Load districts based on state
-        let isLoading = false;
-        $('#dis_state').on('change', function () {
-            if (isLoading) return;
-            isLoading = true;
-            $('#district').html('<option value="">Loading...</option>');
-            const stateId = $(this).val();
-
-            if (stateId) {
-                $.ajax({
-                    url: '/get-districts/' + stateId,
-                    type: 'GET',
-                    success: function (data) {
-                        let options = '<option value="">Select District</option>';
-                        $.each(data, function (index, district) {
-                            options += `<option value="${district.id}" ${district.id == "{{ $application->district ?? '' }}" ? 'selected' : ''}>${$('<div>').text(district.district_name).html()}</option>`;
-                        });
-                        $('#district').html(options);
-                    },
-                    error: function(xhr) {
-                        console.error('AJAX Error:', xhr.responseText);
-                        $('#district').html('<option value="">Error loading districts</option>');
-                    },
-                    complete: function() {
-                        isLoading = false;
-                    }
-                });
-            } else {
-                $('#district').html('<option value="">Select District</option>');
-                isLoading = false;
-            }
-        });
-
-        // Trigger state change for pre-selected values
-        if ($('#dis_state').val()) {
-            $('#dis_state').trigger('change');
-        }
+        }      
 
         // Trigger updateDependentFields for pre-selected territory
         if ($('#territory').val()) {

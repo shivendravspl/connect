@@ -102,7 +102,11 @@
 								<div class="col-md-12">
 									<div class="card bg-light">
 										<div class="card-body py-2">
-											<h6 class="mb-2">Indent Details</h6>
+											<div class="d-flex justify-content-between align-items-center mb-2">
+												<h6 class="mb-2">Indent Details</h6>
+												<small><strong>Indent No:</strong> <span id="display_indent_no"></span></small>
+											</div>
+
 											<div class="row">
 												<div class="col-md-3">
 													<small><strong>Department:</strong> <span id="display_department"></span></small>
@@ -234,7 +238,7 @@
 		<div class="row">
 			<div class="col-md-8">
 				<div class="form-group mb-1">
-					<label class="small fw-bold">Specification</label>
+					<label class="small fw-bold">Remarks</label>
 					<input type="text" class="form-control form-control-sm specification" name="items[][specification]">
 				</div>
 			</div>
@@ -317,6 +321,7 @@
 						document.getElementById('indent_id').value = data.indent_id;
 
 						// Display saved indent details
+						document.getElementById('display_indent_no').textContent = data.indent_no;
 						document.getElementById('display_department').textContent = department.options[department.selectedIndex].text;
 						document.getElementById('display_indent_date').textContent = indentDate.value;
 						document.getElementById('display_supply_date').textContent = supplyDate.value;

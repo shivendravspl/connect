@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container">
+<div class="container-fluid" style="padding: 1.5rem;">
     <div class="row justify-content-center">
         <div class="col-12">
             <div class="card">
@@ -12,24 +12,41 @@
                 <div class="card-body p-2">
                     <div class="stepper-wrapper" data-current-step="{{ $initialFrontendStep }}">
                         <div class="stepper d-flex flex-wrap justify-content-between mb-3">
-                            @php
-                            $steps = ['Basic Details', 'Entity Details', 'Distribution Details', 'Business Plan',
-                            'Financial & Distributorships', 'Bank Details', 'Declarations', 'Review & Submit'];
+                        @php
+$steps = ['Basic Details', 'Entity Details', 'Distribution Details', 'Business Plan', 'Financial & Distributorships', 'Bank Details', 'Declarations', 'Review & Submit'];
 
-                            $completedStepsData = [
-                                1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit) && !empty($application->district) && !empty($application->state),
-                                2 => $application->entityDetails && !empty($application->entityDetails->establishment_name) && !empty($application->entityDetails->pan_number),
-                                3 => $application->distributionDetail && !empty($application->distributionDetail->area_covered),
-                                4 => $application->businessPlans->isNotEmpty(), // Check if any business plans exist
-                                5 => $application->financialInfo && !empty($application->financialInfo->net_worth),
-                                6 => $application->bankDetail && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
-                                7 => $application->declarations->isNotEmpty(), // Assuming Declarations are saved as a collection
-                                8 => $application->status === 'initiated', // This step is 'completed' if the application is initiated (pre-submission review)
-                            ];
+$completedStepsData = [
+    1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit), // Removed district and state
+    2 => !empty($application->entityDetails) && !empty($application->entityDetails->establishment_name) && !empty($application->entityDetails->pan_number),
+    3 => !empty($application->distributionDetail) && !empty($application->distributionDetail->area_covered) && is_array(json_decode($application->distributionDetail->area_covered, true)) && count(json_decode($application->distributionDetail->area_covered, true)) > 0,
+    4 => $application->businessPlans->isNotEmpty(),
+    5 => !empty($application->financialInfo) && !empty($application->financialInfo->net_worth),
+    6 => !empty($application->bankDetail) && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
+    7 => $application->declarations->isNotEmpty(),
+    8 => in_array($application->status, ['initiated', 'approved']),
+];
 
-                            $currentStep = $initialFrontendStep;
-                            @endphp
-
+// Debug completedStepsData
+Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unknown'), [
+    'step1' => [
+        'territory' => !empty($application->territory),
+        'crop_vertical' => !empty($application->crop_vertical),
+        'region' => !empty($application->region),
+        'zone' => !empty($application->zone),
+        'business_unit' => !empty($application->business_unit),
+        'district' => !empty($application->district),
+        'state' => !empty($application->state),
+        'completed' => $completedStepsData[1]
+    ],
+    'step2' => $completedStepsData[2],
+    'step3' => $completedStepsData[3],
+    'step4' => $completedStepsData[4],
+    'step5' => $completedStepsData[5],
+    'step6' => $completedStepsData[6],
+    'step7' => $completedStepsData[7],
+    'step8' => $completedStepsData[8]
+]);
+@endphp
                             @foreach($steps as $index => $stepName)
                             @php
                             $stepNumber = $index + 1;
@@ -118,7 +135,7 @@
                         </div>
                     </div>
 
-                    <div class="form-navigation mt-3 d-flex justify-content-between">
+                    <div class="form-navigation mt-3 d-flex justify-content-between sticky-bottom bg-white p-2 border-top">
                         <button type="button" class="btn btn-sm btn-secondary previous" style="display:none; min-width:80px;">
                             <i class="fas fa-arrow-left d-sm-none"></i>
                             <span class="d-none d-sm-inline">Previous</span>
@@ -137,9 +154,18 @@
         </div>
     </div>
 </div>
-</div>
 @endsection
 
 @push('scripts')
+<script>
+    // Initialize completedStepsData with fallback
+     // Initialize completedStepsData with fallback
+    const completedStepsData = @json($completedStepsData) || {
+        1: false, 2: false, 3: false, 4: false, 5: false, 6: false, 7: false, 8: false
+    };
+    const isEditMode = true; // Since this is the edit page
+    const currentApplicationId = {{ $application->id }};
+    console.log('completedStepsData:', completedStepsData);
+</script>
 <script src="{{ asset('js/application-form.js') }}"></script>
 @endpush

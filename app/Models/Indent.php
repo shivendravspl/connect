@@ -22,11 +22,15 @@ class Indent extends Model
         'quotation_file',
         'purpose',
         'status',
+        'approved_by', 
+        'approved_at',
+        'rejection_reason'
     ];
 
      protected $casts = [
         'indent_date' => 'date',
         'estimated_supply_date' => 'date',
+        'approved_at' => 'datetime',
     ];
 
     public function requestedBy(): BelongsTo

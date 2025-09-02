@@ -16,8 +16,6 @@ class Onboarding extends Model
         'region',
         'zone',
         'business_unit',
-        'district',
-        'state',
         'status',
         'current_progress_step',
         'current_approver_id',

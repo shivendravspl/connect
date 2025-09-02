@@ -11,10 +11,10 @@
     <link href="{{ asset('assets/css/app.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <style>
+     <style>
         :root {
-            --connect-primary: #4f46e5;
-            --connect-secondary: #7c3aed;
+                --connect-primary: #358176;
+    --connect-secondary: #217468;
             --connect-accent: #06b6d4;
             --connect-dark: #1e293b;
             --connect-light: #f8fafc;
@@ -115,8 +115,8 @@
             position: relative;
             box-shadow: -10px 0 50px rgba(0, 0, 0, 0.1);
         }
-
-        .vendor-registration {
+		
+		.vendor-registration {
             position: absolute;
             top: 2rem;
             right: 1rem;
@@ -185,7 +185,7 @@
 
         .form-control {
             width: 100%;
-            padding: 0.875rem 1rem;
+            padding: 6px;
             border: 2px solid #e2e8f0;
             border-radius: 0.75rem;
             font-size: 1rem;
@@ -389,20 +389,6 @@
             .login-form-container {
                 padding: 1rem;
             }
-
-            .vendor-registration {
-                top: 1rem;
-                right: 1rem;
-            }
-
-            .vendor-registration p {
-                font-size: 0.8rem;
-            }
-
-            .vendor-registration a {
-                padding: 0.4rem 0.8rem;
-                font-size: 0.8rem;
-            }
         }
     </style>
 </head>
@@ -417,14 +403,20 @@
 
         <div class="left-panel">
             <div class="brand-section">
-                <div class="connect-logo">Connect</div>             
+                <div class="connect-logo">
+                    <img src="{{ asset('assets/images/connect-logo.png') }}" alt="" >
+                </div>
+                {{--<p class="brand-tagline">Empowering Financial Decisions</p>
+                <ul class="feature-list">
+                 
+                </ul> --}}            
             </div>
         </div>
 
         <div class="right-panel">
-            <div class="vendor-registration">
+              {{--<div class="vendor-registration">
                     <a href="{{ route('register') }}">Vendor Registration</a>
-            </div>
+            </div> --}}
 
             <div class="login-form-container">
                 <div class="form-header">

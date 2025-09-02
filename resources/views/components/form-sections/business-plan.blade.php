@@ -59,10 +59,11 @@
         <table class="table table-bordered table-sm">
             <thead>
                 <tr>
-                    <th style="width: 40%;">Crop *</th>
-                    <th style="width: 25%;">FY 2025-26 (MT) *</th>
-                    <th style="width: 25%;">FY 2026-27 (MT) *</th>
-                    <th style="width: 10%;">Action</th>
+                    <th class="form-label fw-normal small" style="width: 40%;">Crop *</th>
+                    <th class="form-label fw-normal small" style="width: 25%;">FY 2025-26 (MT) *</th>
+                    <th class="form-label fw-normal small" style="width: 25%;">FY 2026-27 (MT) *</th>
+                    <th class="form-label fw-normal small" style="width: 10%;">Action</th>
+
                 </tr>
             </thead>
             <tbody id="business-plan-body">
@@ -94,7 +95,7 @@
                     <td>
                         @if($index > 0)
                         <button type="button" class="btn btn-sm btn-danger remove-business-plan">
-                            <i class="fas fa-trash"></i>
+                           <i class="ri-delete-bin-line"></i>
                         </button>
                         @endif
                     </td>
@@ -104,7 +105,7 @@
         </table>
     </div>
 
-    <button type="button" class="btn btn-sm btn-primary add-business-plan mt-2">
+    <button type="button" class="btn btn-sm btn-primary add-business-plan mt-2" style="margin-left:4px;">
         <i class="fas fa-plus"></i> Add Crop
     </button>
 </div>
@@ -134,7 +135,7 @@
                 </td>
                 <td>
                     <button type="button" class="btn btn-sm btn-danger remove-business-plan">
-                        <i class="fas fa-trash"></i>
+                        <i class="ri-delete-bin-line"></i>
                     </button>
                 </td>
             </tr>`;

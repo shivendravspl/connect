@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,6 +12,7 @@
     <link href="{{ asset('assets/css/custom.min.css') }}" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
+
 <body>
     <div class="auth-page-wrapper auth-bg-cover py-4 d-flex justify-content-center align-items-center min-vh-100">
         <div class="bg-overlay"></div>
@@ -27,8 +29,8 @@
                                 </div>
                                 <div class="col-lg-6">
                                     <div style="margin-left:20%;margin-top:3%;">
-                                        <img style="width:190px;" src="{{ asset('assets/images/home.png') }}" class="logo_image flipImg" draggable="false" alt="OJAS Logo">
-                                        <img style="width:100px;margin-top:25px;margin-left:40px !important;padding-left:35px;border-left:1px solid #efe2e2;" src="{{ asset('assets/images/vnr-logo.png') }}" alt="Image">
+                                        <img style="width:190px;" src="{{ asset('assets/images/connect-logo.png') }}" class="logo_image flipImg" draggable="false" alt="Connect Logo">
+                                        
                                     </div>
                                     <div class="p-lg-5 p-4">
                                         <div>
@@ -37,30 +39,35 @@
                                         </div>
                                         <div class="mt-4">
                                             @if (session('status'))
-                                                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                                    {{ session('status') }}
-                                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                                </div>
+                                            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                                {{ session('status') }}
+                                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                            </div>
                                             @endif
                                             <form method="POST" action="{{ route('password.update') }}">
                                                 @csrf
-                                                <input type="hidden" name="token" value="{{ $request->route('token') }}">
+                                                <input type="hidden" name="token" value="{{ $token }}">
+                                                <input type="hidden" name="email" value="{{ request('email') }}">
+
                                                 <div class="mb-3">
                                                     <label for="identifier" class="form-label">Email or Phone</label>
-                                                    <input type="text" id="identifier" name="identifier" value="{{ old('identifier', $request->identifier) }}" class="form-control @error('identifier') is-invalid @enderror" required>
+                                                    <input type="text" id="identifier" name="identifier"
+                                                        value="{{ old('identifier', request('email')) }}"
+                                                        class="form-control @error('identifier') is-invalid @enderror" required>
                                                     @error('identifier')
-                                                        <p class="text-danger">
-                                                            <strong>{{ $message }}</strong>
-                                                        </p>
+                                                    <p class="text-danger">
+                                                        <strong>{{ $message }}</strong>
+                                                    </p>
                                                     @enderror
                                                 </div>
+
                                                 <div class="mb-3">
                                                     <label for="password" class="form-label">New Password</label>
                                                     <input type="password" id="password" name="password" class="form-control @error('password') is-invalid @enderror" required>
                                                     @error('password')
-                                                        <p class="text-danger">
-                                                            <strong>{{ $message }}</strong>
-                                                        </p>
+                                                    <p class="text-danger">
+                                                        <strong>{{ $message }}</strong>
+                                                    </p>
                                                     @enderror
                                                 </div>
                                                 <div class="mb-3">
@@ -83,4 +90,5 @@
     </div>
     @include('layouts.footer')
 </body>
+
 </html>

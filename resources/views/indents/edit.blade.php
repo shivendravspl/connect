@@ -57,7 +57,10 @@
                                 <div class="col-md-6">
                                     <div class="form-group mb-2">
                                         <label for="quotation_file" class="small fw-bold">Quotation File</label>
-                                        <input type="file" class="form-control-file form-control-sm" id="quotation_file" name="quotation_file">
+                                        <input type="file"
+                                            class="form-control form-control-sm"
+                                            id="quotation_file"
+                                            name="quotation_file">
                                         @if($indent->quotation_file)
                                         <small class="form-text text-muted">
                                             Current file: <a href="{{ Storage::url($indent->quotation_file) }}" target="_blank">View</a>
@@ -137,13 +140,13 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-6">
+                                <form action="{{ route('indents.update', $indent) }}" method="POST" id="itemsForm" enctype="multipart/form-data">
+                                    @csrf
+                                    @method('PUT')
+                                    <input type="hidden" name="indent_id" value="{{ $indent->id }}">
+                                    <!-- Right Column: Items Listing -->
 
-                            <form action="{{ route('indents.update', $indent) }}" method="POST" id="itemsForm" enctype="multipart/form-data">
-                                @csrf
-                                @method('PUT')
-                                <input type="hidden" name="indent_id" value="{{ $indent->id }}">
-                                <!-- Right Column: Items Listing -->
-                                <div class="col-md-6">
                                     <div class="card">
                                         <div class="card-header py-2 d-flex justify-content-between align-items-center">
                                             <h6 class="mb-0">Items Added</h6>
@@ -158,7 +161,7 @@
                                                             <th>Qty</th>
                                                             <th>Unit</th>
                                                             <th>Req Date</th>
-                                                            <th>Spec</th>
+                                                            <th>Remarks</th>
                                                             <th width="80px">Action</th>
                                                         </tr>
                                                     </thead>
@@ -179,8 +182,9 @@
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            </form>
+
+                                </form>
+                            </div>
                         </div>
 
                     </div>
@@ -235,7 +239,7 @@
         <div class="row">
             <div class="col-md-8">
                 <div class="form-group mb-1">
-                    <label class="small fw-bold">Specification</label>
+                    <label class="small fw-bold">Remarks</label>
                     <input type="text" class="form-control form-control-sm specification" name="items[][specification]">
                 </div>
             </div>
@@ -252,343 +256,477 @@
 @endsection
 @push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const container = document.getElementById('itemsContainer');
-        const template = document.getElementById('itemTemplate');
-        const saveHeaderBtn = document.getElementById('saveHeader');
-        const backToHeaderBtn = document.getElementById('backToHeader');
-        const headerSection = document.getElementById('indentHeaderSection');
-        const itemsSection = document.getElementById('itemsSection');
-        const itemsTable = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
-        const itemsCount = document.getElementById('itemsCount');
+   document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('itemsContainer');
+    const template = document.getElementById('itemTemplate');
+    const saveHeaderBtn = document.getElementById('saveHeader');
+    const backToHeaderBtn = document.getElementById('backToHeader');
+    const headerSection = document.getElementById('indentHeaderSection');
+    const itemsSection = document.getElementById('itemsSection');
+    const itemsTable = document.getElementById('itemsTable').getElementsByTagName('tbody')[0];
+    const itemsCount = document.getElementById('itemsCount');
 
-        let itemCount = 0;
-        let savedItems = [];
+    let itemCount = 0;
+    let savedItems = [];
+    let currentlyEditingIndex = null;
 
-        // Set default required date to tomorrow
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    // Set default required date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
 
-        // Pre-populate savedItems with existing items
-        @foreach($indent-> items as $item)
-        savedItems.push({
-            item_id: '{{ $item->item_id }}',
-            item_text: '{{ $item->item->name }} ({{ $item->item->code }})',
-            quantity: '{{ $item->quantity }}',
-            uom: '{{ $item->item->uom }}',
-            required_date: '{{ $item->required_date->format("Y-m-d") }}',
-            specification: '{{ $item->specification ?? "" }}',
-            row_index: itemCount
-        });
-        itemCount++;
-        @endforeach
+    // Pre-populate savedItems with existing items
+    @foreach($indent-> items as $item)
+    savedItems.push({
+        item_id: '{{ $item->item_id }}',
+        item_text: '{{ $item->item->name }} ({{ $item->item->code }})',
+        quantity: '{{ $item->quantity }}',
+        uom: '{{ $item->item->uom }}',
+        required_date: '{{ $item->required_date->format("Y-m-d") }}',
+        specification: '{{ $item->remarks ?? "" }}',
+        row_index: itemCount
+    });
+    itemCount++;
+    @endforeach
 
-        // Save header and show items section
-        saveHeaderBtn.addEventListener('click', function() {
-            // Basic validation
-            const department = document.getElementById('department_id');
-            const indentDate = document.getElementById('indent_date');
-            const supplyDate = document.getElementById('estimated_supply_date');
-            const orderBy = document.getElementById('order_by');
-            const purpose = document.getElementById('purpose');
+    // Save header and show items section
+    saveHeaderBtn.addEventListener('click', function() {
+        // Basic validation
+        const department = document.getElementById('department_id');
+        const indentDate = document.getElementById('indent_date');
+        const supplyDate = document.getElementById('estimated_supply_date');
+        const orderBy = document.getElementById('order_by');
+        const purpose = document.getElementById('purpose');
 
-            if (!department.value || !indentDate.value || !supplyDate.value || !orderBy.value || !purpose.value) {
-                alert('Please fill all required fields before proceeding.');
-                return;
-            }
-
-            // Show loading state
-            saveHeaderBtn.disabled = true;
-            saveHeaderBtn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Saving...';
-
-            // Prepare form data
-            const formData = new FormData(document.getElementById('headerForm'));
-
-            // Send AJAX request to save header
-            fetch('{{ route("indents.saveHeader", $indent) }}', {
-                    method: 'POST',
-                    body: formData,
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => {
-                    const contentType = response.headers.get('content-type');
-                    if (!contentType || !contentType.includes('application/json')) {
-                        return response.text().then(text => {
-                            throw new Error('Received non-JSON response: ' + text.substring(0, 100));
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Update display values
-                        document.getElementById('display_department').textContent = department.options[department.selectedIndex].text;
-                        document.getElementById('display_indent_date').textContent = indentDate.value;
-                        document.getElementById('display_supply_date').textContent = supplyDate.value;
-                        document.getElementById('display_order_by').textContent = document.querySelector('input[disabled][value]').value;
-                        document.getElementById('display_purpose').textContent = purpose.value;
-
-                        // Hide header, show items section
-                        headerSection.style.display = 'none';
-                        itemsSection.style.display = 'block';
-
-                        // Refresh items table with existing items
-                        refreshItemsTable();
-
-                        // Add new item form
-                        if (container.children.length === 0) {
-                            addItem();
-                        }
-                    } else {
-                        alert('Error saving indent header: ' + (data.message || 'Unknown error'));
-                    }
-                })
-                .catch(error => {
-                    console.error('AJAX Error:', error);
-                    alert('Error saving indent header: ' + error.message);
-                })
-                .finally(() => {
-                    // Reset button state
-                    saveHeaderBtn.disabled = false;
-                    saveHeaderBtn.innerHTML = '<i class="ri-save-line"></i> Save Indent Header';
-                });
-        });
-
-        // Back to header section
-        backToHeaderBtn.addEventListener('click', function() {
-            itemsSection.style.display = 'none';
-            headerSection.style.display = 'block';
-            container.innerHTML = ''; // Clear item form
-        });
-
-        function addItem() {
-            // Clear container first to ensure only one row exists
-            container.innerHTML = '';
-
-            const clone = template.content.cloneNode(true);
-            const itemRow = clone.querySelector('.item-row');
-
-            // Update names with index
-            const selects = itemRow.querySelectorAll('[name]');
-            selects.forEach(el => {
-                el.name = el.name.replace('[]', `[${itemCount}]`);
-            });
-
-            // Set default required date
-            const requiredDateInput = itemRow.querySelector('.required-date');
-            requiredDateInput.value = tomorrowStr;
-
-            // Add UOM change handler
-            const itemSelect = itemRow.querySelector('.item-select');
-            const uomField = itemRow.querySelector('.uom');
-
-            itemSelect.addEventListener('change', function() {
-                const selectedOption = this.options[this.selectedIndex];
-                uomField.value = selectedOption.dataset.uom || '';
-            });
-
-            // Add save item button handler
-            itemRow.querySelector('.save-item').addEventListener('click', function() {
-                saveItem(itemRow);
-            });
-
-            container.appendChild(itemRow);
-            itemCount++;
+        if (!department.value || !indentDate.value || !supplyDate.value || !orderBy.value || !purpose.value) {
+            alert('Please fill all required fields before proceeding.');
+            return;
         }
 
-        function saveItem(itemRow) {
-            const itemSelect = itemRow.querySelector('.item-select');
-            const quantityInput = itemRow.querySelector('.quantity');
-            const uomInput = itemRow.querySelector('.uom');
-            const requiredDateInput = itemRow.querySelector('.required-date');
-            const specificationInput = itemRow.querySelector('.specification');
+        // Show loading state
+        saveHeaderBtn.disabled = true;
+        saveHeaderBtn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> Saving...';
 
-            // Strict validation
-            if (!itemSelect.value) {
-                alert('Please select an item.');
-                itemSelect.focus();
-                return;
-            }
-            if (!quantityInput.value || parseFloat(quantityInput.value) <= 0) {
-                alert('Please enter a valid quantity greater than 0.');
-                quantityInput.focus();
-                return;
-            }
-            if (!requiredDateInput.value) {
-                alert('Please select a required date.');
-                requiredDateInput.focus();
-                return;
-            }
+        // Prepare form data
+        const formData = new FormData(document.getElementById('headerForm'));
 
-            const selectedOption = itemSelect.options[itemSelect.selectedIndex];
-            const itemText = selectedOption.text;
-
-            // Add to saved items array
-            const itemData = {
-                item_id: itemSelect.value,
-                item_text: itemText,
-                quantity: parseFloat(quantityInput.value).toFixed(2),
-                uom: uomInput.value,
-                required_date: requiredDateInput.value,
-                specification: specificationInput.value || '',
-                row_index: itemCount
-            };
-
-            savedItems.push(itemData);
-
-            // Add to items table
-            addItemToTable(itemData);
-
-            // Clear the form row for next entry
-            itemSelect.value = '';
-            quantityInput.value = '';
-            uomInput.value = '';
-            requiredDateInput.value = tomorrowStr;
-            specificationInput.value = '';
-
-            // Update items count
-            updateItemsCount();
-
-            // Show success message
-            alert('Item saved successfully! You can add another item.');
-        }
-
-        function addItemToTable(itemData) {
-            const newRow = itemsTable.insertRow();
-            newRow.className = 'small';
-
-            newRow.innerHTML = `
-                <td>${itemData.item_text}</td>
-                <td>${itemData.quantity}</td>
-                <td>${itemData.uom}</td>
-                <td>${itemData.required_date}</td>
-                <td>${itemData.specification || '-'}</td>
-                <td class="text-center">
-                    <button type="button" class="btn btn-sm btn-outline-warning edit-item" data-index="${itemData.row_index}" title="Edit">
-                        <i class="ri-edit-line"></i>
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-danger delete-item" data-index="${itemData.row_index}" title="Delete">
-                        <i class="ri-delete-bin-line"></i>
-                    </button>
-                </td>
-            `;
-
-            // Add event listeners for edit and delete
-            newRow.querySelector('.edit-item').addEventListener('click', function() {
-                editItem(itemData.row_index);
-            });
-
-            newRow.querySelector('.delete-item').addEventListener('click', function() {
-                deleteItem(itemData.row_index);
-            });
-        }
-
-        function editItem(index) {
-            // Find the item in savedItems array
-            const itemIndex = savedItems.findIndex(item => item.row_index === index);
-            if (itemIndex === -1) return;
-
-            const item = savedItems[itemIndex];
-
-            // Ensure item form exists
-            if (container.children.length === 0) {
-                addItem();
-            }
-
-            const itemRow = container.querySelector('.item-row');
-            if (!itemRow) return;
-
-            const itemSelect = itemRow.querySelector('.item-select');
-            const quantityInput = itemRow.querySelector('.quantity');
-            const uomInput = itemRow.querySelector('.uom');
-            const requiredDateInput = itemRow.querySelector('.required-date');
-            const specificationInput = itemRow.querySelector('.specification');
-
-            itemSelect.value = item.item_id;
-            quantityInput.value = item.quantity;
-            uomInput.value = item.uom;
-            requiredDateInput.value = item.required_date;
-            specificationInput.value = item.specification || '';
-
-            // Remove the item from saved items and table
-            savedItems.splice(itemIndex, 1);
-            refreshItemsTable();
-        }
-
-        function deleteItem(index) {
-            if (!confirm('Are you sure you want to delete this item?')) return;
-
-            // Find the item in savedItems array
-            const itemIndex = savedItems.findIndex(item => item.row_index === index);
-            if (itemIndex === -1) return;
-
-            // Remove the item
-            savedItems.splice(itemIndex, 1);
-            refreshItemsTable();
-        }
-
-        function refreshItemsTable() {
-            // Clear the table
-            itemsTable.innerHTML = '';
-
-            // Re-add all items
-            savedItems.forEach(item => {
-                addItemToTable(item);
-            });
-
-            // Update items count
-            updateItemsCount();
-        }
-
-        function updateItemsCount() {
-            itemsCount.textContent = savedItems.length + ' Item' + (savedItems.length !== 1 ? 's' : '');
-        }
-
-        // Before items form submission, add hidden inputs for saved items
-        document.getElementById('itemsForm').addEventListener('submit', function(e) {
-            if (savedItems.length === 0) {
-                e.preventDefault();
-                alert('Please add at least one item before submitting.');
-                return;
-            }
-
-            // Remove any existing hidden inputs first
-            const existingHiddenInputs = this.querySelectorAll('input[type="hidden"][name^="items"]');
-            existingHiddenInputs.forEach(input => input.remove());
-
-            // Add hidden inputs for each saved item
-            savedItems.forEach((item, index) => {
-                if (!item.item_id || !item.quantity || !item.required_date) {
-                    return; // Skip invalid items
+        // Send AJAX request to save header
+        fetch('{{ route("indents.saveHeader", $indent) }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Accept': 'application/json'
                 }
-                const itemIdInput = document.createElement('input');
-                itemIdInput.type = 'hidden';
-                itemIdInput.name = `items[${index}][item_id]`;
-                itemIdInput.value = item.item_id;
-                this.appendChild(itemIdInput);
+            })
+            .then(response => {
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    return response.text().then(text => {
+                        throw new Error('Received non-JSON response: ' + text.substring(0, 100));
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Update display values
+                    document.getElementById('display_department').textContent = department.options[department.selectedIndex].text;
+                    document.getElementById('display_indent_date').textContent = indentDate.value;
+                    document.getElementById('display_supply_date').textContent = supplyDate.value;
+                    document.getElementById('display_order_by').textContent = document.querySelector('input[disabled][value]').value;
+                    document.getElementById('display_purpose').textContent = purpose.value;
 
-                const quantityInput = document.createElement('input');
-                quantityInput.type = 'hidden';
-                quantityInput.name = `items[${index}][quantity]`;
-                quantityInput.value = item.quantity;
-                this.appendChild(quantityInput);
+                    // Hide header, show items section
+                    headerSection.style.display = 'none';
+                    itemsSection.style.display = 'block';
 
-                const requiredDateInput = document.createElement('input');
-                requiredDateInput.type = 'hidden';
-                requiredDateInput.name = `items[${index}][required_date]`;
-                requiredDateInput.value = item.required_date;
-                this.appendChild(requiredDateInput);
+                    // Refresh items table with existing items
+                    refreshItemsTable();
 
-                const specificationInput = document.createElement('input');
-                specificationInput.type = 'hidden';
-                specificationInput.name = `items[${index}][specification]`;
-                specificationInput.value = item.specification || '';
-                this.appendChild(specificationInput);
+                    // Add new item form
+                    if (container.children.length === 0) {
+                        addItem();
+                    }
+                } else {
+                    alert('Error saving indent header: ' + (data.message || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('AJAX Error:', error);
+                alert('Error saving indent header: ' + error.message);
+            })
+            .finally(() => {
+                // Reset button state
+                saveHeaderBtn.disabled = false;
+                saveHeaderBtn.innerHTML = '<i class="ri-save-line"></i> Save Indent Header';
             });
+    });
+
+    // Back to header section
+    backToHeaderBtn.addEventListener('click', function() {
+        itemsSection.style.display = 'none';
+        headerSection.style.display = 'block';
+        container.innerHTML = ''; // Clear item form
+        currentlyEditingIndex = null;
+    });
+
+    function addItem() {
+        // Clear container first to ensure only one row exists
+        container.innerHTML = '';
+
+        const clone = template.content.cloneNode(true);
+        const itemRow = clone.querySelector('.item-row');
+
+        // Update names with index
+        const selects = itemRow.querySelectorAll('[name]');
+        selects.forEach(el => {
+            el.name = el.name.replace('[]', `[${itemCount}]`);
+        });
+
+        // Set default required date
+        const requiredDateInput = itemRow.querySelector('.required-date');
+        requiredDateInput.value = tomorrowStr;
+
+        // Add UOM change handler
+        const itemSelect = itemRow.querySelector('.item-select');
+        const uomField = itemRow.querySelector('.uom');
+
+        itemSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            uomField.value = selectedOption.dataset.uom || '';
+        });
+
+        // Add save item button handler
+        const saveButton = itemRow.querySelector('.save-item');
+        if (currentlyEditingIndex !== null) {
+            saveButton.innerHTML = '<i class="ri-save-line"></i> Update';
+            saveButton.classList.remove('btn-info');
+            saveButton.classList.add('btn-warning');
+            saveButton.onclick = function() {
+                updateItem(itemRow, currentlyEditingIndex);
+            };
+        } else {
+            saveButton.innerHTML = '<i class="ri-save-line"></i> Save';
+            saveButton.classList.remove('btn-warning');
+            saveButton.classList.add('btn-info');
+            saveButton.onclick = function() {
+                saveItem(itemRow);
+            };
+        }
+
+        container.appendChild(itemRow);
+    }
+
+    function saveItem(itemRow) {
+        const itemSelect = itemRow.querySelector('.item-select');
+        const quantityInput = itemRow.querySelector('.quantity');
+        const uomInput = itemRow.querySelector('.uom');
+        const requiredDateInput = itemRow.querySelector('.required-date');
+        const specificationInput = itemRow.querySelector('.specification');
+
+        // Strict validation
+        if (!itemSelect.value) {
+            alert('Please select an item.');
+            itemSelect.focus();
+            return;
+        }
+        if (!quantityInput.value || parseFloat(quantityInput.value) <= 0) {
+            alert('Please enter a valid quantity greater than 0.');
+            quantityInput.focus();
+            return;
+        }
+        if (!requiredDateInput.value) {
+            alert('Please select a required date.');
+            requiredDateInput.focus();
+            return;
+        }
+
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        const itemText = selectedOption.text;
+
+        // Add to saved items array
+        const itemData = {
+            item_id: itemSelect.value,
+            item_text: itemText,
+            quantity: parseFloat(quantityInput.value).toFixed(2),
+            uom: uomInput.value,
+            required_date: requiredDateInput.value,
+            specification: specificationInput.value || '',
+            row_index: itemCount
+        };
+
+        savedItems.push(itemData);
+
+        // Add to items table
+        addItemToTable(itemData);
+
+        // Clear the form row for next entry
+        itemSelect.value = '';
+        quantityInput.value = '';
+        uomInput.value = '';
+        requiredDateInput.value = tomorrowStr;
+        specificationInput.value = '';
+
+        // Update items count
+        updateItemsCount();
+
+        // Show success message
+        alert('Item saved successfully! You can add another item.');
+        
+        itemCount++;
+    }
+
+    function addItemToTable(itemData) {
+        const newRow = itemsTable.insertRow();
+        newRow.className = 'small';
+
+        newRow.innerHTML = `
+            <td>${itemData.item_text}</td>
+            <td>${itemData.quantity}</td>
+            <td>${itemData.uom}</td>
+            <td>${itemData.required_date}</td>
+            <td>${itemData.specification || '-'}</td>
+            <td class="text-center">
+                <button type="button" class="btn btn-sm btn-outline-warning edit-item" data-index="${itemData.row_index}" title="Edit">
+                    <i class="ri-edit-line"></i>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-danger delete-item" data-index="${itemData.row_index}" title="Delete">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </td>
+        `;
+
+        // Add event listeners for edit and delete
+        newRow.querySelector('.edit-item').addEventListener('click', function() {
+            editItem(itemData.row_index);
+        });
+
+        newRow.querySelector('.delete-item').addEventListener('click', function() {
+            deleteItem(itemData.row_index);
+        });
+    }
+
+    function editItem(index) {
+        // If we're already editing an item, save it back first
+        if (currentlyEditingIndex !== null && currentlyEditingIndex !== index) {
+            const itemRow = container.querySelector('.item-row');
+            if (itemRow) {
+                updateItem(itemRow, currentlyEditingIndex, false);
+            }
+        }
+
+        // Find the item in savedItems array
+        const itemIndex = savedItems.findIndex(item => item.row_index === index);
+        if (itemIndex === -1) return;
+
+        const item = savedItems[itemIndex];
+
+        // Remove the item from saved items temporarily
+        savedItems.splice(itemIndex, 1);
+        refreshItemsTable();
+
+        // Set the editing index
+        currentlyEditingIndex = index;
+
+        // Ensure item form exists
+        if (container.children.length === 0) {
+            addItem();
+        }
+
+        const itemRow = container.querySelector('.item-row');
+        if (!itemRow) return;
+
+        const itemSelect = itemRow.querySelector('.item-select');
+        const quantityInput = itemRow.querySelector('.quantity');
+        const uomInput = itemRow.querySelector('.uom');
+        const requiredDateInput = itemRow.querySelector('.required-date');
+        const specificationInput = itemRow.querySelector('.specification');
+
+        // Populate the form with item data
+        itemSelect.value = item.item_id;
+        quantityInput.value = item.quantity;
+        uomInput.value = item.uom;
+        requiredDateInput.value = item.required_date;
+        specificationInput.value = item.specification || '';
+
+        // Update the save button to show we're editing
+        const saveButton = itemRow.querySelector('.save-item');
+        saveButton.innerHTML = '<i class="ri-save-line"></i> Update';
+        saveButton.classList.remove('btn-info');
+        saveButton.classList.add('btn-warning');
+        saveButton.onclick = function() {
+            updateItem(itemRow, index);
+        };
+    }
+
+    function updateItem(itemRow, index, showAlert = true) {
+        const itemSelect = itemRow.querySelector('.item-select');
+        const quantityInput = itemRow.querySelector('.quantity');
+        const uomInput = itemRow.querySelector('.uom');
+        const requiredDateInput = itemRow.querySelector('.required-date');
+        const specificationInput = itemRow.querySelector('.specification');
+
+        // Validation
+        if (!itemSelect.value) {
+            alert('Please select an item.');
+            itemSelect.focus();
+            return;
+        }
+        if (!quantityInput.value || parseFloat(quantityInput.value) <= 0) {
+            alert('Please enter a valid quantity greater than 0.');
+            quantityInput.focus();
+            return;
+        }
+        if (!requiredDateInput.value) {
+            alert('Please select a required date.');
+            requiredDateInput.focus();
+            return;
+        }
+
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        const itemText = selectedOption.text;
+
+        // Add the updated item back to savedItems
+        const updatedItem = {
+            item_id: itemSelect.value,
+            item_text: itemText,
+            quantity: parseFloat(quantityInput.value).toFixed(2),
+            uom: uomInput.value,
+            required_date: requiredDateInput.value,
+            specification: specificationInput.value || '',
+            row_index: index
+        };
+        
+        savedItems.push(updatedItem);
+        
+        // Reset the form
+        itemSelect.value = '';
+        quantityInput.value = '';
+        uomInput.value = '';
+        requiredDateInput.value = tomorrowStr;
+        specificationInput.value = '';
+        
+        // Reset the save button
+        const saveButton = itemRow.querySelector('.save-item');
+        saveButton.innerHTML = '<i class="ri-save-line"></i> Save';
+        saveButton.classList.remove('btn-warning');
+        saveButton.classList.add('btn-info');
+        saveButton.onclick = function() {
+            saveItem(itemRow);
+        };
+        
+        // Refresh the table
+        refreshItemsTable();
+        
+        // Reset editing state
+        currentlyEditingIndex = null;
+        
+        if (showAlert) {
+            alert('Item updated successfully!');
+        }
+    }
+
+    function deleteItem(index) {
+        if (!confirm('Are you sure you want to delete this item?')) return;
+
+        // If we're editing this item, cancel the edit
+        if (currentlyEditingIndex === index) {
+            currentlyEditingIndex = null;
+            
+            // Reset the form
+            const itemRow = container.querySelector('.item-row');
+            if (itemRow) {
+                const itemSelect = itemRow.querySelector('.item-select');
+                const quantityInput = itemRow.querySelector('.quantity');
+                const uomInput = itemRow.querySelector('.uom');
+                const requiredDateInput = itemRow.querySelector('.required-date');
+                const specificationInput = itemRow.querySelector('.specification');
+                
+                itemSelect.value = '';
+                quantityInput.value = '';
+                uomInput.value = '';
+                requiredDateInput.value = tomorrowStr;
+                specificationInput.value = '';
+                
+                // Reset the save button
+                const saveButton = itemRow.querySelector('.save-item');
+                saveButton.innerHTML = '<i class="ri-save-line"></i> Save';
+                saveButton.classList.remove('btn-warning');
+                saveButton.classList.add('btn-info');
+                saveButton.onclick = function() {
+                    saveItem(itemRow);
+                };
+            }
+        }
+
+        // Find the item in savedItems array
+        const itemIndex = savedItems.findIndex(item => item.row_index === index);
+        if (itemIndex === -1) return;
+
+        // Remove the item
+        savedItems.splice(itemIndex, 1);
+        refreshItemsTable();
+    }
+
+    function refreshItemsTable() {
+        // Clear the table
+        itemsTable.innerHTML = '';
+
+        // Re-add all items
+        savedItems.forEach(item => {
+            addItemToTable(item);
+        });
+
+        // Update items count
+        updateItemsCount();
+    }
+
+    function updateItemsCount() {
+        itemsCount.textContent = savedItems.length + ' Item' + (savedItems.length !== 1 ? 's' : '');
+    }
+
+    // Before items form submission, add hidden inputs for saved items
+    document.getElementById('itemsForm').addEventListener('submit', function(e) {
+        if (savedItems.length === 0) {
+            e.preventDefault();
+            alert('Please add at least one item before submitting.');
+            return;
+        }
+
+        // Remove any existing hidden inputs first
+        const existingHiddenInputs = this.querySelectorAll('input[type="hidden"][name^="items"]');
+        existingHiddenInputs.forEach(input => input.remove());
+
+        // Add hidden inputs for each saved item
+        savedItems.forEach((item, index) => {
+            if (!item.item_id || !item.quantity || !item.required_date) {
+                return; // Skip invalid items
+            }
+            const itemIdInput = document.createElement('input');
+            itemIdInput.type = 'hidden';
+            itemIdInput.name = `items[${index}][item_id]`;
+            itemIdInput.value = item.item_id;
+            this.appendChild(itemIdInput);
+
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'hidden';
+            quantityInput.name = `items[${index}][quantity]`;
+            quantityInput.value = item.quantity;
+            this.appendChild(quantityInput);
+
+            const requiredDateInput = document.createElement('input');
+            requiredDateInput.type = 'hidden';
+            requiredDateInput.name = `items[${index}][required_date]`;
+            requiredDateInput.value = item.required_date;
+            this.appendChild(requiredDateInput);
+
+            const specificationInput = document.createElement('input');
+            specificationInput.type = 'hidden';
+            specificationInput.name = `items[${index}][specification]`;
+            specificationInput.value = item.specification || '';
+            this.appendChild(specificationInput);
         });
     });
+});
 </script>
 @endpush

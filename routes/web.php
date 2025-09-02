@@ -10,7 +10,7 @@ use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\CoreAPIController;
-use App\Http\Controllers\DistributorController; // Fixed typo
+use App\Http\Controllers\DistributorController;
 use App\Http\Controllers\CoreOrgFunctionController;
 use App\Http\Controllers\CoreBusinessUnitController;
 use App\Http\Controllers\CoreCategoryController;
@@ -22,18 +22,11 @@ use App\Http\Controllers\CoreVarietyController;
 use App\Http\Controllers\CoreVerticalController;
 use App\Http\Controllers\CoreZoneController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\FormController;
 use App\Http\Controllers\OnboardingController;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\ApprovalController;
-use App\Mail\TestEmail;
-use Illuminate\Support\Facades\Mail;
 use App\Http\Controllers\MISProcessingController;
-use App\Http\Controllers\VendorController;
-use App\Http\Controllers\VendorApprovalController;
-use App\Http\Controllers\ItemGroupController;
-use App\Http\Controllers\ItemController;
-use App\Http\Controllers\IndentController;
+
 
 
 
@@ -79,6 +72,8 @@ Route::middleware('auth')->group(function () {
         Route::post('getUserList', [UserController::class, 'getUserList'])->name('getUserList');
         Route::post('/users/export', [UserController::class, 'export'])->name('users.export');
         Route::put('/users/{user}/password', [UserController::class, 'changePassword'])->name('users.password');
+        Route::get('user/{user_id}/permission', [UserController::class, 'give_permission'])->name('give_permission');
+        Route::post('user/{user_id}/permission', [UserController::class, 'set_user_permission'])->name('set_user_permission');
 
     });
 
@@ -176,10 +171,6 @@ Route::middleware('auth')->group(function () {
     Route::post('menu-builder/show_menu', [\App\Http\Controllers\MenuController::class, 'show_menu'])->name('menu-builder.show_menu');
     Route::post('get_source_table_columns', [\App\Http\Controllers\PageBuilderController::class, 'getSourceTableColumns'])->name('get_source_table_columns');
 
-    // In your routes file
-    Route::post('/get-regions', [EmployeeController::class, 'getRegionsByTerritory']);
-    Route::post('/get-zones', [EmployeeController::class, 'getZonesByRegion']);
-
     // Add API routes for filter dependencies
     Route::get('api/get-territory-regions/{territoryId}', function ($territoryId) {
         $regions = DB::table('core_region_territory_mapping')
@@ -265,51 +256,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/get-territory-data', [CoreTerritoryController::class, 'getMappingData']);
     Route::get('/dashboard/dynamic-data', [App\Http\Controllers\HomeController::class, 'dynamicData'])->name('dashboard.dynamic-data');
 
-    Route::prefix('vendors')->name('vendors.')->group(function () {
-        // Routes handled by VendorController
-        Route::post('/store-section/{vendor}', [VendorController::class, 'storeSection'])->name('store.section');
-        Route::get('/list', [VendorController::class, 'index'])->name('index');
-        Route::get('/create', [VendorController::class, 'create'])->name('create');
-        Route::post('/store', [VendorController::class, 'store'])->name('store');
-        Route::get('/profile', [VendorController::class, 'profile'])->name('profile');
-        Route::get('/edit/{id}', [VendorController::class, 'edit'])->name('edit');
-        Route::put('/update/{id}', [VendorController::class, 'update'])->name('update');
-        Route::get('/edit/{vendor}/section/{section}', [VendorController::class, 'editSection'])->name('edit.section');
-        Route::delete('/destroy/{id}', [VendorController::class, 'destroy'])->name('destroy');
-        Route::get('/submitted/{id}', [VendorController::class, 'submitted'])->name('submitted');
-        Route::get('/success/{id}', [VendorController::class, 'success'])->name('success');
-        Route::get('/{id}', [VendorController::class, 'show'])->name('show');
-        Route::get('/employees/by-department/{departmentId}', [VendorController::class, 'getEmployee'])->name('employees.by-department');
-        Route::get('/{id}/documents/{type}', [VendorController::class, 'showDocument'])->name('documents.show');
-        Route::post('/{id}/toggle-active', [VendorController::class, 'toggleActive'])->name('toggle-active');
-    });
 
-    Route::middleware(['auth'])->group(function () {
-        // Routes handled by VendorApprovalController
-        Route::get('/temp-edits', [VendorApprovalController::class, 'tempEdits'])->name('temp-edits');
-        Route::get('/temp-edits/{id}', [VendorApprovalController::class, 'showTempEdit'])->name('temp-edits.show');
-        Route::patch('/temp-edits/approve/{id}', [VendorApprovalController::class, 'approveTempEdit'])->name('temp-edits.approve');
-        Route::patch('/temp-edits/reject/{id}', [VendorApprovalController::class, 'rejectTempEdit'])->name('temp-edits.reject');
-        Route::get('/temp-edits/document/{id}/{type}', [VendorApprovalController::class, 'showTempDocument'])->name('temp-document');
-        Route::post('/{id}/approve', [VendorApprovalController::class, 'approve'])->name('approve');
-        Route::post('/{id}/reject', [VendorApprovalController::class, 'reject'])->name('reject');
-    });
 
-    Route::middleware(['auth'])->group(function () {
-        Route::get('/items/export', [ItemController::class, 'exportItems'])->name('items.export');
-        Route::get('/categories/export', [ItemController::class, 'exportCategories'])->name('categories.export');
-        Route::resource('item-groups', ItemGroupController::class);
-        Route::resource('items', ItemController::class);
-
-        Route::delete('categories/{category}', [ItemController::class, 'destroyCategory'])->name('categories.destroy');
-        Route::get('items/{item}/categories', [ItemController::class, 'getItemCategories'])->name('items.categories.get');
-        Route::post('items/{item}/categories', [ItemController::class, 'updateItemCategories'])->name('items.categories.update');
-
-        Route::post('indents/{indent}/save-header', [IndentController::class, 'saveHeaderUpdate'])->name('indents.saveHeader');
-        Route::post('indents/save-header', [IndentController::class, 'saveHeader'])->name('indents.createHeader');
-        Route::resource('indents', IndentController::class);
-        Route::post('indents/{indent}/submit', [IndentController::class, 'submit'])->name('indents.submit');
-        Route::post('indents/{indent}/approve', [IndentController::class, 'approve'])->name('indents.approve');
-        Route::post('indents/{indent}/reject', [IndentController::class, 'reject'])->name('indents.reject');
-    });
+   
 });

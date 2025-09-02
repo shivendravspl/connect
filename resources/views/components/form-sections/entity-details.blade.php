@@ -125,13 +125,18 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
     <!-- Partnership Fields -->
     <div id="partnership_fields" class="entity-specific-fields" style="display:none;">
-        <!-- Partner Details -->
-        <div class="card mb-4">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Partner Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addPartner()">+</button>
-            </div>
-            <div class="card-body">
+    <!-- Partnership Details Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-light p-2">
+            <h6 class="mb-0">Partnership Firm Details</h6>
+        </div>
+        <div class="card-body">
+            <!-- Partner Details Section -->
+            <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Partner Details</h6>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addPartner()">+ Add Partner</button>
+                </div>
                 <div id="partners_container">
                     @php
                     $partners = old('partner_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'partnership' ? $application->entityDetails->additional_data['partners'] : []);
@@ -140,7 +145,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($partners as $index => $partner)
-                    <div class="partner-entry mb-2 border-bottom pb-2">
+                    <div class="partner-entry mb-3 @if($index > 0 || count($partners) > 1) border-bottom pb-3 @endif">
                         <div class="row g-2">
                             <div class="col-12 col-md-4">
                                 <div class="form-group mb-2">
@@ -165,7 +170,13 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                             </div>
                             <div class="col-12 col-md-2 d-flex align-items-end">
                                 <div class="form-group mb-2 w-100">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removePartner(this)">-</button>
+                                    @if($index > 0 || count($partners) > 1)
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removePartner(this)" title="Remove Partner">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                    @else
+                                    <div style="height: 38px;"></div> <!-- Spacer to maintain alignment -->
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -173,15 +184,13 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     @endforeach
                 </div>
             </div>
-        </div>
 
-        <!-- Signatory Details -->
-        <div class="card mb-4">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">Signatory Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addSignatory()">+</button>
-            </div>
-            <div class="card-body">
+            <!-- Signatory Details Section -->
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Signatory Details</h6>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addSignatory()">+ Add Signatory</button>
+                </div>
                 <div id="signatories_container">
                     @php
                     $signatories = old('signatory_name', isset($application->entityDetails->additional_data['signatories']) && $application->entityDetails->entity_type === 'partnership' ? $application->entityDetails->additional_data['signatories'] : []);
@@ -190,7 +199,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($signatories as $index => $signatory)
-                    <div class="signatory-entry mb-2 border-bottom pb-2">
+                    <div class="signatory-entry mb-3 @if($index > 0 || count($signatories) > 1) border-bottom pb-3 @endif">
                         <div class="row g-2">
                             <div class="col-12 col-md-4">
                                 <div class="form-group mb-2">
@@ -215,7 +224,13 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                             </div>
                             <div class="col-12 col-md-2 d-flex align-items-end">
                                 <div class="form-group mb-2 w-100">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeSignatory(this)">-</button>
+                                    @if($index > 0 || count($signatories) > 1)
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeSignatory(this)" title="Remove Signatory">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                    @else
+                                    <div style="height: 38px;"></div> <!-- Spacer to maintain alignment -->
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -225,15 +240,40 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
         </div>
     </div>
+</div>
 
     <!-- LLP Fields -->
-    <div id="llp_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Designated Partners Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addLLPPartner()">+</button>
+   <div id="llp_fields" class="entity-specific-fields" style="display:none;">
+    <!-- Unified LLP Details Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-light p-2">
+            <h6 class="mb-0">Limited Liability Partnership (LLP) Details</h6>
+        </div>
+        <div class="card-body">
+            <!-- Basic LLP Information -->
+            <div class="row g-2 mb-4">
+                <div class="col-12 col-md-6">
+                    <div class="form-group mb-2">
+                        <label for="llpin_number" class="form-label small">LLPIN Number *</label>
+                        <input type="text" class="form-control form-control-sm" id="llpin_number" name="llpin_number"
+                            value="{{ old('llpin_number', isset($application->entityDetails->additional_data['llp']['llpin_number']) ? $application->entityDetails->additional_data['llp']['llpin_number'] : '') }}" required>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6">
+                    <div class="form-group mb-2">
+                        <label for="llp_incorporation_date" class="form-label small">Date of Incorporation *</label>
+                        <input type="date" class="form-control form-control-sm" id="llp_incorporation_date" name="llp_incorporation_date"
+                            value="{{ old('llp_incorporation_date', isset($application->entityDetails->additional_data['llp']['incorporation_date']) ? $application->entityDetails->additional_data['llp']['incorporation_date'] : '') }}" required>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-2">
+
+            <!-- Designated Partners Section -->
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="mb-0">Designated Partners Details</h6>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addLLPPartner()">+ Add Partner</button>
+                </div>
                 <div id="llp_partners_container">
                     @php
                     $llpPartners = old('llp_partner_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'llp' ? $application->entityDetails->additional_data['partners'] : []);
@@ -242,7 +282,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($llpPartners as $index => $partner)
-                    <div class="llp-partner-entry mb-2 border-bottom pb-2">
+                    <div class="llp-partner-entry mb-3 @if($index > 0 || count($llpPartners) > 1) border-bottom pb-3 @endif">
                         <div class="row g-2">
                             <div class="col-12 col-md-3">
                                 <div class="form-group mb-2">
@@ -256,55 +296,70 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                                     <input type="text" class="form-control form-control-sm" name="llp_partner_dpin[]" value="{{ old("llp_partner_dpin.$index", $partner['dpin_number'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-3">
+                            <div class="col-12 col-md-2">
                                 <div class="form-group mb-2">
                                     <label class="form-label small">Contact Number *</label>
                                     <input type="tel" class="form-control form-control-sm" name="llp_partner_contact[]" value="{{ old("llp_partner_contact.$index", $partner['contact'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-3">
-                                <label class="form-label small">Full Address *</label>
-                                <input type="text" class="form-control form-control-sm" name="llp_partner_address[]" value="{{ old("llp_partner_address.$index", $partner['address'] ?? '') }}" required>
+                            <div class="col-12 col-md-4">
+                                <div class="form-group mb-2">
+                                    <label class="form-label small">Full Address *</label>
+                                    <input type="text" class="form-control form-control-sm" name="llp_partner_address[]" value="{{ old("llp_partner_address.$index", $partner['address'] ?? '') }}" required>
+                                </div>
                             </div>
                             <div class="col-12 col-md-1 d-flex align-items-end">
                                 <div class="form-group mb-2 w-100">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="removeLLPPartner(this)">-</button>
+                                    @if($index > 0 || count($llpPartners) > 1)
+                                    <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="removeLLPPartner(this)" title="Remove Partner">
+                                        <i class="ri-delete-bin-line"></i>
+                                    </button>
+                                    @else
+                                    <div style="height: 38px;"></div> <!-- Spacer for alignment -->
+                                    @endif
                                 </div>
                             </div>
-
                         </div>
-
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="llpin_number" class="form-label small">LLPIN Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="llpin_number" name="llpin_number"
-                        value="{{ old('llpin_number', isset($application->entityDetails->additional_data['llp']['llpin_number']) ? $application->entityDetails->additional_data['llp']['llpin_number'] : '') }}" required>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="llp_incorporation_date" class="form-label small">Date of Incorporation *</label>
-                    <input type="date" class="form-control form-control-sm" id="llp_incorporation_date" name="llp_incorporation_date"
-                        value="{{ old('llp_incorporation_date', isset($application->entityDetails->additional_data['llp']['incorporation_date']) ? $application->entityDetails->additional_data['llp']['incorporation_date'] : '') }}" required>
-                </div>
-            </div>
-        </div>
     </div>
+</div>
 
     <!-- Company Fields -->
-    <div id="company_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Directors Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addDirector()">+</button>
+<div id="company_fields" class="entity-specific-fields" style="display:none;">
+    <!-- Unified Company Details Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-light p-2">
+            <h6 class="mb-0">Company Details</h6>
+        </div>
+        <div class="card-body">
+            <!-- Basic Company Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="form-label">CIN Number *</label>
+                        <input type="text" class="form-control" id="cin_number" name="cin_number"
+                            value="{{ old('cin_number', isset($application->entityDetails->additional_data['company']['cin_number']) ? $application->entityDetails->additional_data['company']['cin_number'] : '') }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Date of Incorporation *</label>
+                        <input type="date" class="form-control" id="incorporation_date" name="incorporation_date"
+                            value="{{ old('incorporation_date', isset($application->entityDetails->additional_data['company']['incorporation_date']) ? $application->entityDetails->additional_data['company']['incorporation_date'] : '') }}" required>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-2">
+
+            <!-- Directors Section -->
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Directors Details</h6>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addDirector()">+ Add Director</button>
+                </div>
                 <div id="directors_container">
                     @php
                     $directors = old('director_name', isset($application->entityDetails->additional_data['partners']) && in_array($application->entityDetails->entity_type, ['private_company', 'public_company']) ? $application->entityDetails->additional_data['partners'] : []);
@@ -313,63 +368,80 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($directors as $index => $director)
-                    <div class="director-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Director Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="director_name[]" value="{{ old("director_name.$index", $director['name'] ?? '') }}" required>
+                    <div class="director-entry mb-3 @if($index > 0 || count($directors) > 1) border-bottom pb-3 @endif">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Director Name *</label>
+                                    <input type="text" class="form-control" name="director_name[]" value="{{ old("director_name.$index", $director['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">DIN Number *</label>
-                                    <input type="text" class="form-control form-control-sm" name="director_din[]" value="{{ old("director_din.$index", $director['din_number'] ?? '') }}" required>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">DIN Number *</label>
+                                    <input type="text" class="form-control" name="director_din[]" value="{{ old("director_din.$index", $director['din_number'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="director_contact[]" value="{{ old("director_contact.$index", $director['contact'] ?? '') }}" required>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="director_contact[]" value="{{ old("director_contact.$index", $director['contact'] ?? '') }}" required>
                                 </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Full Address *</label>
+                                    <textarea class="form-control form-control-sm" name="director_address[]" rows="1" required>{{ old("director_address.$index", $director['address'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                @if($index > 0 || count($directors) > 1)
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeDirector(this)">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                                @endif
                             </div>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" name="director_address[]" rows="2" required>{{ old("director_address.$index", $director['address'] ?? '') }}</textarea>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="removeDirector(this)">-</button>
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="cin_number" class="form-label small">CIN Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="cin_number" name="cin_number"
-                        value="{{ old('cin_number', isset($application->entityDetails->additional_data['company']['cin_number']) ? $application->entityDetails->additional_data['company']['cin_number'] : '') }}" required>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="incorporation_date" class="form-label small">Date of Incorporation *</label>
-                    <input type="date" class="form-control form-control-sm" id="incorporation_date" name="incorporation_date"
-                        value="{{ old('incorporation_date', isset($application->entityDetails->additional_data['company']['incorporation_date']) ? $application->entityDetails->additional_data['company']['incorporation_date'] : '') }}" required>
-                </div>
-            </div>
-        </div>
     </div>
+</div>
 
     <!-- Cooperative Society Fields -->
     <div id="cooperative_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Committee Members Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addCommitteeMember()">+</button>
+    <!-- Unified Cooperative Society Details Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-light p-2">
+            <h6 class="mb-0">Cooperative Society Details</h6>
+        </div>
+        <div class="card-body">
+            <!-- Basic Cooperative Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Registration Number *</label>
+                        <input type="text" class="form-control" id="cooperative_reg_number" name="cooperative_reg_number"
+                            value="{{ old('cooperative_reg_number', isset($application->entityDetails->additional_data['cooperative']['reg_number']) ? $application->entityDetails->additional_data['cooperative']['reg_number'] : '') }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Registration Date *</label>
+                        <input type="date" class="form-control" id="cooperative_reg_date" name="cooperative_reg_date"
+                            value="{{ old('cooperative_reg_date', isset($application->entityDetails->additional_data['cooperative']['reg_date']) ? $application->entityDetails->additional_data['cooperative']['reg_date'] : '') }}" required>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-2">
+
+            <!-- Committee Members Section -->
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Committee Members Details</h6>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addCommitteeMember()">+ Add Member</button>
+                </div>
                 <div id="committee_container">
                     @php
                     $committeeMembers = old('committee_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'cooperative_society' ? $application->entityDetails->additional_data['partners'] : []);
@@ -378,63 +450,80 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($committeeMembers as $index => $member)
-                    <div class="committee-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Member Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="committee_name[]" value="{{ old("committee_name.$index", $member['name'] ?? '') }}" required>
+                    <div class="committee-entry mb-3 @if($index > 0 || count($committeeMembers) > 1) border-bottom pb-3 @endif">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Member Name *</label>
+                                    <input type="text" class="form-control" name="committee_name[]" value="{{ old("committee_name.$index", $member['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Designation *</label>
-                                    <input type="text" class="form-control form-control-sm" name="committee_designation[]" value="{{ old("committee_designation.$index", $member['designation'] ?? '') }}" required>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Designation *</label>
+                                    <input type="text" class="form-control" name="committee_designation[]" value="{{ old("committee_designation.$index", $member['designation'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="committee_contact[]" value="{{ old("committee_contact.$index", $member['contact'] ?? '') }}" required>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="committee_contact[]" value="{{ old("committee_contact.$index", $member['contact'] ?? '') }}" required>
                                 </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Full Address *</label>
+                                    <textarea class="form-control form-control-sm" name="committee_address[]" rows="1" required>{{ old("committee_address.$index", $member['address'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                @if($index > 0 || count($committeeMembers) > 1)
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeCommitteeMember(this)">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                                @endif
                             </div>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" name="committee_address[]" rows="2" required>{{ old("committee_address.$index", $member['address'] ?? '') }}</textarea>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="removeCommitteeMember(this)">-</button>
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="cooperative_reg_number" class="form-label small">Registration Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="cooperative_reg_number" name="cooperative_reg_number"
-                        value="{{ old('cooperative_reg_number', isset($application->entityDetails->additional_data['cooperative']['reg_number']) ? $application->entityDetails->additional_data['cooperative']['reg_number'] : '') }}" required>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="cooperative_reg_date" class="form-label small">Registration Date *</label>
-                    <input type="date" class="form-control form-control-sm" id="cooperative_reg_date" name="cooperative_reg_date"
-                        value="{{ old('cooperative_reg_date', isset($application->entityDetails->additional_data['cooperative']['reg_date']) ? $application->entityDetails->additional_data['cooperative']['reg_date'] : '') }}" required>
-                </div>
-            </div>
-        </div>
     </div>
+</div>
 
     <!-- Trust Fields -->
     <div id="trust_fields" class="entity-specific-fields" style="display:none;">
-        <div class="card mb-2">
-            <div class="card-header bg-light p-2 d-flex justify-content-between align-items-center">
-                <h6 class="mb-0 fs-6">Trustees Details</h6>
-                <button type="button" class="btn btn-sm btn-primary" onclick="addTrustee()">+</button>
+    <!-- Unified Trust Details Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-light p-2">
+            <h6 class="mb-0">Trust Details</h6>
+        </div>
+        <div class="card-body">
+            <!-- Basic Trust Information -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Registration Number *</label>
+                        <input type="text" class="form-control" id="trust_reg_number" name="trust_reg_number"
+                            value="{{ old('trust_reg_number', isset($application->entityDetails->additional_data['trust']['reg_number']) ? $application->entityDetails->additional_data['trust']['reg_number'] : '') }}" required>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group mb-3">
+                        <label class="form-label">Registration Date *</label>
+                        <input type="date" class="form-control" id="trust_reg_date" name="trust_reg_date"
+                            value="{{ old('trust_reg_date', isset($application->entityDetails->additional_data['trust']['reg_date']) ? $application->entityDetails->additional_data['trust']['reg_date'] : '') }}" required>
+                    </div>
+                </div>
             </div>
-            <div class="card-body p-2">
+
+            <!-- Trustees Section -->
+            <div class="mb-2">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0">Trustees Details</h6>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="addTrustee()">+ Add Trustee</button>
+                </div>
                 <div id="trustees_container">
                     @php
                     $trustees = old('trustee_name', isset($application->entityDetails->additional_data['partners']) && $application->entityDetails->entity_type === 'trust' ? $application->entityDetails->additional_data['partners'] : []);
@@ -443,62 +532,61 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
                     }
                     @endphp
                     @foreach($trustees as $index => $trustee)
-                    <div class="trustee-entry mb-2 border-bottom pb-2">
-                        <div class="row g-2">
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Trustee Name *</label>
-                                    <input type="text" class="form-control form-control-sm" name="trustee_name[]" value="{{ old("trustee_name.$index", $trustee['name'] ?? '') }}" required>
+                    <div class="trustee-entry mb-3 @if($index > 0 || count($trustees) > 1) border-bottom pb-3 @endif">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Trustee Name *</label>
+                                    <input type="text" class="form-control" name="trustee_name[]" value="{{ old("trustee_name.$index", $trustee['name'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Designation *</label>
-                                    <input type="text" class="form-control form-control-sm" name="trustee_designation[]" value="{{ old("trustee_designation.$index", $trustee['designation'] ?? '') }}" required>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Designation *</label>
+                                    <input type="text" class="form-control" name="trustee_designation[]" value="{{ old("trustee_designation.$index", $trustee['designation'] ?? '') }}" required>
                                 </div>
                             </div>
-                            <div class="col-12 col-md-4">
-                                <div class="form-group mb-2">
-                                    <label class="form-label small">Contact Number *</label>
-                                    <input type="tel" class="form-control form-control-sm" name="trustee_contact[]" value="{{ old("trustee_contact.$index", $trustee['contact'] ?? '') }}" required>
+                            <div class="col-md-3">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Contact Number *</label>
+                                    <input type="tel" class="form-control" name="trustee_contact[]" value="{{ old("trustee_contact.$index", $trustee['contact'] ?? '') }}" required>
                                 </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Full Address *</label>
+                                    <textarea class="form-control form-control-sm" name="trustee_address[]" rows="1" required>{{ old("trustee_address.$index", $trustee['address'] ?? '') }}</textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                @if($index > 0 || count($trustees) > 1)
+                                <button type="button" class="btn btn-sm btn-danger" onclick="removeTrustee(this)">
+                                    <i class="ri-delete-bin-line"></i>
+                                </button>
+                                @endif
                             </div>
                         </div>
-                        <div class="form-group mb-2">
-                            <label class="form-label small">Full Address *</label>
-                            <textarea class="form-control form-control-sm" name="trustee_address[]" rows="2" required>{{ old("trustee_address.$index", $trustee['address'] ?? '') }}</textarea>
-                        </div>
-                        <button type="button" class="btn btn-sm btn-danger" onclick="removeTrustee(this)">-</button>
                     </div>
                     @endforeach
                 </div>
             </div>
         </div>
-        <div class="row g-2">
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="trust_reg_number" class="form-label small">Registration Number *</label>
-                    <input type="text" class="form-control form-control-sm" id="trust_reg_number" name="trust_reg_number"
-                        value="{{ old('trust_reg_number', isset($application->entityDetails->additional_data['trust']['reg_number']) ? $application->entityDetails->additional_data['trust']['reg_number'] : '') }}" required>
-                </div>
-            </div>
-            <div class="col-12 col-md-6">
-                <div class="form-group mb-2">
-                    <label for="trust_reg_date" class="form-label small">Registration Date *</label>
-                    <input type="date" class="form-control form-control-sm" id="trust_reg_date" name="trust_reg_date"
-                        value="{{ old('trust_reg_date', isset($application->entityDetails->additional_data['trust']['reg_date']) ? $application->entityDetails->additional_data['trust']['reg_date'] : '') }}" required>
-                </div>
-            </div>
-        </div>
     </div>
+</div>
 
     <!-- Common Fields -->
     <div class="row g-2">
         <div class="col-12 col-md-4">
-            <div class="form-group mb-2">
-                <label for="business_address" class="form-label small">Business Place/Shop Address *</label>
-                <textarea class="form-control form-control-sm" id="business_address" name="business_address" rows="2" required>{{ old('business_address', isset($application->entityDetails) ? $application->entityDetails->business_address : '') }}</textarea required>
-            </div>
+<div class="form-group mb-2">
+    <label for="business_address" class="form-label small">Business Place/Shop Address *</label>
+    <input type="text" 
+           class="form-control form-control-sm" 
+           id="business_address" 
+           name="business_address" 
+           value="{{ old('business_address', isset($application->entityDetails) ? $application->entityDetails->business_address : '') }}" 
+           required>
+</div>
+
         </div>
         <div class="col-12 col-md-4">
             <div class="form-group mb-2">
@@ -516,14 +604,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
     </div>
     <div class="row g-2">
-        <div class="col-12 col-md-2">
-            <div class="form-group mb-2">
-                <label for="city" class="form-label small">City *</label>
-                <input type="text" class="form-control form-control-sm" id="city" name="city"
-                    value="{{ old('city', isset($application->entityDetails) ? $application->entityDetails->city : '') }}" required>
-            </div>
-        </div>
-        <div class="col-12 col-md-3">
+          <div class="col-12 col-md-3">
             <div class="form-group mb-2">
                 <label for="state_id" class="form-label small">State *</label>
                 <select class="form-select form-select-sm" id="state_id" name="state_id" required>
@@ -555,6 +636,14 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
         <div class="col-12 col-md-2">
             <div class="form-group mb-2">
+                <label for="city" class="form-label small">City *</label>
+                <input type="text" class="form-control form-control-sm" id="city" name="city"
+                    value="{{ old('city', isset($application->entityDetails) ? $application->entityDetails->city : '') }}" required>
+            </div>
+        </div>
+      
+        <div class="col-12 col-md-2">
+            <div class="form-group mb-2">
                 <label for="pincode" class="form-label small">Pincode *</label>
                 <input type="text" class="form-control form-control-sm" id="pincode" name="pincode"
                     value="{{ old('pincode', isset($application->entityDetails) ? $application->entityDetails->pincode : '') }}" required>
@@ -570,133 +659,22 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
     </div>
     <div class="row g-2">
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
             <div class="form-group mb-2">
                 <label for="mobile" class="form-label small">Mobile Number *</label>
                 <input type="tel" class="form-control form-control-sm" id="mobile" name="mobile"
-                    value="{{ old('mobile', isset($application->entityDetails) ? $application->entityDetails->mobile : '') }}"
+                    value="{{ old('mobile', isset($application->entityDetails) ? $application->entityDetails->mobile : '') }}" pattern="[0-9]{10}"
                     maxlength="10" required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
             </div>
         </div>
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-md-4">
             <div class="form-group mb-2">
                 <label for="email" class="form-label small">Email Address *</label>
                 <input type="email" class="form-control form-control-sm" id="email" name="email"
                     value="{{ old('edit', isset($application->entityDetails) ? $application->entityDetails->email : '') }}" required>
             </div>
         </div>
-    </div>
-
-    <!-- PAN File -->
-<div class="row g-2">
-    <div class="col-12 col-md-6">
-        <label for="pan_file" class="form-label small">Upload PAN Document *</label>
-        <div class="input-group input-group-sm mb-2">
-            <input type="file" class="form-control form-control-sm d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="pan_file_upload_btn">Upload PAN</button>
-        </div>
-        <div id="pan_file_name" class="small text-muted mb-2 {{ $panDoc ? '' : 'd-none' }}">
-            @if($panDoc)
-                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View PAN Document</a> (Uploaded on {{ $panDoc['remarks'] }})
-                <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
-                <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'pan_file')">Remove</button>
-            @endif
-        </div>
-    </div>
-    <div class="col-12 col-md-6">
-        <label for="pan_number" class="form-label small">PAN Number *</label>
-        <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number" value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}" required>
-        <div class="form-check mt-1">
-            <input class="form-check-input" type="checkbox" id="pan_verified" name="pan_verified" {{ old('pan_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
-            <label class="form-check-label small" for="pan_verified">I confirm the PAN number matches the uploaded document</label>
-        </div>
-    </div>
-</div>
-
-
-    <!-- GST Applicable -->
-    <div class="col-12 col-md-6">
-        <div class="form-group mb-2">
-            <label for="gst_applicable" class="form-label small">GST Applicable *</label>
-            <select class="form-control form-control-sm" id="gst_applicable" name="gst_applicable" required onchange="toggleGSTFields()">
-                <option value="" disabled {{ old('gst_applicable', isset($application->entityDetails) ? '' : 'selected') }}>-- Select --</option>
-                <option value="yes" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'yes' ? 'selected' : '') }}>Yes</option>
-                <option value="no" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'no' ? 'selected' : '') }}>No</option>
-            </select>
-        </div>
-    </div>
-    <!-- GST Fields -->
-<div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
-    <div class="row g-2">
-        <div class="col-12">
-            <div class="form-group mb-2">
-                <label for="gst_file" class="form-label small">Upload GST Document *</label>
-                <div class="input-group input-group-sm mb-2">
-                    <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="gst_file_upload_btn">Upload GST</button>
-                </div>
-                <div id="gst_file_name" class="small text-muted mb-2 {{ $gstDoc ? '' : 'd-none' }}">
-                    @if($gstDoc)
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $gstDoc['path']) }}">View GST Document</a> (Uploaded on {{ $gstDoc['remarks'] }})
-                        <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
-                        <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'gst_file')">Remove</button>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="gst_number" class="form-label small">GST Number *</label>
-                <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number" value="{{ old('gst_number', $gstDoc['details']['gst_number'] ?? ($application->entityDetails->gst_number ?? '')) }}">
-            </div>
-        </div>
-        <div class="col-12 col-md-6">
-            <div class="form-group mb-2">
-                <label for="gst_validity" class="form-label small">GST Validity Date *</label>
-                <input type="date" class="form-control form-control-sm" id="gst_validity" name="gst_validity" value="{{ old('gst_validity', $gstDoc['details']['gst_validity'] ?? ($application->entityDetails->additional_data['gst_validity'] ?? '')) }}">
-            </div>
-        </div>
-    </div>
-</div>
-
-    
-
-                    <!-- Seed License File -->
-<div class="row g-2">
-    <div class="col-12 col-md-6">
-        <div class="form-group mb-2">
-            <label for="seed_license_file" class="form-label small">Upload Seed License Document *</label>
-            <div class="input-group input-group-sm mb-2">
-                <input type="file" class="form-control form-control-sm d-none" id="seed_license_file" name="seed_license_file" accept=".pdf,.jpg,.jpeg,.png">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="seed_license_file_upload_btn">Upload Seed License</button>
-            </div>
-            <div id="seed_license_file_name" class="small text-muted mb-2 {{ $seedLicenseDoc ? '' : 'd-none' }}">
-                @if($seedLicenseDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $seedLicenseDoc['path']) }}">View Seed License Document</a> (Uploaded on {{ $seedLicenseDoc['remarks'] }})
-                    <input type="hidden" name="existing_seed_license_file" value="{{ $seedLicenseDoc['path'] }}">
-                    <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'seed_license_file')">Remove</button>
-                @endif
-            </div>
-            <label for="seed_license" class="form-label small">Seed License Number *</label>
-            <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license" value="{{ old('seed_license', $seedLicenseDoc['details']['seed_license_number'] ?? ($application->entityDetails->seed_license ?? '')) }}" required>
-            <div class="form-check mt-1">
-                <input class="form-check-input" type="checkbox" id="seed_license_verified" name="seed_license_verified" {{ old('seed_license_verified', $seedLicenseDoc['verified'] ?? false) ? 'checked' : '' }}>
-                <label class="form-check-label small" for="seed_license_verified">I confirm the Seed License number matches the uploaded document</label>
-            </div>
-        </div>
-    </div>
-    <div class="col-12 col-md-6">
-        <div class="form-group mb-2">
-            <label for="seed_license_validity" class="form-label small">Seed License Validity Date *</label>
-            <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity" min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" value="{{ old('seed_license_validity', $seedLicenseDoc['details']['seed_license_validity'] ?? ($application->entityDetails->additional_data['seed_license_validity'] ?? '')) }}" required>
-        </div>
-    </div>
-</div>
-
-    <div class="row g-2">
-        <div class="col-12 col-md-6">
+          <div class="col-12 col-md-4">
             <div class="form-group mb-2">
                 <label for="tan_number" class="form-label small">TAN Number (if any)</label>
                 <input type="text" class="form-control form-control-sm" id="tan_number" name="tan_number"
@@ -705,6 +683,182 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
     </div>
 
+    <!-- PAN File -->
+<div class="row g-2 align-items-center">
+    <!-- PAN Upload -->
+    <div class="col-md-3">
+        <label for="pan_file" class="form-label small">PAN Document *</label>
+        <div class="input-group input-group-sm">
+            <input type="file" class="form-control form-control-sm d-none" id="pan_file" name="pan_file" accept=".pdf,.jpg,.jpeg,.png">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="pan_file_upload_btn">Upload PAN</button>
+        </div>
+        <div id="pan_file_name" class="small text-muted {{ $panDoc ? '' : 'd-none' }}">
+            @if($panDoc)
+                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $panDoc['path']) }}">View</a> ({{ $panDoc['remarks'] }})
+                <input type="hidden" name="existing_pan_file" value="{{ $panDoc['path'] }}">
+                <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'pan_file')">Remove</button>
+            @endif
+        </div>
+    </div>
+
+    <!-- PAN Number + Verified -->
+    <div class="col-md-5">
+        <label for="pan_number" class="form-label small">PAN Number *</label>
+        <div class="input-group input-group-sm">
+            <input type="text" 
+                   class="form-control form-control-sm" 
+                   id="pan_number" 
+                   name="pan_number" 
+                   value="{{ old('pan_number', $panDoc['details']['pan_number'] ?? ($application->entityDetails->pan_number ?? '')) }}" 
+                   pattern="[A-Z]{5}[0-9]{4}[A-Z]" 
+                   maxlength="10" required>
+            <div class="input-group-text">
+                <input class="form-check-input mt-0" 
+                       type="checkbox" 
+                       id="pan_verified" 
+                       name="pan_verified" 
+                       {{ old('pan_verified', $panDoc['verified'] ?? false) ? 'checked' : '' }}>
+                <label for="pan_verified" class="ms-1 small mb-0">Verified</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- GST Applicable -->
+    <div class="col-md-4">
+        <label for="gst_applicable" class="form-label small">GST Applicable *</label>
+        <select class="form-control form-control-sm" id="gst_applicable" name="gst_applicable" required onchange="toggleGSTFields()">
+            <option value="" disabled {{ old('gst_applicable', isset($application->entityDetails) ? '' : 'selected') }}>-- Select --</option>
+            <option value="yes" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'yes' ? 'selected' : '') }}>Yes</option>
+            <option value="no" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'no' ? 'selected' : '') }}>No</option>
+        </select>
+    </div>
+</div>
+
+
+
+    <!-- GST Applicable -->
+    {{--<div class="col-12 col-md-6">
+        <div class="form-group mb-2">
+            <label for="gst_applicable" class="form-label small">GST Applicable *</label>
+            <select class="form-control form-control-sm" id="gst_applicable" name="gst_applicable" required onchange="toggleGSTFields()">
+                <option value="" disabled {{ old('gst_applicable', isset($application->entityDetails) ? '' : 'selected') }}>-- Select --</option>
+                <option value="yes" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'yes' ? 'selected' : '') }}>Yes</option>
+                <option value="no" {{ old('gst_applicable', isset($application->entityDetails) && $application->entityDetails->gst_applicable === 'no' ? 'selected' : '') }}>No</option>
+            </select>
+        </div>
+    </div>--}}
+<!-- GST Fields -->
+ <div id="gst_fields" style="display: {{ old('gst_applicable', ($application->entityDetails->gst_applicable ?? ($gstDoc ? 'yes' : 'no'))) === 'yes' ? 'block' : 'none' }};">
+    <div class="row g-2 align-items-center">
+        <!-- GST Document Upload -->
+        <div class="col-md-3">
+            <label for="gst_file" class="form-label small">GST Document *</label>
+            <div class="input-group input-group-sm">
+                <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="gst_file_upload_btn">Upload GST</button>
+            </div>
+            <div id="gst_file_name" class="small text-muted {{ $gstDoc ? '' : 'd-none' }}">
+                @if($gstDoc)
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $gstDoc['path']) }}">View</a> ({{ $gstDoc['remarks'] }})
+                    <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
+                    <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'gst_file')">Remove</button>
+                @endif
+            </div>
+        </div>
+
+        <!-- GST Number + Verified -->
+        <div class="col-md-5">
+            <label for="gst_number" class="form-label small">GST Number *</label>
+            <div class="input-group input-group-sm">
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       id="gst_number" 
+                       name="gst_number" 
+                       value="{{ old('gst_number', $gstDoc['details']['gst_number'] ?? ($application->entityDetails->gst_number ?? '')) }}" 
+                       pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}" 
+                       maxlength="15" 
+                       placeholder="22AAAAA0000A1Z5" required>
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0" 
+                           type="checkbox" 
+                           id="gst_verified" 
+                           name="gst_verified" 
+                           {{ old('gst_verified', $gstDoc['verified'] ?? false) ? 'checked' : '' }}>
+                    <label for="gst_verified " class="ms-1 small mb-0">Verified</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- GST Validity -->
+        <div class="col-md-4">
+    <label for="gst_validity" class="form-label small">GST Validity *</label>
+    <input type="date" 
+           class="form-control form-control-sm" 
+           id="gst_validity" 
+           name="gst_validity" 
+           min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" 
+           value="{{ old('gst_validity', $gstDoc['details']['gst_validity'] ?? ($application->entityDetails->additional_data['gst_validity'] ?? '')) }}" 
+           required>
+</div>
+
+    </div>
+</div>
+
+    
+
+                    <!-- Seed License File -->
+<div class="row g-2 align-items-center">
+    <!-- Upload Seed License -->
+    <div class="col-md-3">
+        <label for="seed_license_file" class="form-label small">Seed License Document *</label>
+        <div class="input-group input-group-sm">
+            <input type="file" class="form-control form-control-sm d-none" id="seed_license_file" name="seed_license_file" accept=".pdf,.jpg,.jpeg,.png">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="seed_license_file_upload_btn">Upload</button>
+        </div>
+        <div id="seed_license_file_name" class="small text-muted {{ $seedLicenseDoc ? '' : 'd-none' }}">
+            @if($seedLicenseDoc)
+                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $seedLicenseDoc['path']) }}">View</a> ({{ $seedLicenseDoc['remarks'] }})
+                <input type="hidden" name="existing_seed_license_file" value="{{ $seedLicenseDoc['path'] }}">
+                <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'seed_license_file')">Remove</button>
+            @endif
+        </div>
+    </div>
+
+    <!-- Seed License Number + Verified -->
+    <div class="col-md-5">
+        <label for="seed_license" class="form-label small">License Number *</label>
+        <div class="input-group input-group-sm">
+            <input type="text" 
+                   class="form-control form-control-sm" 
+                   id="seed_license" 
+                   name="seed_license" 
+                   value="{{ old('seed_license', $seedLicenseDoc['details']['seed_license_number'] ?? ($application->entityDetails->seed_license ?? '')) }}" 
+                   required>
+            <div class="input-group-text">
+                <input class="form-check-input mt-0" 
+                       type="checkbox" 
+                       id="seed_license_verified" 
+                       name="seed_license_verified" 
+                       {{ old('seed_license_verified', $seedLicenseDoc['verified'] ?? false) ? 'checked' : '' }}>
+                <label for="seed_license_verified" class="ms-1 small mb-0">Verified</label>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validity Date -->
+    <div class="col-md-4">
+        <label for="seed_license_validity" class="form-label small">Validity Date *</label>
+        <input type="date" 
+               class="form-control form-control-sm" 
+               id="seed_license_validity" 
+               name="seed_license_validity" 
+               min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" 
+               value="{{ old('seed_license_validity', $seedLicenseDoc['details']['seed_license_validity'] ?? ($application->entityDetails->additional_data['seed_license_validity'] ?? '')) }}" 
+               required>
+    </div>
+</div>
+
+    
     <!-- Bank Details -->
     <div class="row g-2">
         <div class="col-12">
@@ -712,60 +866,76 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         </div>
     </div>
                     <!-- Bank File -->
-<div class="row g-2">
-    <div class="col-12">
-        <div class="form-group mb-2">
-            <label for="bank_file" class="form-label small">Upload Bank Document (Passbook/Cancelled Cheque) *</label>
-            <div class="input-group input-group-sm mb-2">
-                <input type="file" class="form-control form-control-sm d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="bank_file_upload_btn">Upload Bank Document</button>
+<div class="row g-2 align-items-center">
+    <!-- Bank Document Upload -->
+    <div class="col-md-3">
+        <label for="bank_file" class="form-label small">Bank Document *</label>
+        <div class="input-group input-group-sm">
+            <input type="file" class="form-control form-control-sm d-none" id="bank_file" name="bank_file" accept=".pdf,.jpg,.jpeg,.png">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="bank_file_upload_btn">Upload</button>
+        </div>
+        <div id="bank_file_name" class="small text-muted {{ $bankDoc ? '' : 'd-none' }}">
+            @if($bankDoc)
+                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $bankDoc['path']) }}">View</a> ({{ $bankDoc['remarks'] }})
+                <input type="hidden" name="existing_bank_file" value="{{ $bankDoc['path'] }}">
+                <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'bank_file')">Remove</button>
+            @endif
+        </div>
+    </div>
+
+    <!-- Bank Name + Account Holder -->
+    <div class="col-md-5">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label for="bank_name" class="form-label small">Bank Name *</label>
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       id="bank_name" 
+                       name="bank_name" 
+                       value="{{ old('bank_name', $bankDoc['details']['bank_name'] ?? ($application->entityDetails->additional_data['bank_details']['bank_name'] ?? '')) }}" 
+                       required>
             </div>
-            <div id="bank_file_name" class="small text-muted mb-2 {{ $bankDoc ? '' : 'd-none' }}">
-                @if($bankDoc)
-                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="{{ asset('storage/' . $bankDoc['path']) }}">View Bank Document</a> (Uploaded on {{ $bankDoc['remarks'] }})
-                    <input type="hidden" name="existing_bank_file" value="{{ $bankDoc['path'] }}">
-                    <button type="button" class="btn btn-sm btn-link text-danger" onclick="removeExistingFile(this, 'bank_file')">Remove</button>
-                @endif
+            <div class="col-md-6">
+                <label for="account_holder" class="form-label small">Account Holder *</label>
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       id="account_holder" 
+                       name="account_holder" 
+                       value="{{ old('account_holder', $bankDoc['details']['account_holder'] ?? ($application->entityDetails->additional_data['bank_details']['account_holder'] ?? '')) }}" 
+                       required>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Number + IFSC Code -->
+    <div class="col-md-4">
+        <div class="row g-2">
+            <div class="col-md-6">
+                <label for="account_number" class="form-label small">Account Number *</label>
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       id="account_number" 
+                       name="account_number" 
+                       value="{{ old('account_number', $bankDoc['details']['account_number'] ?? ($application->entityDetails->additional_data['bank_details']['account_number'] ?? '')) }}" 
+                       inputmode="numeric" 
+                       required>
+            </div>
+            <div class="col-md-6">
+                <label for="ifsc_code" class="form-label small">IFSC Code *</label>
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       id="ifsc_code" 
+                       name="ifsc_code" 
+                       value="{{ old('ifsc_code', $bankDoc['details']['ifsc_code'] ?? ($application->entityDetails->additional_data['bank_details']['ifsc_code'] ?? '')) }}" 
+                       required>
             </div>
         </div>
     </div>
 </div>
 
-    <div class="row g-2">
-        <div class="col-12 col-md-3">
-            <div class="form-group mb-2">
-                <label for="bank_name" class="form-label small">Name of the Bank *</label>
-                <input type="text" class="form-control form-control-sm" id="bank_name" name="bank_name"
-                    value="{{ old('bank_name', $bankDoc['details']['bank_name'] ?? ($application->entityDetails->additional_data['bank_details']['bank_name'] ?? '')) }}" required>
-            </div>
-        </div>
-        <div class="col-12 col-md-3">
-            <div class="form-group mb-2">
-                <label for="account_holder" class="form-label small">Name of Bank Account Holder *</label>
-                <input type="text" class="form-control form-control-sm" id="account_holder" name="account_holder"
-                    value="{{ old('account_holder', $bankDoc['details']['account_holder'] ?? ($application->entityDetails->additional_data['bank_details']['account_holder'] ?? '')) }}" required>
-            </div>
-        </div>
-        <div class="col-12 col-md-3">
-            <div class="form-group mb-2">
-                <label for="account_number" class="form-label small">Account Number *</label>
-                <input type="text" class="form-control form-control-sm" id="account_number" name="account_number"
-                    value="{{ old('account_number', $bankDoc['details']['account_number'] ?? ($application->entityDetails->additional_data['bank_details']['account_number'] ?? '')) }}" required>
-            </div>
-        </div>
-        <div class="col-12 col-md-3">
-            <div class="form-group mb-2">
-                <label for="ifsc_code" class="form-label small">IFSC Code of Bank *</label>
-                <input type="text" class="form-control form-control-sm" id="ifsc_code" name="ifsc_code"
-                    value="{{ old('ifsc_code', $bankDoc['details']['ifsc_code'] ?? ($application->entityDetails->additional_data['bank_details']['ifsc_code'] ?? '')) }}" required>
-            </div>
-        </div>
-    </div>
-
-
     <!-- Authorized Persons Section -->
     <div class="card mb-2">
-        <div class="card-header bg-light p-2">
+        <div class="card-header bg-light p-2 mt-2">
             <h6 class="mb-0 fs-6">Authorized Persons Details</h6>
         </div>
         <div class="card-body p-2">
@@ -778,17 +948,17 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
             <div id="authorized_persons_section" class="{{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? '' : 'd-none' }}">
                 <div class="table-responsive">
-                    <table class="table table-bordered table-hover compact-table" id="authorized_persons_table">
+                    <table class="table table-bordered table-hover compact-table table-sm" id="authorized_persons_table">
                         <thead>
                             <tr>
-                                <th class="small">Name *</th>
-                                <th class="small">Contact Number *</th>
-                                <th class="small">Email Address</th>
-                                <th class="small">Full Address *</th>
-                                <th class="small">Relation *</th>
-                                <th class="small">Letter of Authorisation *</th>
-                                <th class="small">Aadhar *</th>
-                                <th class="small">Action</th>
+                                <th class="form-label fw-normal small">Name *</th>
+                                <th class="form-label fw-normal small">Contact Number *</th>
+                                <th class="form-label fw-normal small">Email Address</th>
+                                <th class="form-label fw-normal small">Full Address *</th>
+                                <th class="form-label fw-normal small">Relation *</th>
+                                <th class="form-label fw-normal small">Letter of Authorisation *</th>
+                                <th class="form-label fw-normal small">Aadhar *</th>
+                                <th class="form-label fw-normal small">Action</th>
                             </tr>
                         </thead>
                         <tbody id="authorized_persons_container">
@@ -831,7 +1001,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         <td data-label="Full Address">
             <textarea class="form-control form-control-sm"
                 name="auth_person_address[]"
-                rows="2"
+                rows="1"
                 {{ old('has_authorized_persons', isset($application->entityDetails->additional_data['authorized_persons']) ? 'yes' : 'no') == 'yes' ? 'required' : '' }}>{{ old("auth_person_address.$index", $person['address'] ?? '') }}</textarea>
             <div class="invalid-feedback">Please enter the full address</div>
         </td>
@@ -889,7 +1059,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
 
         <!-- Action -->
         <td data-label="Action">
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)">-</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)"><i class="ri-delete-bin-line"></i></button>
         </td>
     </tr>
 @endforeach
@@ -1091,7 +1261,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
             <div class="col-12 col-md-2 d-flex align-items-end">
                 <div class="form-group mb-2 w-100">
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removePartner(this)">-</button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removePartner(this)"><i class="ri-delete-bin-line"></i></button>
                 </div>
             </div>
         </div>
@@ -1137,7 +1307,7 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             </div>
             <div class="col-12 col-md-2 d-flex align-items-end">
                 <div class="form-group mb-2 w-100">
-                    <button type="button" class="btn btn-sm btn-danger w-100" onclick="removeSignatory(this)">-</button>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeSignatory(this)"><i class="ri-delete-bin-line"></i></button>
                 </div>
             </div>
         </div>
@@ -1163,31 +1333,40 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         const newEntry = document.createElement('div');
         newEntry.className = 'llp-partner-entry mb-4 border-bottom pb-3';
         newEntry.innerHTML = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Partner Name *</label>
-                            <input type="text" class="form-control" name="llp_partner_name[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">DPIN Number *</label>
-                            <input type="text" class="form-control" name="llp_partner_dpin[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Contact Number *</label>
-                            <input type="tel" class="form-control" name="llp_partner_contact[]" required>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-group mb-3">
-                    <label class="form-label">Full Address *</label>
-                    <textarea class="form-control form-control-sm" name="llp_partner_address[]" rows="2" required></textarea>
-                </div>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeLLPPartner(this)">-</button>
+                <div class="row align-items-end">
+    <div class="col-md-3">
+        <div class="form-group mb-3">
+            <label class="form-label small">Partner Name *</label>
+            <input type="text" class="form-control" name="llp_partner_name[]" required>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="form-group mb-3">
+            <label class="form-label small">DPIN Number *</label>
+            <input type="text" class="form-control" name="llp_partner_dpin[]" required>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="form-group mb-3">
+            <label class="form-label small">Contact Number *</label>
+            <input type="tel" class="form-control" name="llp_partner_contact[]" required>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="form-group mb-3">
+            <label class="form-label small">Full Address *</label>
+            <textarea class="form-control form-control-sm" name="llp_partner_address[]" rows="1" required></textarea>
+        </div>
+    </div>
+    <div class="col-md-1 d-flex align-items-end mb-3">
+        <button type="button" class="btn btn-sm btn-danger" onclick="removeLLPPartner(this)">
+            <i class="ri-delete-bin-line"></i>
+        </button>
+    </div>
+</div>
+
+               
+               
             `;
         container.appendChild(newEntry);
     }
@@ -1206,31 +1385,37 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
         const newEntry = document.createElement('div');
         newEntry.className = 'director-entry mb-4 border-bottom pb-3';
         newEntry.innerHTML = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Director Name *</label>
-                            <input type="text" class="form-control" name="director_name[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">DIN Number *</label>
-                            <input type="text" class="form-control" name="director_din[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Contact Number *</label>
-                            <input type="tel" class="form-control" name="director_contact[]" required>
-                        </div>
-                    </div>
+                 <div class="row align-items-end">
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="form-label">Director Name *</label>
+                    <input type="text" class="form-control" name="director_name[]" required>
                 </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="form-label">DIN Number *</label>
+                    <input type="text" class="form-control" name="director_din[]" required>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="form-label">Contact Number *</label>
+                    <input type="tel" class="form-control" name="director_contact[]" required>
+                </div>
+            </div>
+            <div class="col-md-2">
                 <div class="form-group mb-3">
                     <label class="form-label">Full Address *</label>
-                    <textarea class="form-control" name="director_address[]" rows="2" required></textarea>
+                    <textarea class="form-control form-control-sm" name="director_address[]" rows="1" required></textarea>
                 </div>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeDirector(this)">-</button>
+            </div>
+            <div class="col-md-1 d-flex align-items-end mb-3">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeDirector(this)">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </div>
+        </div>
             `;
         container.appendChild(newEntry);
     }
@@ -1243,92 +1428,155 @@ $gstDoc = $documentsCollection->firstWhere('type', 'gst');
             alert('At least one director is required.');
         }
     }
-
-    function addCommitteeMember() {
-        const container = document.getElementById('committee_container');
-        const newEntry = document.createElement('div');
-        newEntry.className = 'committee-entry mb-4 border-bottom pb-3';
-        newEntry.innerHTML = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Member Name *</label>
-                            <input type="text" class="form-control" name="committee_name[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Designation *</label>
-                            <input type="text" class="form-control" name="committee_designation[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Contact Number *</label>
-                            <input type="tel" class="form-control" name="committee_contact[]" required>
-                        </div>
-                    </div>
+function addCommitteeMember() {
+    const container = document.getElementById('committee_container');
+    const index = container.children.length;
+    
+    const newEntry = document.createElement('div');
+    newEntry.className = 'committee-entry mb-3 border-bottom pb-3';
+    newEntry.innerHTML = `
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="form-label">Member Name *</label>
+                    <input type="text" class="form-control" name="committee_name[]" required>
                 </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group mb-3">
+                    <label class="form-label">Designation *</label>
+                    <input type="text" class="form-control" name="committee_designation[]" required>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="form-group mb-3">
+                    <label class="form-label">Contact Number *</label>
+                    <input type="tel" class="form-control" name="committee_contact[]" required>
+                </div>
+            </div>
+            <div class="col-md-4">
                 <div class="form-group mb-3">
                     <label class="form-label">Full Address *</label>
-                    <textarea class="form-control" name="committee_address[]" rows="2" required></textarea>
+                    <textarea class="form-control form-control-sm" name="committee_address[]" rows="1" required></textarea>
                 </div>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeCommitteeMember(this)">-</button>
-            `;
-        container.appendChild(newEntry);
-    }
-
-    function removeCommitteeMember(button) {
-        const entries = document.querySelectorAll('.committee-entry');
-        if (entries.length > 1) {
-            button.closest('.committee-entry').remove();
-        } else {
-            alert('At least one committee member is required.');
+            </div>
+            <div class="col-md-1 d-flex align-items-end mb-3">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeCommitteeMember(this)">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newEntry);
+    
+    // Add border to first entry if it was the only one
+    if (container.children.length === 2) {
+        const firstEntry = container.children[0];
+        firstEntry.classList.add('border-bottom', 'pb-3');
+        // Show remove button on first entry
+        const firstRemoveBtn = firstEntry.querySelector('.btn-danger');
+        if (firstRemoveBtn) {
+            firstRemoveBtn.style.display = 'block';
         }
     }
+}
+
+function removeCommitteeMember(button) {
+    const entry = button.closest('.committee-entry');
+    const container = document.getElementById('committee_container');
+    
+    if (container.children.length > 1) {
+        entry.remove();
+        
+        // If only one entry remains, remove its border and hide remove button
+        if (container.children.length === 1) {
+            const firstEntry = container.children[0];
+            firstEntry.classList.remove('border-bottom', 'pb-3');
+            const firstRemoveBtn = firstEntry.querySelector('.btn-danger');
+            if (firstRemoveBtn) {
+                firstRemoveBtn.style.display = 'none';
+            }
+        }
+    } else {
+        alert('At least one committee member is required.');
+    }
+}
 
     function addTrustee() {
-        const container = document.getElementById('trustees_container');
-        const newEntry = document.createElement('div');
-        newEntry.className = 'trustee-entry mb-4 border-bottom pb-3';
-        newEntry.innerHTML = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Trustee Name *</label>
-                            <input type="text" class="form-control" name="trustee_name[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Designation *</label>
-                            <input type="text" class="form-control" name="trustee_designation[]" required>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Contact Number *</label>
-                            <input type="tel" class="form-control" name="trustee_contact[]" required>
-                        </div>
-                    </div>
+    const container = document.getElementById('trustees_container');
+    const index = container.children.length;
+    
+    const newEntry = document.createElement('div');
+    newEntry.className = 'trustee-entry mb-3 border-bottom pb-3';
+    newEntry.innerHTML = `
+        <div class="row align-items-end">
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="form-label">Trustee Name *</label>
+                    <input type="text" class="form-control" name="trustee_name[]" required>
                 </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="form-label">Designation *</label>
+                    <input type="text" class="form-control" name="trustee_designation[]" required>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-group mb-3">
+                    <label class="form-label">Contact Number *</label>
+                    <input type="tel" class="form-control" name="trustee_contact[]" required>
+                </div>
+            </div>
+            <div class="col-md-2">
                 <div class="form-group mb-3">
                     <label class="form-label">Full Address *</label>
-                    <textarea class="form-control" name="trustee_address[]" rows="2" required></textarea>
+                    <textarea class="form-control form-control-sm" name="trustee_address[]" rows="1" required></textarea>
                 </div>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeTrustee(this)">-</button>
-            `;
-        container.appendChild(newEntry);
-    }
-
-    function removeTrustee(button) {
-        const entries = document.querySelectorAll('.trustee-entry');
-        if (entries.length > 1) {
-            button.closest('.trustee-entry').remove();
-        } else {
-            alert('At least one trustee is required.');
+            </div>
+            <div class="col-md-1 d-flex align-items-end mb-3">
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeTrustee(this)">
+                    <i class="ri-delete-bin-line"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newEntry);
+    
+    // Add border to first entry if it was the only one
+    if (container.children.length === 2) {
+        const firstEntry = container.children[0];
+        firstEntry.classList.add('border-bottom', 'pb-3');
+        // Show remove button on first entry
+        const firstRemoveBtn = firstEntry.querySelector('.btn-danger');
+        if (firstRemoveBtn) {
+            firstRemoveBtn.style.display = 'block';
         }
     }
+}
+
+function removeTrustee(button) {
+    const entry = button.closest('.trustee-entry');
+    const container = document.getElementById('trustees_container');
+    
+    if (container.children.length > 1) {
+        entry.remove();
+        
+        // If only one entry remains, remove its border and hide remove button
+        if (container.children.length === 1) {
+            const firstEntry = container.children[0];
+            firstEntry.classList.remove('border-bottom', 'pb-3');
+            const firstRemoveBtn = firstEntry.querySelector('.btn-danger');
+            if (firstRemoveBtn) {
+                firstRemoveBtn.style.display = 'none';
+            }
+        }
+    } else {
+        alert('At least one trustee is required.');
+    }
+}
      let removedDocuments = {}; 
     function handleFileChange(input, fieldName) {
     const fileNameDiv = document.getElementById(`${fieldName}_name`);
@@ -1479,7 +1727,7 @@ function addAuthorizedPerson() {
         
         <!-- Action -->
         <td data-label="Action">
-            <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)">-</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeAuthorizedPerson(this)"><i class="ri-delete-bin-line"></i></button>
         </td>
     `;
     
@@ -1823,34 +2071,27 @@ function removeAuthorizedPerson(button) {
     }
 
     // GST Document processor
-    async function processGSTDocument(file, fileNameField) {
-        try {
-            fileNameField.textContent = 'Processing GST document...';
-            fileNameField.classList.remove('d-none');
+    async function processGSTDocument(file, gstFileName) {
+    gstFileName.textContent = file.name;
 
-            const processedImage = await preprocessImage(file);
-            const extractedText = await extractTextFromImage(processedImage);
-            console.log('Extracted GST Text:', extractedText);
-
-            const gstNumber = extractField(extractedText, [
-                /GST\s*[:\s]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})/i,
-                /Goods\s*and\s*Services\s*Tax\s*[:\s]*([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})/i,
-                /([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1})/
-            ], /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/);
-
-            if (gstNumber) {
-                setFieldValue('gst_number', gstNumber);
-                fileNameField.textContent = `GST extracted: ${gstNumber}`;
-                return gstNumber;
+    return new Promise((resolve, reject) => {
+        Tesseract.recognize(
+            file,
+            'eng',
+            { logger: info => console.log(info) }
+        ).then(({ data: { text } }) => {
+            console.log("OCR Text:", text);
+            const match = text.match(/\d{2}[A-Z0-9]{10}[A-Z0-9]Z\d/); // Regex for GSTIN
+            //alert(match);
+            if (match) {
+                document.getElementById('gst_number').value = match[0];
+                resolve();
             } else {
-                throw new Error('GST number not found');
+                reject('GSTIN not found in document.');
             }
-        } catch (error) {
-            console.error('GST processing error:', error);
-            fileNameField.textContent = 'Error processing GST document';
-            throw error;
-        }
-    }
+        }).catch(reject);
+    });
+}
 
     // Initialize all upload handlers
     function initializeUploaders() {

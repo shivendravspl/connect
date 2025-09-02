@@ -29,7 +29,7 @@
         <div class="col-md-6">
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn btn-success btn-sm export-users" title="Export to Excel">
-                    <i class="fas fa-file-excel me-1"></i> Export
+                    <i class="ri-file-excel-2-line me-1"></i>
                 </button>
                 {{--<button class="btn btn-primary btn-sm add-user" title="Add New User">
                     <i class="fas fa-plus me-1"></i> Add User
@@ -47,6 +47,7 @@
                                     <th>ID</th>
                                     <th>Name</th>
                                     <th>Email</th>
+                                    <th>Status</th>
                                     <th>Phone</th>
                                     <th>Roles</th>
                                     <th>Created At</th>
@@ -80,6 +81,15 @@
                         <div class="mb-2">
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control form-control-sm" id="email" name="email">
+                            <div class="invalid-feedback"></div>
+                        </div>
+                        <div class="mb-2">
+                            <label for="user_status" class="form-label">Status</label>
+                            <select class="form-select form-control-sm" id="user_status" name="user_status" required>
+                                <option value="A">Active</option>
+                                <option value="P">Pending</option>
+                                <option value="D">Disabled</option>
+                            </select>
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="mb-2">
@@ -315,6 +325,13 @@
     .modal-title {
         font-size: 1.1rem;
     }
+
+    .btn-xs {
+    padding: 0.15rem 0.35rem;   /* smaller padding */
+    font-size: 0.65rem;         /* smaller text/icons */
+    line-height: 1;
+    border-radius: 0.25rem;
+}
 </style>
 @endpush
 
@@ -349,19 +366,28 @@
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                 },
                 data: function(d) {
-                    if ($('#bu').val() !== 'All') {
-                        d.bu_id = $('#bu').val();
-                    }
-                    d.territory_id = $('#filter_territory').val();
-                    d.region_id = $('#filter_region').val();
-                    d.zone_id = $('#filter_zone').val();
-                    d.crop_vertical = $('#filter_crop_vertical').val();
                 }
             },
             columns: [
                 { data: 'id', name: 'id', width: '5%' },
                 { data: 'name', name: 'name', width: '15%' },
                 { data: 'email', name: 'email', width: '15%' },
+                { 
+                    data: 'status', 
+                    name: 'status', 
+                    width: '10%' ,
+                    render: function(data) {
+                        if (data === 'A') {
+                            return `<span class="badge bg-success">Active</span>`;
+                        } else if (data === 'P') {
+                            return `<span class="badge bg-warning text-dark">Pending</span>`;
+                        } else if (data === 'D') {
+                            return `<span class="badge bg-danger text-dark">Disabled</span>`;
+                        } else {
+                            return `<span>-</span>`;
+                        }
+                    }
+                },
                 { data: 'phone', name: 'phone', width: '10%' },
                 { 
                     data: 'roles',
@@ -381,13 +407,16 @@
                     render: function(data, type, row) {
                         return `
                             <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-info edit-user" data-id="${row.id}" title="Edit">
-                                    <i class="bx bx-pencil fs-14"></i>
+                                <button class="btn btn-xs btn-info edit-user" data-id="${row.id}" title="Edit">
+                                    <i class="bx bx-pencil fs-8"></i>
                                 </button>
-                                <button class="btn btn-sm btn-warning change-password" data-id="${row.id}" title="Change Password">
-                                    <i class="bx bx-lock fs-14"></i>
+                                <button class="btn btn-xs btn-warning change-password" data-id="${row.id}" title="Change Password">
+                                    <i class="ri-lock-password-line fs-14"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger delete-user" data-id="${row.id}" title="Delete">
+                                <a href="/user/${row.id}/permission" class="btn btn-xs btn-secondary" title="Manage Permissions">
+                                    <i class="ri-shield-keyhole-line align-bottom"></i>
+                                </a>
+                                <button class="btn btn-xs btn-danger delete-user" data-id="${row.id}" title="Delete">
                                     <i class="bx bx-trash fs-14"></i>
                                 </button>
                             </div>
@@ -430,9 +459,10 @@
                     const userData = response.data || response;
                     if (userData && (userData.user || userData.id)) {
                         const user = userData.user || userData;
-                        $('#name').val(user.name || '');
-                        $('#email').val(user.email || '');
-                        $('#phone').val(user.phone || '');
+                        $('#name').val(user.name || '').prop('readonly', true);
+                        $('#email').val(user.email || '').prop('readonly', true);
+                        $('#phone').val(user.phone || '').prop('readonly', true);
+                        $('#user_status').val(user.status || 'A');
                         if (userData.userRoles) {
                             $('#roles').val(userData.userRoles).trigger('change');
                         }
@@ -568,18 +598,12 @@
         // Export button click handler
         $(document).on('click', '.export-users', function() {
             const filters = {
-                bu_id: $('#bu').val(),
-                territory_id: $('#filter_territory').val(),
-                region_id: $('#filter_region').val(),
-                zone_id: $('#filter_zone').val(),
-                crop_vertical: $('#filter_crop_vertical').val(),
                 search: $('#user-table_filter input').val() || ''
             };
 
             const form = $('<form>', {
                 action: "{{ route('users.export') }}",
                 method: 'POST',
-                target: '_blank'
             }).appendTo('body');
 
             form.append($('<input>', {

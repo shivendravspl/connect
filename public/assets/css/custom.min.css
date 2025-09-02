@@ -1,2 +1,442 @@
 
 /*# sourceMappingURL=custom.min.css.map */
+
+table thead th{
+    font-size: 11px !important;
+}
+table tbody td{
+    font-size: 11px !important;
+    padding: 5px !important;
+}
+.breadcrumb{
+    font-size: 12px;
+}
+.form-label, .form-control-sm, .form-select-sm{
+    font-size: 11px !important;
+}
+.card-header{
+    padding: 9px 1rem !important;
+}
+.dataTable thead th, thead th{
+    text-transform: none !important;
+}
+.offcanvas, .offcanvas-lg, .offcanvas-md, .offcanvas-sm, .offcanvas-xl, .offcanvas-xxl{
+        --vz-offcanvas-width: 270px;
+}
+.form-select{
+    padding: 7px;
+    /*line-height: 1.0;*/
+}
+.search-form{
+        line-height: 1.0;
+    height: 30px;
+    padding: 5px 10px;
+    font-size: 12px;
+}
+:root, [data-bs-theme=light] 
+{
+    --vz-primary:#358176;
+    --vz-primary-text-emphasis: #266057;
+}
+[data-theme=default][data-sidebar=dark]
+{
+--vz-vertical-menu-item-color: #72e7d3;
+}
+.navbar-menu .navbar-nav .nav-sm .nav-link{
+    color: #b3dfd8;
+}
+.btn-check:checked+.btn, .btn.active, .btn.show, .btn:first-child:active, :not(.btn-check)+.btn:active{
+
+}
+.page-title-box{
+    margin-bottom: 10px;
+}
+.form-control{
+    padding: 5px 10px;
+}
+.bg-primary {
+    --vz-bg-opacity: 1;
+    background-color: rgb(64 128 118) !important;
+}
+.form-label
+ {
+    margin-bottom: 5px;
+}
+
+    #data-table.dataTable, #categories-table, #companies-table, #org-functions-table, #region-table.dataTable, #crop-table.dataTable, #territory-table.dataTable, #variety-table.dataTable, #verticals-table {
+        font-size: 0.82rem;
+    }
+    #data-table.dataTable thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #data-table.dataTable tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #data-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+        #data-table.dataTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #data-table.dataTable tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #data-table.dataTable tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+        border-left-color: #467fcf;
+    }
+
+
+    #business-unit-table.dataTable thead th {
+        background-color: #f3f6f9;
+    }
+
+    #business-unit-table.dataTable tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #business-unit-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #business-unit-table.dataTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #business-unit-table.dataTable tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #business-unit-table.dataTable tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+        border-left-color: #467fcf;
+    }
+     
+
+    #categories-table thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #categories-table tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #categories-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    #categories-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #categories-table tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #categories-table tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+    }
+
+    #companies-table thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #companies-table tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #companies-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #companies-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #companies-table tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #companies-table tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+    }
+
+
+    #crop-table.dataTable thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #crop-table.dataTable tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #crop-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #crop-table.dataTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #crop-table.dataTable tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #crop-table.dataTable tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+        border-left-color: #467fcf;
+    }
+
+
+    #org-functions-table thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #org-functions-table tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #org-functions-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #org-functions-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #org-functions-table tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #org-functions-table tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+    }
+
+    #region-table.dataTable thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #region-table.dataTable tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #region-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #region-table.dataTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #region-table.dataTable tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #region-table.dataTable tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+        border-left-color: #467fcf;
+    }
+
+    #territory-table.dataTable thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #territory-table.dataTable tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #territory-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #territory-table.dataTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #territory-table.dataTable tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #territory-table.dataTable tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+        border-left-color: #467fcf;
+    }
+
+    #variety-table.dataTable thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #variety-table.dataTable tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #variety-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #variety-table.dataTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #variety-table.dataTable tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #variety-table.dataTable tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+        border-left-color: #467fcf;
+    }
+
+
+    #verticals-table thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #verticals-table tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #verticals-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+
+    #verticals-table tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #verticals-table tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #verticals-table tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+    }
+
+    #zone-table.dataTable thead th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        background-color: #f3f6f9;
+        color: #333;
+    }
+
+    #zone-table.dataTable tbody td {
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    #zone-table .badge {
+        font-size: 0.68rem;
+        padding: 0.3em 0.6em;
+    }
+    
+    #zone-table.dataTable tbody tr:nth-child(even) {
+        background-color: #f8f9fa;
+    }
+
+    #zone-table.dataTable tbody tr {
+        border-left: 3px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    #zone-table.dataTable tbody tr:hover {
+        background-color: rgba(70, 127, 207, 0.05);
+        border-left-color: #467fcf;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 0.75rem 1.5rem rgba(18, 38, 63, 0.03);
+        border-radius: 0.5rem;
+    }
+
+    .card-header {
+        background-color: #f8f9fa;
+        border-bottom: 1px solid rgba(0, 0, 0, .125);
+        padding: 1rem 1.5rem;
+    }
+
+
+    .btn-sm i {
+        font-size: 0.8rem;
+    }
+    /*.card-header.bg-light, .card-header {
+    background-color: #cfede8 !important;
+    }*/
+    #basic-details .card-header, #entity-details .card-header, #distribution-details .card-header, #business-plan .card-header, #financial-info .card-header, #bank-details .card-header, #declarations .card-header{
+        background-color: #cfede8
+    }
+    .vender-application-view .card-header.bg-light{
+        background-color: #cfede8 !important
+    }
+
+/*# sourceMappingURL=custom.min.css.map */

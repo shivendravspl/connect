@@ -6,18 +6,14 @@ use App\Models\Onboarding;
 use App\Models\EntityDetails;
 use App\Models\DistributionDetail;
 use App\Models\BankDetail;
-use App\Models\BusinessPlan;
 use App\Models\FinancialInfo;
 use App\Models\ExistingDistributorship;
 use App\Models\Document;
 use App\Models\Employee;
-use App\Models\ApprovalLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use App\Notifications\ApplicationSubmitted;
-use App\Notifications\ApplicationApprovalRequired;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
@@ -29,12 +25,15 @@ class OnboardingController extends Controller
 {
     public function index()
     {
-        $empId = Auth::user()->emp_id;
-
-        $applications = Onboarding::where('created_by', $empId)
+        $user = Auth::user();
+        if ($user->emp_id || $user->hasAnyRole(['Admin', 'Super Admin'])) {
+              $applications = Onboarding::orderBy('created_at', 'desc')
+            ->paginate(10);
+        }else{
+        $applications = Onboarding::where('created_by', $user->emp_id)
             ->orderBy('created_at', 'desc')
             ->paginate(10);
-//dd($applications);
+        }
         return view('applications.index', compact('applications'));
     }
 
@@ -68,16 +67,19 @@ class OnboardingController extends Controller
         return [];
     }
 
-    public function create($application_id = null, $step = 1)
-    {
-        $user = Auth::user();
-        $territory_list = [];
-        $zone_list = [];
-        $region_list = [];
-        $preselected = [];
-        $bu_list = [];
-        $hasAddDistributorPermission = $user->hasRole('Mis User');
+  public function create(Request $request, $application_id = null, $step = 1)
+{
+    $user = Auth::user();
+    $territory_list = [];
+    $zone_list = [];
+    $region_list = [];
+    $preselected = [];
+    $bu_list = [];
+    $hasAddDistributorPermission = $user->hasRole('Mis User');
 
+    // Retrieve application_id from URL or request
+    $application_id = $application_id ?? $request->input('application_id');
+    try {
         $application = $application_id ? Onboarding::with([
             'territoryDetail',
             'regionDetail',
@@ -91,72 +93,97 @@ class OnboardingController extends Controller
             'bankDetail',
             'declarations'
         ])->findOrFail($application_id) : new Onboarding();
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        Log::error('Application not found', [
+            'application_id' => $application_id,
+            'url' => $request->fullUrl(),
+            'step' => $step
+        ]);
+        return redirect()->route('applications.create', ['step' => 1])
+            ->with('error', 'Application not found. Please start a new application.');
+    }
 
-        // Enforce step 1 for new applications
-        if (!$application_id && $step != 1) {
-            return redirect()->route('applications.create', ['step' => 1])
-                ->with('error', 'Please start from Basic Details.');
-        }
+    // Log application retrieval
+    Log::info('create method called', [
+        'url' => $request->fullUrl(),
+        'application_id' => $application_id,
+        'application_exists' => $application->exists,
+        'step' => $step,
+        'application_id_from_model' => $application->id ?? 'none'
+    ]);
 
-        // Validate step progression
-        if ($application_id && $step > 1) {
-            $requiredSteps = [
-                2 => !$application->territory,
-                3 => !$application->entityDetails,
-                4 => !$application->distributionDetail,
-                5 => !$application->businessPlans->count(),
-                6 => !$application->financialInfo || !$application->existingDistributorships->count(),
-                7 => !$application->bankDetail,
-                8 => !$application->declarations->count()
-            ];
-            for ($i = 2; $i <= $step; $i++) {
-                $frontendStep = $i;
-                $backendRelationship = match ($frontendStep) {
-                    2 => 'entityDetails',
-                    3 => 'distributionDetail',
-                    4 => 'businessPlans',
-                    5 => 'financialInfo',
-                    6 => 'bankDetail',
-                    7 => 'declarations',
-                    default => null,
-                };
+    // Enforce step 1 for new applications
+    if (!$application_id && $step != 1) {
+        Log::info('Redirecting to step 1: No application_id provided');
+        return redirect()->route('applications.create', ['step' => 1])
+            ->with('error', 'Please start from Basic Details.');
+    }
 
-                if ($backendRelationship === 'businessPlans' || $backendRelationship === 'declarations') {
-                    if ($application->$backendRelationship->isEmpty()) {
-                        return redirect()->route('applications.create', ['step' => $frontendStep - 1, 'application_id' => $application_id])
-                            ->with('error', 'Please complete all previous steps.');
-                    }
-                } elseif ($backendRelationship && !$application->$backendRelationship) {
-                    return redirect()->route('applications.create', ['step' => $frontendStep - 1, 'application_id' => $application_id])
+    // Validate step progression
+    if ($application_id && $step > 1) {
+        $requiredSteps = [
+            2 => !$application->territory,
+            3 => !$application->entityDetails,
+            4 => !$application->distributionDetail,
+            5 => !$application->businessPlans->count(),
+            6 => !$application->financialInfo,
+            7 => !$application->bankDetail,
+            8 => !$application->declarations->count()
+        ];
+        for ($i = 2; $i <= $step; $i++) {
+            $frontendStep = $i;
+            $backendRelationship = match ($frontendStep) {
+                2 => 'entityDetails',
+                3 => 'distributionDetail',
+                4 => 'businessPlans',
+                5 => 'financialInfo',
+                6 => 'bankDetail',
+                7 => 'declarations',
+                default => null,
+            };
+
+            if ($backendRelationship === 'businessPlans' || $backendRelationship === 'declarations') {
+                if ($application->$backendRelationship->isEmpty()) {
+                    Log::info('Redirecting due to incomplete step', [
+                        'step' => $frontendStep,
+                        'application_id' => $application_id,
+                        'redirect_to_step' => $frontendStep - 1
+                    ]);
+                    return redirect()->route('applications.create', ['application_id' => $application_id, 'step' => $frontendStep - 1])
                         ->with('error', 'Please complete all previous steps.');
                 }
+            } elseif ($backendRelationship && !$application->$backendRelationship) {
+                Log::info('Redirecting due to incomplete step', [
+                    'step' => $frontendStep,
+                    'application_id' => $application_id,
+                    'redirect_to_step' => $frontendStep - 1
+                ]);
+                return redirect()->route('applications.create', ['application_id' => $application_id, 'step' => $frontendStep - 1])
+                    ->with('error', 'Please complete all previous steps.');
             }
         }
+    }
 
-        if ($user->emp_id) {
-            $employee = DB::table('core_employee')->where('id', $user->emp_id)->first();
+    if ($user->emp_id) {
+        $employee = DB::table('core_employee')->where('id', $user->emp_id)->first();
 
-            if ($employee) {
-                $bu_list = $this->getAssociatedBusinessUnitList($user->emp_id);
-                // Preselect user's business unit
-                if ($employee->bu > 0) {
-                    $preselected['bu'] = $employee->bu;
-                }
-                $vertical_list = DB::table('core_vertical')
-                    ->pluck('vertical_name', 'id')
+        if ($employee) {
+            $bu_list = $this->getAssociatedBusinessUnitList($user->emp_id);
+            if ($employee->bu > 0) {
+                $preselected['bu'] = $employee->bu;
+            }
+            $vertical_list = DB::table('core_vertical')
+                ->pluck('vertical_name', 'id')
+                ->toArray();
+
+            if ($hasAddDistributorPermission) {
+                $territory_list = DB::table('core_territory')
+                    ->where('is_active', 1)
+                    ->pluck('territory_name', 'id')
                     ->toArray();
-
-                // Check for add-distributor permission
-                if ($hasAddDistributorPermission) {
-                    // If user has 'add-distributor' permission, fetch all active territories
-                    $territory_list = DB::table('core_territory')
-                        ->where('is_active', 1)
-                        ->pluck('territory_name', 'id')
-                        ->toArray();
-                } else {
-                    // Existing territory logic for users without the permission
-                    if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
-                        $mapping = DB::select("
+            } else {
+                if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
+                    $mapping = DB::select("
                         SELECT 
                             bzm.zone_id,
                             z.zone_name,
@@ -180,35 +207,35 @@ class OnboardingController extends Controller
                             bzm.business_unit_id = ?
                     ", [$employee->bu]);
 
-                        $zone_list = collect($mapping)
-                            ->pluck('zone_name', 'zone_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $zone_list = collect($mapping)
+                        ->pluck('zone_name', 'zone_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $region_list = collect($mapping)
-                            ->pluck('region_name', 'region_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $region_list = collect($mapping)
+                        ->pluck('region_name', 'region_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($zone_list) === 1) {
-                            $preselected['zone'] = array_key_first($zone_list);
-                        }
-                        if (count($region_list) === 1) {
-                            $preselected['region'] = array_key_first($region_list);
-                        }
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
-                        $mapping = DB::select("
+                    if (count($zone_list) === 1) {
+                        $preselected['zone'] = array_key_first($zone_list);
+                    }
+                    if (count($region_list) === 1) {
+                        $preselected['region'] = array_key_first($region_list);
+                    }
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
+                    $mapping = DB::select("
                         SELECT 
                             zrm.zone_id,
                             z.zone_name,
@@ -230,17 +257,17 @@ class OnboardingController extends Controller
                             zrm.zone_id = ?
                     ", [$employee->zone]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory == 0 && $employee->region > 0) {
-                        $mapping = DB::select("
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory == 0 && $employee->region > 0) {
+                    $mapping = DB::select("
                         SELECT 
                             r.id as region_id,
                             r.region_name,
@@ -262,105 +289,133 @@ class OnboardingController extends Controller
                             r.id = ?
                     ", [$employee->region]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory > 0) {
-                        $territory = DB::table('core_territory')
-                            ->where('id', $employee->territory)
-                            ->first();
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory > 0) {
+                    $territory = DB::table('core_territory')
+                        ->where('id', $employee->territory)
+                        ->first();
 
-                        if ($territory) {
-                            $territory_list = [$territory->id => $territory->territory_name];
-                            $preselected['territory'] = $territory->id;
-                        }
+                    if ($territory) {
+                        $territory_list = [$territory->id => $territory->territory_name];
+                        $preselected['territory'] = $territory->id;
                     }
                 }
-
-                // If we have a preselected territory, get its regions and zones
-                if (isset($preselected['territory'])) {
-                    $territoryData = $this->getTerritoryData($preselected['territory']);
-                    $region_list = $territoryData['regions'] ?? [];
-                    $zone_list = $territoryData['zones'] ?? [];
-                    $bu_list = $territoryData['businessUnits'] ?? [];
-                    $vertical_list = $territoryData['verticals'] ?? [];
-
-                    if (!empty($region_list)) {
-                        $preselected['region'] = array_key_first($region_list);
-                    }
-                    if (!empty($zone_list)) {
-                        $preselected['zone'] = array_key_first($zone_list);
-                    }
-                    if (!empty($bu_list)) {
-                        $preselected['bu'] = array_key_first($bu_list);
-                    }
-                    if (!empty($vertical_list)) {
-                        $preselected['crop_vertical'] = array_key_first($vertical_list);
-                    }
-                }
-
-
-                $crop_type = [
-                    '1' => 'Field Crop',
-                    '2' => 'Veg Crop',
-                    '3' => 'Root Stock',
-                    '4' => 'Fruit Crop',
-                    '5' => 'Common'
-                ];
-
-                // Assuming $vertical_list has only one value like: [2 => "Veg Crop"]
-                $verticalId = array_key_first($vertical_list);
-                $preselected['crop_vertical'] = (string) $verticalId;
-
-                // Fetch crops for selected vertical + always include Common (id=5)
-                $cropsQuery = DB::table('core_crop')
-                    ->where('is_active', 1)
-                    ->select('id', 'crop_name')
-                    ->orderBy('crop_name');
-
-                // If vertical is NOT common (5), filter by vertical_id
-                if ($verticalId != 5) {
-                    $cropsQuery->where('vertical_id', $verticalId);
-                }
-
-                $crops = $cropsQuery->get();
-
-                $states = DB::table('core_state')
-                    ->where('is_active', 1)
-                    ->orderBy('state_name')
-                    ->get();
-
-                $currentStep = $step;
             }
 
-            $currentYear = '2025-26';
-            $financialYears = Year::where('status', 'active')
-                ->where('period', '<', $currentYear)
-                ->orderBy('start_year', 'desc')
-                ->take(3)
-                ->get();
+            if (isset($preselected['territory'])) {
+                $territoryData = $this->getTerritoryData($preselected['territory']);
+                $region_list = $territoryData['regions'] ?? [];
+                $zone_list = $territoryData['zones'] ?? [];
+                $bu_list = $territoryData['businessUnits'] ?? [];
+                $vertical_list = $territoryData['verticals'] ?? [];
 
-            return view('applications.create', compact(
-                'application',
-                'bu_list',
-                'zone_list',
-                'region_list',
-                'territory_list',
-                'preselected',
-                'crop_type',
-                'states',
-                'currentStep',
-                'crops',
-                'financialYears'
-            ));
+                if (!empty($region_list)) {
+                    $preselected['region'] = array_key_first($region_list);
+                }
+                if (!empty($zone_list)) {
+                    $preselected['zone'] = array_key_first($zone_list);
+                }
+                if (!empty($bu_list)) {
+                    $preselected['bu'] = array_key_first($bu_list);
+                }
+                if (!empty($vertical_list)) {
+                    $preselected['crop_vertical'] = array_key_first($vertical_list);
+                }
+            }
+
+            $crop_type = [
+                '1' => 'Field Crop',
+                '2' => 'Veg Crop',
+                '3' => 'Root Stock',
+                '4' => 'Fruit Crop',
+                '5' => 'Common'
+            ];
+
+            $verticalId = array_key_first($vertical_list);
+            $preselected['crop_vertical'] = (string) $verticalId;
+
+            $cropsQuery = DB::table('core_crop')
+                ->where('is_active', 1)
+                ->select('id', 'crop_name')
+                ->orderBy('crop_name');
+
+            if ($verticalId != 5) {
+                $cropsQuery->where('vertical_id', $verticalId);
+            }
+
+            $crops = $cropsQuery->get();
+
+            $states = DB::table('core_state')
+                ->where('is_active', 1)
+                ->orderBy('state_name')
+                ->get();
         }
+
+        $currentYear = '2025-26';
+        $financialYears = Year::where('status', 'active')
+            ->where('period', '<', $currentYear)
+            ->orderBy('start_year', 'desc')
+            ->take(3)
+            ->get();
+
+        // Define completedStepsData for create view
+        $completedStepsData = [
+            1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit),
+            2 => !empty($application->entityDetails) && !empty($application->entityDetails->establishment_name) && !empty($application->entityDetails->pan_number),
+            3 => !empty($application->distributionDetail) && !empty($application->distributionDetail->area_covered) && is_array(json_decode($application->distributionDetail->area_covered, true)) && count(json_decode($application->distributionDetail->area_covered, true)) > 0,
+            4 => $application->businessPlans->isNotEmpty(),
+            5 => !empty($application->financialInfo) && !empty($application->financialInfo->net_worth),
+            6 => !empty($application->bankDetail) && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
+            7 => $application->declarations->isNotEmpty(),
+            8 => in_array($application->status, ['initiated', 'approved']),
+        ];
+
+        // Debug completedStepsData
+        Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unknown'), [
+            'step1' => [
+                'territory' => !empty($application->territory),
+                'crop_vertical' => !empty($application->crop_vertical),
+                'region' => !empty($application->region),
+                'zone' => !empty($application->zone),
+                'business_unit' => !empty($application->business_unit),
+                'completed' => $completedStepsData[1]
+            ],
+            'step2' => $completedStepsData[2],
+            'step3' => $completedStepsData[3],
+            'step4' => $completedStepsData[4],
+            'step5' => $completedStepsData[5],
+            'step6' => $completedStepsData[6],
+            'step7' => $completedStepsData[7],
+            'step8' => $completedStepsData[8]
+        ]);
+
+        $currentStep = $application && $application->current_progress_step ? $application->current_progress_step : $step;
+
+        return view('applications.create', compact(
+            'application',
+            'application_id',
+            'bu_list',
+            'zone_list',
+            'region_list',
+            'territory_list',
+            'preselected',
+            'crop_type',
+            'states',
+            'currentStep',
+            'crops',
+            'financialYears',
+            'completedStepsData'
+        ));
     }
+}
 
     private function getTerritoryData($territoryId)
     {
@@ -436,390 +491,427 @@ class OnboardingController extends Controller
         return view('applications.show', compact('application'));
     }
 
-    public function edit(Onboarding $application, $step = 1)
-    {
-        $user = Auth::user();
-        // Manual authorization: Check if user's emp_id matches application's created_by
-        if (!$user->emp_id || $user->emp_id !== $application->created_by) {
-            abort(403, 'You are not authorized to edit this application.');
-        }
+   public function edit(Onboarding $application, $step = 1)
+{
+    $user = Auth::user();
+    // Manual authorization: Check if user's emp_id matches application's created_by
+    if (!$user->emp_id || $user->emp_id !== $application->created_by) {
+        abort(403, 'You are not authorized to edit this application.');
+    }
 
-        if (!in_array($application->status, ['draft', 'reverted'])) {
-            return redirect()->route('applications.show', $application)
-                ->with('error', 'You can only edit draft or reverted applications');
-        }
-        $initialFrontendStep = $application->current_progress_step ?? 1;
-        if ($step && $step <= $initialFrontendStep) {
-            $initialFrontendStep = (int) $step; // Cast to int to be safe
-        }
-        $totalSteps = 8; // Define your total number of steps
-        if ($initialFrontendStep > $totalSteps) {
-            $initialFrontendStep = $totalSteps;
-        }
-        //dd($initialFrontendStep);
-        // Ensure all relationships are loaded for editing
-        $application->load([
-            'territoryDetail',
-            'regionDetail',
-            'zoneDetail',
-            'businessUnit',
-            'entityDetails',
-            'distributionDetail',
-            'businessPlans',
-            'financialInfo',
-            'existingDistributorships',
-            'bankDetail',
-            'declarations'
-        ]);
+    if (!in_array($application->status, ['draft', 'reverted'])) {
+        return redirect()->route('applications.show', $application)
+            ->with('error', 'You can only edit draft or reverted applications');
+    }
 
-        $territory_list = [];
-        $zone_list = [];
-        $region_list = [];
-        $bu_list = [];
-        $preselected = [];
-        $hasAddDistributorPermission = $user->hasRole('Mis User');
+    $initialFrontendStep = $application->current_progress_step ?? 1;
+    if ($step && $step <= $initialFrontendStep) {
+        $initialFrontendStep = (int) $step; // Cast to int to be safe
+    }
+    $totalSteps = 8; // Define your total number of steps
+    if ($initialFrontendStep > $totalSteps) {
+        $initialFrontendStep = $totalSteps;
+    }
 
-        if ($user->emp_id) {
-            $employee = DB::table('core_employee')->where('id', $user->emp_id)->first();
+    // Ensure all relationships are loaded for editing
+    $application->load([
+        'territoryDetail',
+        'regionDetail',
+        'zoneDetail',
+        'businessUnit',
+        'entityDetails',
+        'distributionDetail',
+        'businessPlans',
+        'financialInfo',
+        'existingDistributorships',
+        'bankDetail',
+        'declarations'
+    ]);
 
-            if ($employee) {
-                // Populate vertical_list for pre-selected crop_vertical
-                $vertical_list = DB::table('core_vertical')
-                    ->pluck('vertical_name', 'id')
+    $territory_list = [];
+    $zone_list = [];
+    $region_list = [];
+    $bu_list = [];
+    $preselected = [];
+    $hasAddDistributorPermission = $user->hasRole('Mis User');
+
+    if ($user->emp_id) {
+        $employee = DB::table('core_employee')->where('id', $user->emp_id)->first();
+
+        if ($employee) {
+            // Populate vertical_list for pre-selected crop_vertical
+            $vertical_list = DB::table('core_vertical')
+                ->pluck('vertical_name', 'id')
+                ->toArray();
+
+            if ($hasAddDistributorPermission) {
+                // If user has 'add-distributor' permission, fetch all active territories
+                $territory_list = DB::table('core_territory')
+                    ->where('is_active', 1)
+                    ->pluck('territory_name', 'id')
                     ->toArray();
-
-                if ($hasAddDistributorPermission) {
-                    // If user has 'add-distributor' permission, fetch all active territories
-                    $territory_list = DB::table('core_territory')
-                        ->where('is_active', 1)
-                        ->pluck('territory_name', 'id')
-                        ->toArray();
-                } else {
-                    // Case 1: territory = 0, region = 0, zone = 0, business unit > 0
-                    if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
-                        $mapping = DB::select("
-                    SELECT 
-                        bzm.zone_id,
-                        z.zone_name,
-                        zrm.region_id,
-                        r.region_name,
-                        rtm.territory_id,
-                        t.territory_name
-                    FROM 
-                        core_bu_zone_mapping bzm
-                    INNER JOIN 
-                        core_zone z ON bzm.zone_id = z.id
-                    INNER JOIN 
-                        core_zone_region_mapping zrm ON bzm.zone_id = zrm.zone_id
-                    INNER JOIN 
-                        core_region r ON zrm.region_id = r.id
-                    LEFT JOIN 
-                        core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
-                    LEFT JOIN 
-                        core_territory t ON rtm.territory_id = t.id
-                    WHERE 
-                        bzm.business_unit_id = ?
+            } else {
+                // Case 1: territory = 0, region = 0, zone = 0, business unit > 0
+                if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
+                    $mapping = DB::select("
+                        SELECT 
+                            bzm.zone_id,
+                            z.zone_name,
+                            zrm.region_id,
+                            r.region_name,
+                            rtm.territory_id,
+                            t.territory_name
+                        FROM 
+                            core_bu_zone_mapping bzm
+                        INNER JOIN 
+                            core_zone z ON bzm.zone_id = z.id
+                        INNER JOIN 
+                            core_zone_region_mapping zrm ON bzm.zone_id = zrm.zone_id
+                        INNER JOIN 
+                            core_region r ON zrm.region_id = r.id
+                        LEFT JOIN 
+                            core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
+                        LEFT JOIN 
+                            core_territory t ON rtm.territory_id = t.id
+                        WHERE 
+                            bzm.business_unit_id = ?
                     ", [$employee->bu]);
 
-                        $zone_list = collect($mapping)
-                            ->pluck('zone_name', 'zone_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $zone_list = collect($mapping)
+                        ->pluck('zone_name', 'zone_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $region_list = collect($mapping)
-                            ->pluck('region_name', 'region_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $region_list = collect($mapping)
+                        ->pluck('region_name', 'region_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($zone_list) === 1) {
-                            $preselected['zone'] = array_key_first($zone_list);
-                        }
-                        if (count($region_list) === 1) {
-                            $preselected['region'] = array_key_first($region_list);
-                        }
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
+                    if (count($zone_list) === 1) {
+                        $preselected['zone'] = array_key_first($zone_list);
                     }
-
-                    // Territory/region/zone logic
-                    elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
-                        $mapping = DB::select("
-                    SELECT 
-                        zrm.zone_id,
-                        z.zone_name,
-                        zrm.region_id,
-                        r.region_name,
-                        rtm.territory_id,
-                        t.territory_name
-                    FROM 
-                        core_zone_region_mapping zrm
-                    INNER JOIN 
-                        core_zone z ON zrm.zone_id = z.id
-                    INNER JOIN 
-                        core_region r ON zrm.region_id = r.id
-                    LEFT JOIN 
-                        core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
-                    LEFT JOIN 
-                        core_territory t ON rtm.territory_id = t.id
-                    WHERE 
-                        zrm.zone_id = ?
+                    if (count($region_list) === 1) {
+                        $preselected['region'] = array_key_first($region_list);
+                    }
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
+                    $mapping = DB::select("
+                        SELECT 
+                            zrm.zone_id,
+                            z.zone_name,
+                            zrm.region_id,
+                            r.region_name,
+                            rtm.territory_id,
+                            t.territory_name
+                        FROM 
+                            core_zone_region_mapping zrm
+                        INNER JOIN 
+                            core_zone z ON zrm.zone_id = z.id
+                        INNER JOIN 
+                            core_region r ON zrm.region_id = r.id
+                        LEFT JOIN 
+                            core_region_territory_mapping rtm ON zrm.region_id = rtm.region_id
+                        LEFT JOIN 
+                            core_territory t ON rtm.territory_id = t.id
+                        WHERE 
+                            zrm.zone_id = ?
                     ", [$employee->zone]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory == 0 && $employee->region > 0) {
-                        $mapping = DB::select("
-                    SELECT 
-                        r.id as region_id,
-                        r.region_name,
-                        zrm.zone_id,
-                        z.zone_name,
-                        rtm.territory_id,
-                        t.territory_name
-                    FROM 
-                        core_region r
-                    LEFT JOIN 
-                        core_zone_region_mapping zrm ON r.id = zrm.region_id
-                    LEFT JOIN 
-                        core_zone z ON zrm.zone_id = z.id
-                    LEFT JOIN 
-                        core_region_territory_mapping rtm ON r.id = rtm.region_id
-                    LEFT JOIN 
-                        core_territory t ON rtm.territory_id = t.id
-                    WHERE 
-                        r.id = ?
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory == 0 && $employee->region > 0) {
+                    $mapping = DB::select("
+                        SELECT 
+                            r.id as region_id,
+                            r.region_name,
+                            zrm.zone_id,
+                            z.zone_name,
+                            rtm.territory_id,
+                            t.territory_name
+                        FROM 
+                            core_region r
+                        LEFT JOIN 
+                            core_zone_region_mapping zrm ON r.id = zrm.region_id
+                        LEFT JOIN 
+                            core_zone z ON zrm.zone_id = z.id
+                        LEFT JOIN 
+                            core_region_territory_mapping rtm ON r.id = rtm.region_id
+                        LEFT JOIN 
+                            core_territory t ON rtm.territory_id = t.id
+                        WHERE 
+                            r.id = ?
                     ", [$employee->region]);
 
-                        $territory_list = collect($mapping)
-                            ->pluck('territory_name', 'territory_id')
-                            ->unique()
-                            ->filter()
-                            ->toArray();
+                    $territory_list = collect($mapping)
+                        ->pluck('territory_name', 'territory_id')
+                        ->unique()
+                        ->filter()
+                        ->toArray();
 
-                        if (count($territory_list) === 1) {
-                            $preselected['territory'] = array_key_first($territory_list);
-                        }
-                    } elseif ($employee->territory > 0) {
-                        $territory = DB::table('core_territory')
-                            ->where('id', $employee->territory)
-                            ->first();
+                    if (count($territory_list) === 1) {
+                        $preselected['territory'] = array_key_first($territory_list);
+                    }
+                } elseif ($employee->territory > 0) {
+                    $territory = DB::table('core_territory')
+                        ->where('id', $employee->territory)
+                        ->first();
 
-                        if ($territory) {
-                            $territory_list = [$territory->id => $territory->territory_name];
-                            $preselected['territory'] = $application->territory ?? $territory->id;
-                        }
+                    if ($territory) {
+                        $territory_list = [$territory->id => $territory->territory_name];
+                        $preselected['territory'] = $application->territory ?? $territory->id;
                     }
                 }
-                // Fetch regions and zones
-                if (isset($preselected['territory']) || $application->territory) {
-                    $territoryData = $this->getTerritoryData($application->territory ?? $preselected['territory']);
-                    $region_list = $territoryData['regions'] ?? [];
-                    $zone_list = $territoryData['zones'] ?? [];
-                    $bu_list = $territoryData['businessUnits'] ?? [];
-                    $vertical_list = $territoryData['verticals'] ?? [];
-
-                    if (!empty($region_list)) {
-                        $preselected['region'] = $application->region ?? array_key_first($region_list);
-                    }
-                    if (!empty($zone_list)) {
-                        $preselected['zone'] = $application->zone ?? array_key_first($zone_list);
-                    }
-                    if (!empty($bu_list)) {
-                        $preselected['bu'] = $application->bu ?? array_key_first($bu_list);
-                    }
-                    if (!empty($vertical_list)) {
-                        $preselected['crop_vertical'] = $application->crop_vertical ?? array_key_first($vertical_list);
-                    }
-                }
-
-                $crop_type = [
-                    '1' => 'Field Crop',
-                    '2' => 'Veg Crop',
-                    '3' => 'Root Stock',
-                    '4' => 'Fruit Crop',
-                    '5' => 'Common'
-                ];
-
-                // Assuming $vertical_list has only one value like: [2 => "Veg Crop"]
-                $verticalId = array_key_first($vertical_list);
-                $preselected['crop_vertical'] = (string) $verticalId;
-
-                // Fetch crops for selected vertical + always include Common (id=5)
-                $cropsQuery = DB::table('core_crop')
-                    ->where('is_active', 1)
-                    ->select('id', 'crop_name')
-                    ->orderBy('crop_name');
-
-                // If vertical is NOT common (5), filter by vertical_id
-                if ($verticalId != 5) {
-                    $cropsQuery->where('vertical_id', $verticalId);
-                }
-
-                $crops = $cropsQuery->get();
-
-                // Fetch states
-                $states = Cache::remember('active_states', 60 * 60, function () {
-                    return DB::table('core_state')
-                        ->where('is_active', 1)
-                        ->orderBy('state_name')
-                        ->get(['id', 'state_name']);
-                });
             }
-        }
 
-        // Load `Year` models for business plan display
-        $years = Year::all()->keyBy('id');
+            // Fetch regions and zones
+            if (isset($preselected['territory']) || $application->territory) {
+                $territoryData = $this->getTerritoryData($application->territory ?? $preselected['territory']);
+                $region_list = $territoryData['regions'] ?? [];
+                $zone_list = $territoryData['zones'] ?? [];
+                $bu_list = $territoryData['businessUnits'] ?? [];
+                $vertical_list = $territoryData['verticals'] ?? [];
 
-        $currentYear = '2025-26';
-        $financialYears = Year::where('status', 'active')
-            ->where('period', '<', $currentYear)
-            ->orderBy('start_year', 'desc')
-            ->take(3)
-            ->get();
-        //dd($preselected);
-        if ($step == 8) {
-            return view('applications.review-submit', compact('application', 'years'));
+                if (!empty($region_list)) {
+                    $preselected['region'] = $application->region ?? array_key_first($region_list);
+                }
+                if (!empty($zone_list)) {
+                    $preselected['zone'] = $application->zone ?? array_key_first($zone_list);
+                }
+                if (!empty($bu_list)) {
+                    $preselected['bu'] = $application->business_unit ?? array_key_first($bu_list);
+                }
+                if (!empty($vertical_list)) {
+                    $preselected['crop_vertical'] = $application->crop_vertical ?? array_key_first($vertical_list);
+                }
+            }
+
+            $crop_type = [
+                '1' => 'Field Crop',
+                '2' => 'Veg Crop',
+                '3' => 'Root Stock',
+                '4' => 'Fruit Crop',
+                '5' => 'Common'
+            ];
+
+            // Assuming $vertical_list has only one value like: [2 => "Veg Crop"]
+            $verticalId = array_key_first($vertical_list);
+            $preselected['crop_vertical'] = (string) $verticalId;
+
+            // Fetch crops for selected vertical + always include Common (id=5)
+            $cropsQuery = DB::table('core_crop')
+                ->where('is_active', 1)
+                ->select('id', 'crop_name')
+                ->orderBy('crop_name');
+
+            // If vertical is NOT common (5), filter by vertical_id
+            if ($verticalId != 5) {
+                $cropsQuery->where('vertical_id', $verticalId);
+            }
+
+            $crops = $cropsQuery->get();
+
+            // Fetch states
+            $states = Cache::remember('active_states', 60 * 60, function () {
+                return DB::table('core_state')
+                    ->where('is_active', 1)
+                    ->orderBy('state_name')
+                    ->get(['id', 'state_name']);
+            });
         }
-        \Log::debug('Edit Preselected Values:', $preselected); // Debug
-        \Log::debug('Edit Vertical List:', $vertical_list); // Debug
-        return view('applications.edit', compact(
-            'application',
-            'bu_list',
-            'vertical_list',
-            'zone_list',
-            'region_list',
-            'territory_list',
-            'preselected',
-            'crop_type',
-            'states',
-            'step', // Pass the current step to the view
-            'initialFrontendStep',
-            'crops',
-            'financialYears'
-        ));
     }
+
+    // Load `Year` models for business plan display
+    $years = Year::all()->keyBy('id');
+
+    $currentYear = '2025-26';
+    $financialYears = Year::where('status', 'active')
+        ->where('period', '<', $currentYear)
+        ->orderBy('start_year', 'desc')
+        ->take(3)
+        ->get();
+
+    // Define completedStepsData
+    $completedStepsData = [
+        1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit), // Removed district and state
+        2 => !empty($application->entityDetails) && !empty($application->entityDetails->establishment_name) && !empty($application->entityDetails->pan_number),
+        3 => !empty($application->distributionDetail) && !empty($application->distributionDetail->area_covered) && is_array(json_decode($application->distributionDetail->area_covered, true)) && count(json_decode($application->distributionDetail->area_covered, true)) > 0,
+        4 => $application->businessPlans->isNotEmpty(),
+        5 => !empty($application->financialInfo) && !empty($application->financialInfo->net_worth),
+        6 => !empty($application->bankDetail) && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
+        7 => $application->declarations->isNotEmpty(),
+        8 => in_array($application->status, ['initiated', 'approved']),
+    ];
+
+    // Debug completedStepsData
+    \Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unknown'), [
+        'step1' => [
+            'territory' => !empty($application->territory),
+            'crop_vertical' => !empty($application->crop_vertical),
+            'region' => !empty($application->region),
+            'zone' => !empty($application->zone),
+            'business_unit' => !empty($application->business_unit),
+            'district' => !empty($application->district),
+            'state' => !empty($application->state),
+            'completed' => $completedStepsData[1]
+        ],
+        'step2' => $completedStepsData[2],
+        'step3' => $completedStepsData[3],
+        'step4' => $completedStepsData[4],
+        'step5' => $completedStepsData[5],
+        'step6' => $completedStepsData[6],
+        'step7' => $completedStepsData[7],
+        'step8' => $completedStepsData[8]
+    ]);
+
+    if ($step == 8) {
+        return view('applications.review-submit', compact('application', 'years'));
+    }
+
+    \Log::debug('Edit Preselected Values:', $preselected);
+    \Log::debug('Edit Vertical List:', $vertical_list);
+
+    // Pass $initialFrontendStep as $currentStep
+    return view('applications.edit', compact(
+        'application',
+        'bu_list',
+        'vertical_list',
+        'zone_list',
+        'region_list',
+        'territory_list',
+        'preselected',
+        'crop_type',
+        'states',
+        'step',
+        'initialFrontendStep',
+        'crops',
+        'financialYears',
+        'completedStepsData'
+    ))->with('currentStep', $initialFrontendStep);
+}
 
     // Main save step function that routes to specific step handlers
     public function saveStep(Request $request, $stepNumber)
-    {
-        try {
-            $user = Auth::user();
-            if (!$user) {
-                return response()->json(['success' => false, 'error' => 'Authentication required.'], 401);
-            }
-
-            $application_id = $request->input('application_id');
-            $current_step = $stepNumber;
-            $result = ['success' => false, 'error' => 'Invalid step number.']; // Initialize result
-
-            $application = null; // Initialize $application to null
-            //dd( $stepNumber);
-            // Load the application ONLY if an application_id is provided (i.e., not step 1 on first save)
-            if ($application_id && $stepNumber != 1) {
-                $application = Onboarding::find($application_id);
-                if (!$application) {
-                    return response()->json(['success' => false, 'error' => 'Application not found.'], 404);
-                }
-                // Refresh the model to get latest data
-                //$application->refresh();
-            }
-            // Route to specific step handler
-            switch ($stepNumber) {
-                case 1:
-                    $result = $this->saveStep1($request, $user, $application_id);
-                    break;
-                case 2:
-                    $result = $this->saveStep2($request, $user, $application_id);
-                    break;
-                case 3:
-                    $result = $this->saveStep3($request, $user, $application_id);
-                    break;
-                case 4:
-                    $result = $this->saveStep4($request, $user, $application_id);
-                    break;
-                case 5:
-                    $result = $this->saveStep5($request, $user, $application_id);
-                    break;
-                case 6:
-                    $result = $this->saveStep6($request, $user, $application_id);
-                    break;
-                case 7:
-                    $result = $this->saveStep7($request, $user, $application_id);
-                    break;
-                case 8:
-                    $result = $this->saveStep8($request, $user, $application_id);
-                    break;
-                default:
-                    return response()->json(['success' => false, 'error' => 'Invalid step number.'], 400);
-            }
-            // Ensure all step handlers return the application ID
-            //dd($result);
-            if (isset($result['success']) && $result['success']) {
-                $response = [
-                    'success' => true,
-                    'message' => $result['message'] ?? 'Step saved successfully!',
-                    'application_id' => $result['application_id'] ?? $application_id,
-                    'current_step' => $result['current_step'] ?? $stepNumber,
-                ];
-
-                // Only add redirect for final submission (step 9)
-                if ($stepNumber == 8 && isset($result['redirect'])) {
-                    $response['redirect'] = $result['redirect'];
-                }
-                return response()->json($response);
-            } else {
-                // This handles cases where $result['success'] is false or not set
-                return response()->json($result, $result['status'] ?? 422);
-            }
-
-            if (is_array($result)) {
-                if ($result['success'] ?? false) {
-                    $response = [
-                        'success' => true,
-                        'message' => $result['message'] ?? 'Step saved successfully!',
-                        'current_step' => $application->current_progress_step,
-                        'application' => $application->toArray()
-                    ];
-
-                    if ($stepNumber != 8) {
-                        $response['application_id'] = $application_id;
-                        //$response['current_step'] = $current_step;
-                    }
-
-                    if ($stepNumber == 8 && isset($result['redirect'])) {
-                        $response['redirect'] = $result['redirect'];
-                    }
-
-                    return response()->json($response);
-                } else {
-                    // For error responses
-                    return response()->json($result, $result['status'] ?? 422);
-                }
-            }
-
-            // If result is already a JsonResponse, return it directly
-            return $result;
-        } catch (\Exception $e) {
-            Log::error("Error in saveStep: " . $e->getMessage(), ['step' => $stepNumber, 'trace' => $e->getTraceAsString()]);
-            return response()->json(['success' => false, 'error' => 'An unexpected error occurred.'], 500);
+{
+    try {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['success' => false, 'error' => 'Authentication required.'], 401);
         }
+
+        $application_id = $request->input('application_id');
+        $application = $application_id ? Onboarding::find($application_id) : new Onboarding();
+
+        if (!$application && $stepNumber != 1) {
+            return response()->json(['success' => false, 'error' => 'Application not found.'], 404);
+        }
+
+        // Set created_by for new applications
+        if (!$application->exists) {
+            $application->created_by = $user->emp_id;
+        }
+
+        // Route to specific step handler
+        $result = ['success' => false, 'error' => 'Invalid step number.'];
+        switch ($stepNumber) {
+            case 1:
+                $result = $this->saveStep1($request, $user, $application_id);
+                break;
+            case 2:
+                $result = $this->saveStep2($request, $user, $application_id);
+                break;
+            case 3:
+                $result = $this->saveStep3($request, $user, $application_id);
+                break;
+            case 4:
+                $result = $this->saveStep4($request, $user, $application_id);
+                break;
+            case 5:
+                $result = $this->saveStep5($request, $user, $application_id);
+                break;
+            case 6:
+                $result = $this->saveStep6($request, $user, $application_id);
+                break;
+            case 7:
+                $result = $this->saveStep7($request, $user, $application_id);
+                break;
+            case 8:
+                $result = $this->saveStep8($request, $user, $application_id);
+                break;
+            default:
+                return response()->json(['success' => false, 'error' => 'Invalid step number.'], 400);
+        }
+
+        // Ensure application is saved
+        if ($result['success']) {
+            $application = Onboarding::find($result['application_id'] ?? $application_id);
+            if (!$application) {
+                return response()->json(['success' => false, 'error' => 'Failed to retrieve application.'], 500);
+            }
+
+            // Update current_progress_step
+            $application->current_progress_step = $stepNumber;
+            $application->save();
+
+            // Calculate completedStepsData
+            $completedStepsData = [
+                1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit),
+                2 => !empty($application->entityDetails) && !empty($application->entityDetails->establishment_name) && !empty($application->entityDetails->pan_number),
+                3 => !empty($application->distributionDetail) && !empty($application->distributionDetail->area_covered) && is_array(json_decode($application->distributionDetail->area_covered, true)) && count(json_decode($application->distributionDetail->area_covered, true)) > 0,
+                4 => $application->businessPlans->isNotEmpty(),
+                5 => !empty($application->financialInfo) && !empty($application->financialInfo->net_worth),
+                6 => !empty($application->bankDetail) && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
+                7 => $application->declarations->isNotEmpty(),
+                8 => in_array($application->status, ['initiated', 'approved']),
+            ];
+
+            // For Step 8, validate all previous steps
+            if ($stepNumber == 8 && in_array(false, array_slice($completedStepsData, 1, 7))) {
+                $missingSteps = array_keys(array_filter(array_slice($completedStepsData, 1, 7), fn($completed) => !$completed));
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Please complete all previous steps.',
+                    'missing_steps' => $missingSteps
+                ], 422);
+            }
+
+            $response = [
+                'success' => true,
+                'message' => $result['message'] ?? 'Step saved successfully!',
+                'application_id' => $application->id,
+                'current_step' => $stepNumber,
+                'completedStepsData' => $completedStepsData
+            ];
+
+            if ($stepNumber == 8 && isset($result['redirect'])) {
+                $response['redirect'] = $result['redirect'];
+            }
+
+            return response()->json($response);
+        }
+
+        return response()->json($result, $result['status'] ?? 422);
+    } catch (\Exception $e) {
+        Log::error("Error in saveStep: " . $e->getMessage(), ['step' => $stepNumber, 'trace' => $e->getTraceAsString()]);
+        return response()->json(['success' => false, 'error' => 'An unexpected error occurred.'], 500);
     }
+}
 
     // Step 1: Distributor Application Details
     private function saveStep1(Request $request, $user, $application_id)
@@ -830,16 +922,10 @@ class OnboardingController extends Controller
                 'territory' => 'required|string',
                 'crop_vertical' => 'required|string',
                 'zone' => 'required|string',
-                'state' => 'required|string',
-                //'dis_state' => 'required|string',
-                'district' => 'required|string',
             ], [
                 'territory.required' => 'The territory field is required',
                 'crop_vertical.required' => 'Please select a crop vertical',
                 'zone.required' => 'Please select a zone',
-                'state.required' => 'Please select a state',
-                //'dis_state.required' => 'Please select a state',
-                'district.required' => 'Please select a district',
             ]);
 
             if ($validator->fails()) {
@@ -847,12 +933,9 @@ class OnboardingController extends Controller
             }
 
             $data = $validator->validated();
-            $data['state'] = $data['state'];
-            //$data['state'] = $data['dis_state'];
             $data['region'] = $request->input('region');
             $data['business_unit'] = $request->input('business_unit');
             $data['zone'] = $request->input('zone');
-            unset($data['dis_state']);
             //dd($data);
             $now = now();
             if ($application_id) {
@@ -1402,6 +1485,7 @@ class OnboardingController extends Controller
     // Step 3: Distribution Details
     private function saveStep3(Request $request, $user, $application_id)
     {
+        Log::info('saveStep3: Starting for application_id: ' . $application_id, $request->all());
         if (!$application_id) {
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }

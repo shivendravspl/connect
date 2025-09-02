@@ -132,7 +132,7 @@
 @endphp
 
 <div id="declarations" class="form-section step-content" data-step="7" style="display: none;">
-    <p class="text-muted mb-4">Answer the following questions carefully (Select Yes/No, if Yes then specify details)</p>
+    <p class="text-muted mb-4" style="margin-left: 12px;">Answer the following questions carefully (Select Yes/No, if Yes then specify details)</p>
 
     @foreach($questions as $questionKey => $config)
         <x-declaration-question

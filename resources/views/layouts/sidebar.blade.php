@@ -68,10 +68,10 @@
     </div>
     </li>
     <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
+        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
             <i class="ri-apps-2-line"></i> <span data-key="t-dashboards">Masters</span>
         </a>
-        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*') ? 'show' : '' }}" id="sidebarMaster">
+        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'show' : '' }}" id="sidebarMaster">
             <ul class="nav nav-sm flex-column">
                 <li class="nav-item">
                     <a href="{{ route('distributor.index') }}" class="nav-link {{ request()->is('distributor*') ? 'active' : '' }}" data-key="t-analytics">Distributor</a>
@@ -143,21 +143,26 @@
                     <a href="{{ route('items.index') }}" class="nav-link {{ request()->routeIs('items*') ? 'active' : '' }}" data-key="t-analytics">Items Master</a>
                 </li>
                 <li class="nav-item">
-                    <a href="{{ route('indents.index') }}" class="nav-link {{ request()->routeIs('indents*') ? 'active' : '' }}" data-key="t-analytics">Indent Management</a>
-                </li>
-                <li class="nav-item">
-                    <a href="{{ route('indents.index', ['status' => 'submitted']) }}" class="nav-link {{ request()->get('status') == 'submitted' ? 'active' : '' }}" data-key="t-analytics">Pending Approval</a>
-                </li>
+                    <a href="{{ route('indents.index') }}" class="nav-link {{ request()->routeIs('indents.index') ? 'active' : '' }}" data-key="t-analytics">Indent Management</a>
+                </li>               
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('indents.approval.*') ? 'active' : '' }}" href="{{ route('indents.approval.index') }}">
+                             Approve Indents
+                           {{-- @if($pendingApprovalCount > 0)
+                            <span class="badge bg-danger">{{ $pendingApprovalCount }}</span>
+                            @endif --}}
+                        </a>
+                    </li>
             </ul>
         </div>
     </li>
     @else
     @canany(['list-distributor', 'list-user', 'list-role', 'list-zone', 'list-region', 'list-territory', 'list-category', 'list-crop', 'list-variety', 'list-vertical', 'list-business-unit', 'list-org-function', 'list-company', 'list-core-api'])
     <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
+        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
             <i class="ri-apps-2-line"></i> <span data-key="t-dashboards">Masters</span>
         </a>
-        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*') ? 'show' : '' }}" id="sidebarMaster">
+        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'show' : '' }}" id="sidebarMaster">
             <ul class="nav nav-sm flex-column">
                 @can('list-distributor')
                 <li class="nav-item">
@@ -266,7 +271,7 @@
     <li class="nav-item">
         <a class="nav-link menu-link {{ request()->routeIs('applications.*') ? 'active' : '' }}"
             href="{{ route('applications.index') }}">
-            <i class="ri-apps-line"></i> <span>Applications</span>
+            <i class="ri-apps-line"></i> <span>Distributor Applications</span>
         </a>
     </li>
     @endcan

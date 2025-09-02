@@ -33,6 +33,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             'users.id',
             'users.name',
             'users.email',
+            'users.status',
             'users.phone',
             'users.created_at',
             'users.emp_id',
@@ -41,13 +42,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
         ->leftJoin('core_employee', 'users.emp_id', '=', 'core_employee.id')
         ->leftJoin('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
         ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
-        ->groupBy('users.id', 'users.name', 'users.email', 'users.phone', 'users.created_at', 'users.emp_id');
-
-        // Apply filters
-        if ($this->request->has('bu_id') && $this->request->bu_id && $this->request->bu_id !== 'All') {
-            $query->where('core_employee.bu', $this->request->bu_id);
-        }
-
+        ->groupBy('users.id', 'users.name', 'users.email',  'users.status','users.phone', 'users.created_at', 'users.emp_id');
         // Apply search filter
         if ($this->request->has('search') && !empty($this->request->input('search'))) {
             $search = strtolower($this->request->input('search'));
@@ -70,28 +65,48 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             'ID',
             'Name',
             'Email',
+            'Status',
             'Phone',
             'Roles',
             'Created At',
         ];
     }
 
-    public function map($user): array
+     public function map($user): array
     {
+        $status = '-';
+        if ($user->status) {
+            switch ($user->status) {
+                case 'A':
+                    $status = 'Active';
+                    break;
+                case 'P':
+                    $status = 'Pending';
+                    break;
+                case 'D':
+                    $status = 'Disabled';
+                    break;
+                default:
+                    $status = $user->status;
+            }
+        }
+
         return [
             $user->id,
             $user->name,
             $user->email ?: '-',
+            $status,
             $user->phone ?: '-',
             $user->roles ?: '-',
             $user->created_at ? $user->created_at->format('Y-m-d') : '-',
         ];
     }
 
+
     public function styles(Worksheet $sheet)
     {
         $sheet->freezePane('A2');
-        $sheet->getStyle('A1:F1')->applyFromArray([
+        $sheet->getStyle('A1:G1')->applyFromArray([ // Changed to G1 to account for the new column
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
@@ -115,7 +130,7 @@ class UsersExport implements FromQuery, WithHeadings, WithMapping, WithStyles
             ],
         ]);
 
-        foreach (range('A', 'F') as $columnID) {
+        foreach (range('A', 'G') as $columnID) { // Changed to G to account for the new column
             $sheet->getColumnDimension($columnID)->setAutoSize(true);
         }
     }

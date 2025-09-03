@@ -51,6 +51,9 @@ class DistributorController extends Controller
         if ($request->filled('fc_territory')) {
             $userQuery->where('core_distributor.fc_territory', $request->fc_territory);
         }
+         if ($request->filled('bulk_party')) {
+            $userQuery->where('core_distributor.bulk_party', $request->bulk_party);
+        }
         //dd($request->employee);
         if ($request->filled('employee')) {
             $userQuery->where(function ($q) use ($request) {

@@ -12,7 +12,7 @@
     .table th,
     .table td {
         vertical-align: middle;
-        font-size: 0.8rem;
+        font-size: 0.6rem;
         padding: 0.5rem;
     }
 
@@ -88,12 +88,12 @@
 
 @section('content')
 <div class="container mt-3">
-    <h2 class="mb-3">Distributor Application - View (ID: {{ $application->application_code }})</h2>
+    <h5 class="mb-3">Distributor Application - View (ID: {{ $application->application_code }})</h5>
 
     <!-- Application Status -->
     <div class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Application Status: <span class="badge bg-{{ $application->status_badge }}">{{ ucfirst($application->status) }}</span></h5>
+            <h6 class="mb-1">Application Status: <span class="badge bg-{{ $application->status_badge }}">{{ ucfirst($application->status) }}</span></h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -112,7 +112,7 @@
     <!-- Step 1: Basic Details -->
     <div id="basic-details" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Basic Details</h5>
+            <h6 class="mb-1">Basic Details</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -121,20 +121,12 @@
                         <tr>
                             <th>Territory</th>
                             <td>{{ isset($application->territory) ? DB::table('core_territory')->where('id', $application->territory)->value('territory_name') ?? 'N/A' : 'N/A' }}</td>
-                        </tr>
-                        <tr>
                             <th>Region</th>
                             <td>{{ isset($application->region) ? DB::table('core_region')->where('id', $application->region)->value('region_name') ?? 'N/A' : 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Zone</th>
+                               <th>Zone</th>
                             <td>{{ isset($application->zone) ? DB::table('core_zone')->where('id', $application->zone)->value('zone_name') ?? 'N/A' : 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Business Unit</th>
+                             <th>Business Unit</th>
                             <td>{{ isset($application->business_unit) ? DB::table('core_business_unit')->where('id', $application->business_unit)->value('business_unit_name') ?? 'N/A' : 'N/A' }}</td>
-                        </tr>
-                        <tr>
                             <th>Crop Vertical</th>
                             <td>{{ isset($application->crop_vertical) && $application->crop_vertical === '1' ? 'Field Crop' : 'Veg Crop' }}</td>
                         </tr>
@@ -156,7 +148,7 @@
     @if(isset($application->entityDetails))
     <div id="entity-details" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Entity Details</h5>
+            <h6 class="mb-1">Entity Details</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -165,64 +157,46 @@
                         <tr>
                             <th>Type of Firm</th>
                             <td>{{ $application->entityDetails->entity_type ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
                             <th>Firm Name</th>
                             <td>{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Business Address</th>
+                             <th>Business Address</th>
                             <td>{{ $application->entityDetails->business_address ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
                             <th>House No</th>
                             <td>{{ $application->entityDetails->house_no ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>Landmark</th>
                             <td>{{ $application->entityDetails->landmark ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>City</th>
+                             <th>City</th>
                             <td>{{ $application->entityDetails->city ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
                             <th>Pincode</th>
                             <td>{{ $application->entityDetails->pincode ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
                             <th>State</th>
                             <td>{{ $application->entityDetails->state->state_name ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>District</th>
                             <td>{{ $application->entityDetails->district->district_name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                        
                             <th>Country</th>
-                            <td>{{ $application->entityDetails->district->country ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                            <td>{{ $application->entityDetails->country->country_name ?? 'N/A' }}</td>
+                       
                             <th>Mobile</th>
                             <td>{{ $application->entityDetails->mobile ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                       
                             <th>Email</th>
                             <td>{{ $application->entityDetails->email ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>PAN Number</th>
                             <td>{{ $application->entityDetails->pan_number ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                      
                             <th>GST Applicable</th>
                             <td>{{ $application->entityDetails->gst_applicable ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                       
                             <th>GST Number</th>
                             <td>{{ $application->entityDetails->gst_number ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                      
                             <th>Seed License</th>
                             <td>{{ $application->entityDetails->seed_license ?? 'N/A' }}</td>
                         </tr>
@@ -288,7 +262,6 @@
                 </table>
             </div>
             @endif
-
             <!-- Entity-Specific Details -->
             @if($application->entityDetails->entity_type === 'sole_proprietorship')
             <div class="card mt-3">
@@ -302,26 +275,17 @@
                                 <tr>
                                     <th>Name</th>
                                     <td>{{ $application->entityDetails->additional_data['proprietor']['name'] ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Date of Birth</th>
-                                    <td>{{ $application->entityDetails->additional_data['proprietor']['dob'] ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
+
                                     <th>Father's Name</th>
                                     <td>{{ $application->entityDetails->additional_data['proprietor']['father_name'] ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Address</th>
-                                    <td>{{ $application->entityDetails->additional_data['proprietor']['address'] ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Pincode</th>
-                                    <td>{{ $application->entityDetails->additional_data['proprietor']['pincode'] ?? 'N/A' }}</td>
-                                </tr>
-                                <tr>
-                                    <th>Country</th>
-                                    <td>{{ $application->entityDetails->additional_data['proprietor']['country'] ?? 'N/A' }}</td>
+                              
+                                    <th>Date of Birth</th>
+                                    <td>{{ $application->entityDetails->additional_data['proprietor']['dob'] ?? 'N/A' }}</td>
+                               
+                                    <th>Age</th>
+                                    <td>{{ $application->entityDetails->additional_data['proprietor']['age'] ?? 'N/A' }}</td>
+                               
+                                   
                                 </tr>
                             </tbody>
                         </table>
@@ -440,7 +404,7 @@
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header p-2">
-                        <h5 class="modal-title" id="documentModalLabel{{ $index }}">{{ ucfirst($doc['type'] ?? 'Document') }}</h5>
+                        <h6 class="modal-title" id="documentModalLabel{{ $index }}">{{ ucfirst($doc['type'] ?? 'Document') }}</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-2">
@@ -514,7 +478,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header p-2">
-                    <h5 class="modal-title" id="authLetterModalLabel{{ $index }}">Authorization Letter</h5>
+                    <h6 class="modal-title" id="authLetterModalLabel{{ $index }}">Authorization Letter</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-2">
@@ -532,7 +496,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header p-2">
-                    <h5 class="modal-title" id="authAadharModalLabel{{ $index }}">Aadhar Document</h5>
+                    <h6 class="modal-title" id="authAadharModalLabel{{ $index }}">Aadhar Document</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-2">
@@ -552,7 +516,7 @@
     @if(isset($application->distributionDetail))
     <div id="distribution-details" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Distribution Details</h5>
+            <h6 class="mb-1">Distribution Details</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -574,27 +538,23 @@
                             }
                         @endphp
                         <tr>
-                            <th>Area Covered</th>
-                            <td>{{ !empty($areaCovered) ? implode(', ', $areaCovered) : 'N/A' }}</td>
-                        </tr>
-                        <tr>
-                            <th>Appointment Type</th>
-                            <td>{{ $application->distributionDetail->appointment_type ?? 'N/A' }}</td>
+                            <th colspan="2">Area Covered</th>
+                            <td colspan="2">{{ !empty($areaCovered) ? implode(', ', $areaCovered) : 'N/A' }}</td>
+                       
+                            <th colspan="2">Appointment Type</th>
+                            <td colspan="2">{{ $application->distributionDetail->appointment_type ?? 'N/A' }}</td>
                         </tr>
                         @if($application->distributionDetail && $application->distributionDetail->appointment_type === 'replacement')
                         <tr>
                             <th>Reason for Replacement</th>
                             <td>{{ $application->distributionDetail->replacement_reason ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                     
                             <th>Commitment to Recover Outstanding</th>
                             <td>{{ $application->distributionDetail->outstanding_recovery ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                      
                             <th>Name of Previous Firm</th>
                             <td>{{ $application->distributionDetail->previous_firm_name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                      
                             <th>Code of Previous Firm</th>
                             <td>{{ $application->distributionDetail->previous_firm_code ?? 'N/A' }}</td>
                         </tr>
@@ -615,7 +575,7 @@
     @if(isset($application->businessPlans) && !$application->businessPlans->isEmpty())
     <div id="business-plan" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Business Plan (Next Two Years)</h5>
+            <h6 class="mb-1">Business Plan (Next Two Years)</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -653,7 +613,7 @@
     @if(isset($application->financialInfo))
     <div id="financial-info" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Financial & Operational Information</h5>
+            <h6 class="mb-1">Financial & Operational Information</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -662,23 +622,20 @@
                         <tr>
                             <th>Net Worth (Previous FY)</th>
                             <td>{{ $application->financialInfo->net_worth ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                     
                             <th>Shop Ownership</th>
                             <td>{{ $application->financialInfo->shop_ownership ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                       
                             <th>Godown Area & Ownership</th>
                             <td>{{ $application->financialInfo->godown_area ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                        
                             <th>Years in Business</th>
                             <td>{{ $application->financialInfo->years_in_business ?? 'N/A' }}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
-            <h6 class="mb-2 mt-3">Annual Turnover</h6>
+            <h6 class="mb-2 mt-1">Annual Turnover</h6>
             <div class="table-responsive">
                 <table class="table table-bordered table-sm">
                     <thead>
@@ -713,7 +670,7 @@
     @if(isset($application->existingDistributorships) && !$application->existingDistributorships->isEmpty())
     <div id="existing-distributorships" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Existing Distributorships (Agro Inputs)</h5>
+            <h6 class="mb-1">Existing Distributorships (Agro Inputs)</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -740,49 +697,41 @@
     @if(isset($application->bankDetail))
     <div id="bank-details" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Bank Details</h5>
+            <h6 class="mb-1">Bank Details</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
                 <table class="table table-bordered table-sm">
                     <tbody>
                         <tr>
-                            <th>Financial Status</th>
+                            <th >Financial Status</th>
                             <td>{{ $application->bankDetail->financial_status ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                       
                             <th>No. of Retailers Dealt With</th>
                             <td>{{ $application->bankDetail->retailer_count ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                       
                             <th>Bank Name</th>
                             <td>{{ $application->bankDetail->bank_name ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                    
                             <th>Account Holder Name</th>
                             <td>{{ $application->bankDetail->account_holder ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                      
                             <th>Account Number</th>
                             <td>{{ $application->bankDetail->account_number ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <th>IFSC Code</th>
                             <td>{{ $application->bankDetail->ifsc_code ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                      
                             <th>Account Type</th>
                             <td>{{ $application->bankDetail->account_type ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                     
                             <th>Relationship Duration (Years)</th>
                             <td>{{ $application->bankDetail->relationship_duration ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                       
                             <th>OD Limit (if any)</th>
                             <td>{{ $application->bankDetail->od_limit ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
+                      
                             <th>OD Security</th>
                             <td>{{ $application->bankDetail->od_security ?? 'N/A' }}</td>
                         </tr>
@@ -797,7 +746,7 @@
     @if(isset($application->declarations) && !$application->declarations->isEmpty())
     <div id="declarations" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Declarations</h5>
+            <h6 class="mb-1">Declarations</h6>
         </div>
         <div class="card-body p-2">
             @php
@@ -875,7 +824,7 @@
                 }
             @endphp
             <div class="mb-2">
-                <h6 class="mb-1" style="font-size: 0.9rem;">{{ $config['label'] }}</h6>
+                <h6 class="mb-1">{{ $config['label'] }}</h6>
                 <div class="table-responsive">
                     <table class="table table-bordered table-sm">
                         <tbody>
@@ -932,7 +881,7 @@
     @if(isset($application->approvalLogs) && !$application->approvalLogs->isEmpty())
     <div id="approval-logs" class="card mb-3">
         <div class="card-header">
-            <h5 class="mb-1">Approval Logs</h5>
+            <h6 class="mb-1">Approval Logs</h6>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -965,7 +914,7 @@
     @if(auth()->user()->emp_id === $application->current_approver_id && !auth()->user()->hasRole('Mis User'))
     {{--<div class="card mb-3">
         <div class="card-header p-2">
-            <h5 class="mb-0">Take Action</h5>
+            <h6 class="mb-0">Take Action</h6>
         </div>
         <div class="card-body p-2">
             <form action="{{ route('approvals.approve', $application) }}" method="POST" class="d-inline">
@@ -989,10 +938,10 @@
                 <form action="{{ route('approvals.revert', $application) }}" method="POST">
                     @csrf
                     <div class="modal-header p-2">
-                        <h5 class="modal-title" id="revertModalLabel">Revert Application</h5>
+                        <h6 class="modal-title" id="revertModalLabel">Revert Application</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-Rem                    <div class="modal-body p-2">
+              <div class="modal-body p-2">
                         <div class=" Geschlecht mb-2">
                             <label for="revertRemarks" class="form-label">Reason for Revert *</label>
                             <textarea name="remarks" id="revertRemarks" class="form-control" rows="3" required style="font-size: 0.8rem;"></textarea>
@@ -1014,7 +963,7 @@ Rem                    <div class="modal-body p-2">
                 <form action="{{ route('approvals.hold', $application) }}" method="POST">
                     @csrf
                     <div class="modal-header p-2">
-                        <h5 class="modal-title" id="holdModalLabel">Put Application On Hold</h5>
+                        <h6 class="modal-title" id="holdModalLabel">Put Application On Hold</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-2">
@@ -1043,7 +992,7 @@ Rem                    <div class="modal-body p-2">
                 <form action="{{ route('approvals.reject', $application) }}" method="POST">
                     @csrf
                     <div class="modal-header p-2">
-                        <h5 class="modal-title" id="rejectModalLabel">Reject Application</h5>
+                        <h6 class="modal-title" id="rejectModalLabel">Reject Application</h6>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-2">

@@ -33,9 +33,181 @@ class OnboardingController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
         }
-        return view('applications.index', compact('applications'));
+        // Fetch territories for filter dropdown
+        $territories = DB::table('core_territory')->select('id', 'territory_name')->orderBy('territory_name')->get();
+        // Define possible statuses
+        $statuses = ['draft', 'initiated', 'mis_processing', 'approved', 'rejected', 'reverted'];
+        return view('applications.index', compact('applications', 'territories', 'statuses'));
     }
 
+    public function datatable(Request $request)
+    {
+        try {
+            // Log request parameters
+            Log::info('DataTable Request Parameters', [
+                'territory' => $request->input('territory'),
+                'status' => $request->input('status'),
+                'search' => $request->input('search.value'),
+                'draw' => $request->input('draw'),
+                'start' => $request->input('start'),
+                'length' => $request->input('length')
+            ]);
+
+            $user = Auth::user();
+            $query = Onboarding::query()->with(['entityDetails', 'territoryDetail']);
+
+            // Apply role-based filtering
+            if (!$user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin'])) {
+                $query->where('created_by', $user->emp_id);
+                Log::info('Applied Role Filter', ['emp_id' => $user->emp_id]);
+            }
+
+            // Apply default DataTable-like search across visible columns
+            if ($request->has('search') && !empty($request->input('search.value'))) {
+                $search = trim($request->input('search.value'));
+                $query->where(function ($q) use ($search) {
+                    // Search application_code
+                    $q->where('application_code', 'like', "%{$search}%")
+                      // Search distributor (entity_details.establishment_name)
+                      ->orWhereHas('entityDetails', function ($q) use ($search) {
+                          $q->where('establishment_name', 'like', "%{$search}%");
+                      })
+                      // Search territory (core_territory.territory_name)
+                      ->orWhereHas('territoryDetail', function ($q) use ($search) {
+                          $q->where('territory_name', 'like', "%{$search}%");
+                      })
+                      // Search status
+                      ->orWhere('status', 'like', "%{$search}%")
+                      // Search created_at (formatted as d-M-Y)
+                      ->orWhereRaw("DATE_FORMAT(created_at, '%d-%b-%Y') LIKE ?", ["%{$search}%"]);
+                });
+                Log::info('Applied Search', ['search' => $search]);
+            }
+
+            // Apply filters only if non-null and non-empty
+            $territory = $request->input('territory');
+            if ($territory !== null && $territory !== '') {
+                $query->where('territory', $territory);
+                Log::info('Applied Territory Filter', ['territory' => $territory]);
+            }
+
+            $status = $request->input('status');
+            if ($status !== null && $status !== '') {
+                $query->where('status', $status);
+                Log::info('Applied Status Filter', ['status' => $status]);
+            }
+
+            // Log the query
+            Log::info('DataTable Query', [
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
+
+            // Apply sorting
+            if ($request->has('order')) {
+                $orderColumnIndex = $request->input('order.0.column');
+                $orderDir = $request->input('order.0.dir');
+                $columns = $request->input('columns');
+                $orderColumn = $columns[$orderColumnIndex]['data'];
+
+                $columnMap = [
+                    'application_code' => 'application_code',
+                    'distributor' => 'entity_details.establishment_name',
+                    'territory' => 'core_territory.territory_name',
+                    'status' => 'status',
+                    'created_at' => 'created_at',
+                ];
+
+                if (isset($columnMap[$orderColumn])) {
+                    if ($orderColumn === 'distributor') {
+                        $query->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.onboarding_id')
+                              ->orderBy('entity_details.establishment_name', $orderDir);
+                    } elseif ($orderColumn === 'territory') {
+                        $query->leftJoin('core_territory', 'onboardings.territory', '=', 'core_territory.id')
+                              ->orderBy('core_territory.territory_name', $orderDir);
+                    } else {
+                        $query->orderBy($columnMap[$orderColumn], $orderDir);
+                    }
+                }
+            } else {
+                $query->orderBy('created_at', 'desc');
+            }
+
+            // Get total records before filtering
+            $totalRecords = Onboarding::count();
+            Log::info('Total Records', ['count' => $totalRecords]);
+
+            // Get filtered records count
+            $totalFiltered = $query->count();
+            Log::info('Filtered Records', ['count' => $totalFiltered]);
+
+            // Apply pagination
+            $start = $request->input('start', 0);
+            $length = $request->input('length', 10);
+            $applications = $query->skip($start)->take($length)->get();
+
+            // Log retrieved data
+            Log::info('DataTable Results', [
+                'count' => $applications->count(),
+                'data' => $applications->toArray()
+            ]);
+
+            // Prepare data for DataTables
+            $data = [];
+            foreach ($applications as $index => $application) {
+                $data[] = [
+                    's_no' => $start + $index + 1,
+                    'application_code' => $application->application_code ?? 'N/A',
+                    'distributor' => $application->entityDetails ? ($application->entityDetails->establishment_name ?? 'N/A') : 'N/A',
+                    'territory' => $application->territoryDetail ? ($application->territoryDetail->territory_name ?? 'N/A') : 'N/A',
+                    'status' => '<span class="badge bg-' . ($application->status_badge ?? 'secondary') . '" style="font-size: 0.65rem;">' . ucfirst($application->status ?? 'unknown') . '</span>',
+                    'created_at' => $application->created_at ? $application->created_at->format('d-M-Y') : 'N/A',
+                    'actions' => $this->getActions($application),
+                ];
+            }
+
+            return response()->json([
+                'draw' => intval($request->input('draw')),
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalFiltered,
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('DataTable Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'draw' => intval($request->input('draw')),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => 'An error occurred while fetching data: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function getActions($application)
+    {
+        $user = Auth::user();
+        $actions = '<div class="d-flex justify-content-center" style="gap: 0.25rem;">';
+        $actions .= '<a href="' . route('applications.show', $application->id) . '" class="btn btn-info btn-action p-0" title="View"><i class="bx bx-show fs-10 d-flex justify-content-center align-items-center"></i></a>';
+
+        if (in_array($application->status, ['draft', 'reverted']) && ($application->created_by === $user->emp_id || $user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin']))) {
+            $actions .= '<a href="' . route('applications.edit', $application->id) . '" class="btn btn-info btn-action p-0" title="Edit"><i class="bx bx-pencil fs-10 d-flex justify-content-center align-items-center"></i></a>';
+        }
+
+        if ($application->status === 'draft' && ($application->created_by === $user->emp_id || $user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin']))) {
+            $actions .= '<form action="' . route('applications.destroy', $application->id) . '" method="POST" class="d-inline" onsubmit="return confirm(\'Delete this application?\');">' .
+                        csrf_field() .
+                        method_field('DELETE') .
+                        '<button type="submit" class="btn btn-danger btn-action p-0" title="Delete"><i class="bx bx-trash fs-10 d-flex justify-content-center align-items-center"></i></button>' .
+                        '</form>';
+        }
+
+        $actions .= '</div>';
+        return $actions;
+    }
     function getAssociatedBusinessUnitList($employeeId)
     {
         $user = Auth::user();
@@ -114,14 +286,7 @@ class OnboardingController extends Controller
                 ->with('error', 'Application not found. Please start a new application.');
         }
 
-        // Log application retrieval
-        Log::info('create method called', [
-            'url' => $request->fullUrl(),
-            'application_id' => $application_id,
-            'application_exists' => $application->exists,
-            'step' => $step,
-            'application_id_from_model' => $application->id ?? 'none'
-        ]);
+        
 
         // Enforce step 1 for new applications
         if (!$application_id && $step != 1) {
@@ -155,20 +320,11 @@ class OnboardingController extends Controller
 
                 if ($backendRelationship === 'businessPlans' || $backendRelationship === 'declarations') {
                     if ($application->$backendRelationship->isEmpty()) {
-                        Log::info('Redirecting due to incomplete step', [
-                            'step' => $frontendStep,
-                            'application_id' => $application_id,
-                            'redirect_to_step' => $frontendStep - 1
-                        ]);
                         return redirect()->route('applications.create', ['application_id' => $application_id, 'step' => $frontendStep - 1])
                             ->with('error', 'Please complete all previous steps.');
                     }
                 } elseif ($backendRelationship && !$application->$backendRelationship) {
-                    Log::info('Redirecting due to incomplete step', [
-                        'step' => $frontendStep,
-                        'application_id' => $application_id,
-                        'redirect_to_step' => $frontendStep - 1
-                    ]);
+                   
                     return redirect()->route('applications.create', ['application_id' => $application_id, 'step' => $frontendStep - 1])
                         ->with('error', 'Please complete all previous steps.');
                 }
@@ -378,25 +534,6 @@ class OnboardingController extends Controller
                 7 => $application->declarations->isNotEmpty(),
                 8 => in_array($application->status, ['initiated', 'approved']),
             ];
-
-            // Debug completedStepsData
-            Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unknown'), [
-                'step1' => [
-                    'territory' => !empty($application->territory),
-                    'crop_vertical' => !empty($application->crop_vertical),
-                    'region' => !empty($application->region),
-                    'zone' => !empty($application->zone),
-                    'business_unit' => !empty($application->business_unit),
-                    'completed' => $completedStepsData[1]
-                ],
-                'step2' => $completedStepsData[2],
-                'step3' => $completedStepsData[3],
-                'step4' => $completedStepsData[4],
-                'step5' => $completedStepsData[5],
-                'step6' => $completedStepsData[6],
-                'step7' => $completedStepsData[7],
-                'step8' => $completedStepsData[8]
-            ]);
 
             $currentStep = $application && $application->current_progress_step ? $application->current_progress_step : $step;
             //dd($preselected['zone']);
@@ -769,33 +906,9 @@ class OnboardingController extends Controller
             8 => in_array($application->status, ['initiated', 'approved']),
         ];
 
-        // Debug completedStepsData
-        // \Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unknown'), [
-        //     'step1' => [
-        //         'territory' => !empty($application->territory),
-        //         'crop_vertical' => !empty($application->crop_vertical),
-        //         'region' => !empty($application->region),
-        //         'zone' => !empty($application->zone),
-        //         'business_unit' => !empty($application->business_unit),
-        //         'district' => !empty($application->district),
-        //         'state' => !empty($application->state),
-        //         'completed' => $completedStepsData[1]
-        //     ],
-        //     'step2' => $completedStepsData[2],
-        //     'step3' => $completedStepsData[3],
-        //     'step4' => $completedStepsData[4],
-        //     'step5' => $completedStepsData[5],
-        //     'step6' => $completedStepsData[6],
-        //     'step7' => $completedStepsData[7],
-        //     'step8' => $completedStepsData[8]
-        // ]);
-
         if ($step == 8) {
             return view('applications.review-submit', compact('application', 'years'));
         }
-
-        // \Log::debug('Edit Preselected Values:', $preselected);
-        // \Log::debug('Edit Vertical List:', $vertical_list);
 
         // Pass $initialFrontendStep as $currentStep
         return view('applications.edit', compact(
@@ -1495,7 +1608,7 @@ class OnboardingController extends Controller
     // Step 3: Distribution Details
     private function saveStep3(Request $request, $user, $application_id)
     {
-        Log::info('saveStep3: Starting for application_id: ' . $application_id, $request->all());
+        
         if (!$application_id) {
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
@@ -1542,11 +1655,6 @@ class OnboardingController extends Controller
                 }
                 $input['area_covered'] = $processed;
             }
-
-
-            // Log input for debugging
-            Log::info('Request payload:', $request->all());
-            Log::info('Processed area_covered:', $input['area_covered']);
 
             $validator = Validator::make($input, $rules, [
                 'area_covered.*.exists' => 'The selected district ":input" is not a valid district.',
@@ -1778,90 +1886,6 @@ class OnboardingController extends Controller
             ];
         }
     }
-    // Step 6: Existing Distributorships
-    // private function saveStep6(Request $request, $user, $application_id)
-    // {
-    //     if (!$application_id) {
-    //         return ['success' => false, 'error' => 'Application ID is missing.'];
-    //     }
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $submittedCompanies = $request->input('existing_distributorships', []);
-
-    //         // Filter out completely empty entries (where both id and company_name are empty)
-    //         $validCompanies = array_filter($submittedCompanies, function ($company) {
-    //             return isset($company['id']) || !empty(trim($company['company_name'] ?? ''));
-    //         });
-
-    //         $validator = Validator::make(
-    //             ['existing_distributorships' => $validCompanies],
-    //             [
-    //                 'existing_distributorships' => 'array',
-    //                 'existing_distributorships.*.company_name' => [
-    //                     'nullable', // Allow null/empty values
-    //                     'string',
-    //                     'max:255'
-    //                 ],
-    //                 'existing_distributorships.*.id' => [
-    //                     'sometimes',
-    //                     'integer',
-    //                     'exists:existing_distributorships,id,application_id,' . $application_id
-    //                 ]
-    //             ],
-    //             [
-    //                 'existing_distributorships.*.company_name.max' => 'Company name must not exceed 255 characters.'
-    //             ]
-    //         );
-
-    //         if ($validator->fails()) {
-    //             DB::rollBack();
-    //             return [
-    //                 'success' => false,
-    //                 'errors' => $validator->errors()->toArray(),
-    //                 'message' => 'Please correct the validation errors.'
-    //             ];
-    //         }
-
-    //         $existingIds = collect($validCompanies)->pluck('id')->filter()->toArray();
-
-    //         // Delete records not present in the submitted data
-    //         ExistingDistributorship::where('application_id', $application_id)
-    //             ->whereNotIn('id', $existingIds)
-    //             ->delete();
-
-    //         // Create/update entries
-    //         foreach ($validCompanies as $companyData) {
-    //             ExistingDistributorship::updateOrCreate(
-    //                 ['id' => $companyData['id'] ?? null, 'application_id' => $application_id],
-    //                 ['company_name' => isset($companyData['company_name']) ? trim($companyData['company_name']) : null]
-    //             );
-    //         }
-    //         $application = Onboarding::find($application_id);
-    //         if ($application) {
-    //             if ($application->current_progress_step < 7) {
-    //                 $application->update(['current_progress_step' => 7]);
-    //             }
-    //         }
-    //         DB::commit();
-    //         return [
-    //             'success' => true,
-    //             'message' => 'Distributorships updated successfully',
-    //             'application_id' => $application_id,
-    //             'current_step' => 7
-    //         ];
-    //     } catch (\Exception $e) {
-    //         DB::rollBack();
-    //         Log::error("Error saving distributorships: " . $e->getMessage());
-    //         return [
-    //             'success' => false,
-    //             'error' => 'Failed to save: ' . $e->getMessage(),
-    //             'message' => 'An unexpected error occurred. Please try again.'
-    //         ];
-    //     }
-    // }
-
 
     // Step 7: Bank Details
     private function saveStep6(Request $request, $user, $application_id)
@@ -1925,19 +1949,7 @@ class OnboardingController extends Controller
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
         // Log incoming request data for debugging
-        Log::debug('saveStep7 request data:', $request->all());
-        Log::debug('has_question_j specific:', [
-            'has_question_j' => $request->input('has_question_j'),
-            'referrer_1' => $request->input('referrer_1'),
-            'referrer_2' => $request->input('referrer_2'),
-            'referrer_3' => $request->input('referrer_3'),
-            'referrer_4' => $request->input('referrer_4'),
-        ]);
-        Log::debug('declaration fields:', [
-            'declaration_truthful' => $request->input('declaration_truthful'),
-            'declaration_update' => $request->input('declaration_update'),
-        ]);
-
+       
         DB::beginTransaction();
 
         try {
@@ -2087,11 +2099,6 @@ class OnboardingController extends Controller
                     'created_at' => now(),
                     'updated_at' => now()
                 ];
-
-                Log::debug("Saving {$question_key}:", [
-                    'has_issue' => $has_issue,
-                    'details' => $details_json,
-                ]);
             }
 
             // Delete existing declarations for this application
@@ -2114,7 +2121,6 @@ class OnboardingController extends Controller
             }
 
             DB::commit();
-            Log::info('saveStep7: Declarations saved successfully for application_id: ' . $application_id);
             return [
                 'success' => true,
                 'message' => 'Step 7 saved successfully!',
@@ -2272,17 +2278,6 @@ class OnboardingController extends Controller
             'declarations',
         ]);
 
-        // Log related records before deletion
-        Log::info("Preparing to delete application_id: {$application->id}, user_id: {$user->emp_id}", [
-            'entityDetails' => $application->entityDetails ? $application->entityDetails->toArray() : null,
-            'distributionDetail' => $application->distributionDetail ? $application->distributionDetail->toArray() : null,
-            'businessPlans_count' => $application->businessPlans->count(),
-            'financialInfo' => $application->financialInfo ? $application->financialInfo->toArray() : null,
-            'existingDistributorships_count' => $application->existingDistributorships->count(),
-            'bankDetail' => $application->bankDetail ? $application->bankDetail->toArray() : null,
-            'declarations' => $application->declarations ? $application->declarations->toArray() : null,
-        ]);
-
         // Delete the application (cascading deletes handled in Onboarding model)
         $application->delete();
 
@@ -2361,7 +2356,6 @@ class OnboardingController extends Controller
                 ->first();
 
             if ($document) {
-                Log::info("Removing document type {$type} for application {$applicationId}: {$document->path}");
                 Storage::disk('public')->delete($document->path);
                 $document->delete();
                 DB::commit();
@@ -2478,13 +2472,6 @@ class OnboardingController extends Controller
             $districts = DB::table('core_district')->select('id', 'district_name')->get()->keyBy('id');
             $countries = DB::table('core_country')->select('id', 'country_name')->get()->keyBy('id');
             $years = Year::select('id', 'period')->get()->keyBy('id');
-
-            // Log for debugging
-            Log::info("Preview Application ID: {$id}", [
-                'application' => $application->toArray(),
-                'business_unit' => $application->business_unit,
-                'businessUnit' => $application->businessUnit ? $application->businessUnit->toArray() : null
-            ]);
 
             return response()->view('components.form-sections.preview-pdf', [
                 'application' => $application,

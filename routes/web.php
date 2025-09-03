@@ -223,6 +223,7 @@ Route::view('view_distributor', 'page_builder.distributor1')->name('view_distrib
 Route::middleware(['auth'])->group(function () {
     // Application routes
     Route::resource('applications', OnboardingController::class);
+    Route::post('applications/datatable', [OnboardingController::class, 'datatable'])->name('applications.datatable');
     Route::post('/applications/save-step/{stepNumber}', [OnboardingController::class, 'saveStep'])->name('applications.save-step');
     Route::post('/applications/remove-document/{application_id}', [OnboardingController::class, 'removeDocument'])->name('applications.remove-document');
 

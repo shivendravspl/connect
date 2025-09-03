@@ -7,20 +7,40 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
                     <h5 class="mb-0 small font-weight-bold">My Applications</h5>
-                    @if(auth()->user()->emp_id && auth()->user()->hasAnyRole(['Admin', 'Super Admin','Mis User']))
-                    <a href="{{ route('applications.create') }}" class="btn btn-sm btn-primary py-1 px-3 fs-6">
-                        <i class="fas fa-plus fa-sm"></i> <span class="d-none d-sm-inline">New</span>
-                    </a>
-                    @endif
+                    <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                        <!-- Filters -->
+                        <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                            <div>
+                                <select id="territory_filter" class="form-select form-select-sm">
+                                    <option value="">All Territories</option>
+                                    @foreach($territories as $territory)
+                                    <option value="{{ $territory->id }}">{{ $territory->territory_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <select id="status_filter" class="form-select form-select-sm">
+                                    <option value="">All Statuses</option>
+                                    @foreach($statuses as $status)
+                                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                        <!-- New Button -->
+                        @if(auth()->user()->emp_id && auth()->user()->hasAnyRole(['Admin', 'Super Admin', 'Mis User']))
+                        <a href="{{ route('applications.create') }}" class="btn btn-sm btn-primary py-1 px-3 fs-6">
+                            <i class="fas fa-plus fa-sm"></i> <span class="d-none d-sm-inline">New</span>
+                        </a>
+                        @endif
+                    </div>
                 </div>
 
                 <div class="card-body p-1 p-sm-2">
-                    @if($applications->isEmpty())
-                    <div class="alert alert-info py-1 px-2 mb-1 small">You haven't submitted any applications yet.</div>
-                    @else
+                    <!-- DataTable -->
                     <div class="table-responsive">
-                        <table class="table table-sm table-hover mb-1 small">
-                            <thead class="small">
+                        <table id="applicationsTable" class="table table-sm table-hover mb-1 small" style="width:100%">
+                            <thead>
                                 <tr>
                                     <th class="py-1 px-1 text-center">S.No</th>
                                     <th class="py-1 px-1">App ID</th>
@@ -31,64 +51,108 @@
                                     <th class="py-1 px-1 text-center">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                @foreach($applications as $index => $application)
-                                <tr>
-                                    <td class="py-1 px-1 align-middle text-center">
-                                        {{ ($applications->currentPage() - 1) * $applications->perPage() + $loop->iteration }}
-                                    </td>
-                                    <td class="py-1 px-1 align-middle">{{ $application->application_code }}</td>
-                                    <td class="py-1 px-1 align-middle">{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
-                                    <td class="py-1 px-1 d-none d-sm-table-cell align-middle">{{ isset($application->territory) ? DB::table('core_territory')->where('id', $application->territory)->value('territory_name') ?? 'N/A' : 'N/A' }}</td>
-                                    <td class="py-1 px-1 align-middle">
-                                        <span class="badge bg-{{ $application->status_badge }}" style="font-size: 0.65rem;">
-                                            {{ ucfirst($application->status) }}
-                                        </span>
-                                    </td>
-                                    <td class="py-1 px-1 d-none d-md-table-cell align-middle">{{ $application->created_at->format('d-M-Y') }}</td>
-                                    <td class="py-1 px-1 align-middle">
-                                        <div class="d-flex justify-content-center" style="gap: 0.25rem;">
-                                            <!-- View button -->
-                                            <a href="{{ route('applications.show', $application) }}" class="btn btn-info btn-action p-0" title="View">
-                                                <i class="bx bx-show fs-10 d-flex justify-content-center align-items-center"></i>
-                                            </a>
-
-                                            @if(in_array($application->status, ['draft', 'reverted']) && ($application->created_by === Auth::user()->emp_id || auth()->user()->hasAnyRole(['Admin', 'Super Admin','Mis Admin'])))
-                                            <!-- Edit button -->
-                                            <a href="{{ route('applications.edit', $application) }}" class="btn btn-info btn-action p-0" title="Edit">
-                                                <i class="bx bx-pencil fs-10 d-flex justify-content-center align-items-center"></i>
-                                            </a>
-                                            @endif
-
-                                            @if($application->status === 'draft' && ($application->created_by === Auth::user()->emp_id || auth()->user()->hasAnyRole(['Admin', 'Super Admin','Mis Admin']) ) )
-                                            <!-- Delete button -->
-                                            <form action="{{ route('applications.destroy', $application) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this application?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-action p-0" title="Delete">
-                                                    <i class="bx bx-trash fs-10 d-flex justify-content-center align-items-center"></i>
-                                                </button>
-                                            </form>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
+                            <tbody></tbody>
                         </table>
                     </div>
-                    <div class="d-flex justify-content-center mt-1">
-                        {{ $applications->links('pagination::bootstrap-4') }}
-                    </div>
-                    @endif
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+@push('scripts')
+<!-- DataTables CSS and JS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    // Set CSRF token for AJAX requests
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    });
+
+    var table = $('#applicationsTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: '{{ route("applications.datatable") }}',
+            type: 'POST',
+            data: function(d) {
+                // Ensure empty strings instead of null
+                d.territory = $('#territory_filter').val() ? $('#territory_filter').val() : '';
+                d.status = $('#status_filter').val() ? $('#status_filter').val() : '';
+                console.log('Sending AJAX Data:', {
+                    territory: d.territory,
+                    status: d.status,
+                    draw: d.draw,
+                    start: d.start,
+                    length: d.length,
+                    search: d.search.value
+                });
+                return d;
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTable AJAX Error:', {
+                    status: xhr.status,
+                    error: error,
+                    response: xhr.responseText
+                });
+                alert('Error loading data: ' + (xhr.responseJSON?.error || error));
+            },
+            dataSrc: function(json) {
+                console.log('Received AJAX Response:', json);
+                if (json.error) {
+                    alert('Server Error: ' + json.error);
+                    return [];
+                }
+                return json.data;
+            }
+        },
+        columns: [
+            { data: 's_no', name: 's_no', searchable: false, orderable: false },
+            { data: 'application_code', name: 'application_code' },
+            { data: 'distributor', name: 'distributor' },
+            { data: 'territory', name: 'territory', visible: window.innerWidth >= 576 },
+            { data: 'status', name: 'status' },
+            { data: 'created_at', name: 'created_at', visible: window.innerWidth >= 768 },
+            { data: 'actions', name: 'actions', searchable: false, orderable: false }
+        ],
+        order: [[5, 'desc']], // Default sort by created_at (Submitted) descending
+        pageLength: 10,
+        responsive: true,
+        language: {
+            emptyTable: "You haven't submitted any applications yet.",
+            zeroRecords: "No matching records found"
+        },
+        columnDefs: [
+            { className: 'py-1 px-1 text-center', targets: [0, 6] },
+            { className: 'py-1 px-1', targets: '_all' },
+            {
+                targets: 5, // created_at column
+                render: function(data, type, row) {
+                    return type === 'sort' ? new Date(data).getTime() : data;
+                }
+            }
+        ]
+    });
+
+    // Refresh table on filter change
+    $('#territory_filter, #status_filter').on('change', function() {
+        console.log('Filter Changed:', {
+            territory: $('#territory_filter').val() || '',
+            status: $('#status_filter').val() || ''
+        });
+        table.draw();
+    });
+});
+</script>
+
 <style>
-    /* Custom small styles */
     .btn-action {
         width: 22px;
         height: 22px;
@@ -125,9 +189,10 @@
         padding: 0.5rem 0.75rem;
     }
 
-    .alert {
-        padding: 0.5rem;
-        margin-bottom: 0.5rem;
+    .form-select-sm {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.75rem;
+        height: 28px;
     }
 
     @media (max-width: 576px) {
@@ -150,17 +215,21 @@
             height: 20px;
         }
         
-        /* Hide S.No on very small screens if needed */
         .table-responsive th:nth-child(1),
         .table-responsive td:nth-child(1) {
             display: none;
         }
         
-        /* Adjust other columns to fill space */
         .table-responsive th:nth-child(2),
         .table-responsive td:nth-child(2) {
             padding-left: 0.5rem;
         }
+
+        .form-select-sm {
+            font-size: 0.7rem;
+            height: 26px;
+        }
     }
 </style>
+@endpush
 @endsection

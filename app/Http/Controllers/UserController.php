@@ -46,8 +46,8 @@ class UserController extends Controller
 
         $buId = DB::table('core_employee')
             ->where('employee_id', $employeeId)
-            ->where('emp_zone', 0)
-            ->value('emp_bu');
+            ->where('zone', 0)
+            ->value('bu');
 
         if ($buId > 0) {
             return DB::table('core_business_unit')
@@ -78,8 +78,8 @@ class UserController extends Controller
 
         $zoneId = DB::table('core_employee')
             ->where('employee_id', $employeeId)
-            ->where('emp_region', 0)
-            ->value('emp_zone');
+            ->where('region', 0)
+            ->value('zone');
 
         if ($zoneId > 0) {
             return DB::table('core_zone')
@@ -110,8 +110,8 @@ class UserController extends Controller
 
         $regionId = DB::table('core_employee')
             ->where('employee_id', $employeeId)
-            ->where('emp_territory', 0)
-            ->value('emp_region');
+            ->where('territory', 0)
+            ->value('region');
 
         if ($regionId > 0) {
             return DB::table('core_region')
@@ -140,7 +140,7 @@ class UserController extends Controller
 
         $territoryId = DB::table('core_employee')
             ->where('employee_id', $employeeId)
-            ->value('emp_territory');
+            ->value('territory');
 
         if ($territoryId > 0) {
             return DB::table('core_territory')

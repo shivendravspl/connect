@@ -17,7 +17,7 @@ class Employee extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
+          'id',
         'company_id',
         'company_name',
         'employee_id',
@@ -44,6 +44,14 @@ class Employee extends Model
         'emp_bu',
         'emp_state',
         'emp_city',
+        'department',
+        'sub_department',
+        'designation',
+        'grade',
+        'bu',
+        'zone',
+        'region',
+        'territory',
     ];
 
     /**
@@ -61,17 +69,17 @@ class Employee extends Model
 
     public function zone()
     {
-        return $this->belongsTo(CoreZone::class, 'emp_zone');
+        return $this->belongsTo(CoreZone::class, 'zone');
     }
 
     public function bu()
     {
-        return $this->belongsTo(CoreBusinessUnit::class, 'emp_bu');
+        return $this->belongsTo(CoreBusinessUnit::class, 'bu');
     }
 
     public function department()
     {
-        return $this->belongsTo(Department::class, 'emp_department');
+        return $this->belongsTo(Department::class, 'department');
     }
 
     public function reportingManager()

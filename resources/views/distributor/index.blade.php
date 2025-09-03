@@ -41,8 +41,13 @@
                                     <th>Name</th>
                                     <th>Phone</th>
                                     <th>VC Territory</th>
+                                    <th>VC Employee</th>
                                     <th>FC Territory</th>
+                                    <th>FC Employee</th>
                                     <th>Bulk Territory</th>
+                                    <th>Bulk Employee</th>
+                                    <th>Business Type</th>
+                                    <th>Bulk Party</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -77,6 +82,15 @@
                     </select>
                 </div>
                 <div class="col-12 mt-3">
+                        <label for="bulk_party_filter" class="form-label">Bulk Party:</label>
+                        <select name="bulk_party_filter" id="bulk_party_filter" class="form-control form-select"
+                                onchange="filter_data();">
+                            <option value="">Select</option>
+                            <option value="Y">Yes</option>
+                            <option value="N">No</option>
+                        </select>
+                    </div>
+                <div class="col-12 mt-3">
                     <label for="business_type_filter" class="form-label">Business Type:</label>
                     <select name="business_type" id="business_type_filter" class="form-control form-select form-select-sm" onchange="filter_data();">
                         <option value="">Select</option>
@@ -103,6 +117,19 @@
                         @endforeach
                     </select>
                 </div>
+                <div class="col-lg-12 mt-3">
+                        <label for="employee_filter">Employee :</label>
+                        <select name="employee_filter" id="employee_filter" class="form-control form-select"
+                                onchange="filter_data();">
+
+                            <option value="">Select</option>
+                            @foreach($employee_list as $employee)
+                                <option
+                                    value="{{$employee->id}}">{{$employee->emp_name}}
+                                    ~ {{$employee->emp_code}}</option>
+                            @endforeach
+                        </select>
+                    </div>
             </div>
             <div class="offcanvas-footer border-top p-3 text-center">
                 <div class="row">
@@ -208,15 +235,15 @@
             });
 
             table = $('#distributor-table').DataTable({
-                processing: true,
                 serverSide: true,
+                ordering: true,
                 searching: true,
-                responsive: true,
+                info: true,
                 pageLength: 10,
-                destroy: true,
+                lengthChange: true,
                 lengthMenu: [
-                    [5, 10, 25, 50, 100],
-                    [5, 10, 25, 50, 100]
+                    [10, 25, 50, -1],
+                    [10, 25, 50, "All"]
                 ],
                 dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rt<"row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
                 ajax: {
@@ -227,6 +254,8 @@
                         d.business_type = $('#business_type_filter').val();
                         d.vc_territory = $('#vc_territory_filter').val();
                         d.fc_territory = $('#fc_territory_filter').val();
+                        d.employee = $("#employee_filter").val();
+                        d.bulk_party = $("#bulk_party_filter").val();
                         console.log('AJAX data:', d);
                     },
                     beforeSend: function() {
@@ -262,12 +291,37 @@
                         name: 'vc.territory_name'
                     },
                     {
+                        data: 'vc_emp',
+                        name: 'e1.emp_name',
+
+                    },
+                    {
                         data: 'fc_territory_name',
                         name: 'fc.territory_name'
                     },
                     {
+                        data: 'fc_emp',
+                        name: 'e2.emp_name',
+
+                    },
+                    {
                         data: 'bulk_territory_name',
                         name: 'bc.territory_name'
+                    },
+                     {
+                        data: 'bulk_emp',
+                        name: 'e3.emp_name',
+
+                    },
+                     {
+                        data:'business_type',
+                        name: 'b.business_type',
+                    },
+                    {
+                        data: 'bulk_party',
+                        name: 'bulk_party',
+                        className: 'text-center'
+
                     },
                     {
                         data: 'status',

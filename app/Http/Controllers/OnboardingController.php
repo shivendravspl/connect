@@ -222,8 +222,8 @@ class OnboardingController extends Controller
 
         $buId = DB::table('core_employee')
             ->where('id', $employeeId)
-            ->where('emp_zone', 0)
-            ->value('emp_bu');
+            ->where('zone', 0)
+            ->value('bu');
         //dd($employeeId);
 
         if ($buId > 0) {
@@ -336,8 +336,8 @@ class OnboardingController extends Controller
 
             if ($employee) {
                 $bu_list = $this->getAssociatedBusinessUnitList($user->emp_id);
-                if ($employee->emp_bu > 0) {
-                    $preselected['bu'] = $employee->emp_bu;
+                if ($employee->bu > 0) {
+                    $preselected['bu'] = $employee->bu;
                 }
                 $vertical_list = DB::table('core_vertical')
                     ->pluck('vertical_name', 'id')
@@ -349,7 +349,7 @@ class OnboardingController extends Controller
                         ->pluck('territory_name', 'id')
                         ->toArray();
                 } else {
-                    if ($employee->emp_territory == 0 && $employee->emp_region == 0 && $employee->emp_zone == 0 && $employee->emp_bu > 0) {
+                    if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
                         $mapping = DB::select("
                         SELECT 
                             bzm.zone_id,
@@ -372,7 +372,7 @@ class OnboardingController extends Controller
                             core_territory t ON rtm.territory_id = t.id
                         WHERE 
                             bzm.business_unit_id = ?
-                    ", [$employee->emp_bu]);
+                    ", [$employee->bu]);
 
                         $zone_list = collect($mapping)
                             ->pluck('zone_name', 'zone_id')
@@ -401,7 +401,7 @@ class OnboardingController extends Controller
                         if (count($territory_list) === 1) {
                             $preselected['territory'] = array_key_first($territory_list);
                         }
-                    } elseif ($employee->emp_territory == 0 && $employee->emp_region == 0 && $employee->emp_zone > 0) {
+                    } elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
                         $mapping = DB::select("
                         SELECT 
                             zrm.zone_id,
@@ -422,7 +422,7 @@ class OnboardingController extends Controller
                             core_territory t ON rtm.territory_id = t.id
                         WHERE 
                             zrm.zone_id = ?
-                    ", [$employee->emp_zone]);
+                    ", [$employee->zone]);
 
                         $territory_list = collect($mapping)
                             ->pluck('territory_name', 'territory_id')
@@ -433,7 +433,7 @@ class OnboardingController extends Controller
                         if (count($territory_list) === 1) {
                             $preselected['territory'] = array_key_first($territory_list);
                         }
-                    } elseif ($employee->emp_territory == 0 && $employee->emp_region > 0) {
+                    } elseif ($employee->territory == 0 && $employee->region > 0) {
                         $mapping = DB::select("
                         SELECT 
                             r.id as region_id,
@@ -454,7 +454,7 @@ class OnboardingController extends Controller
                             core_territory t ON rtm.territory_id = t.id
                         WHERE 
                             r.id = ?
-                    ", [$employee->emp_region]);
+                    ", [$employee->region]);
 
                         $territory_list = collect($mapping)
                             ->pluck('territory_name', 'territory_id')
@@ -465,9 +465,9 @@ class OnboardingController extends Controller
                         if (count($territory_list) === 1) {
                             $preselected['territory'] = array_key_first($territory_list);
                         }
-                    } elseif ($employee->emp_territory > 0) {
+                    } elseif ($employee->territory > 0) {
                         $territory = DB::table('core_territory')
-                            ->where('id', $employee->emp_territory)
+                            ->where('id', $employee->territory)
                             ->first();
 
                         if ($territory) {
@@ -682,10 +682,10 @@ class OnboardingController extends Controller
 
             if ($employee) {
                 // Convert NULLs to 0 for consistency
-                $employee->emp_territory = $employee->emp_territory ?? 0;
-                $employee->emp_region = $employee->emp_region ?? 0;
-                $employee->emp_zone = $employee->emp_zone ?? 0;
-                $employee->emp_bu = $employee->emp_bu ?? 0;
+                $employee->territory = $employee->territory ?? 0;
+                $employee->region = $employee->region ?? 0;
+                $employee->zone = $employee->zone ?? 0;
+                $employee->bu = $employee->bu ?? 0;
                 // Populate vertical_list for pre-selected crop_vertical
                 $vertical_list = DB::table('core_vertical')
                     ->pluck('vertical_name', 'id')
@@ -699,7 +699,7 @@ class OnboardingController extends Controller
                         ->toArray();
                 } else {
                     // Case 1: territory = 0, region = 0, zone = 0, business unit > 0
-                    if ($employee->emp_territory == 0 && $employee->emp_region == 0 && $employee->emp_zone == 0 && $employee->emp_bu > 0) {
+                    if ($employee->territory == 0 && $employee->region == 0 && $employee->zone == 0 && $employee->bu > 0) {
                         $mapping = DB::select("
                         SELECT 
                             bzm.zone_id,
@@ -722,7 +722,7 @@ class OnboardingController extends Controller
                             core_territory t ON rtm.territory_id = t.id
                         WHERE 
                             bzm.business_unit_id = ?
-                    ", [$employee->emp_bu]);
+                    ", [$employee->bu]);
 
                         $zone_list = collect($mapping)
                             ->pluck('zone_name', 'zone_id')
@@ -751,7 +751,7 @@ class OnboardingController extends Controller
                         if (count($territory_list) === 1) {
                             $preselected['territory'] = array_key_first($territory_list);
                         }
-                    } elseif ($employee->emp_territory == 0 && $employee->emp_region == 0 && $employee->emp_zone > 0) {
+                    } elseif ($employee->territory == 0 && $employee->region == 0 && $employee->zone > 0) {
                         $mapping = DB::select("
                         SELECT 
                             zrm.zone_id,
@@ -772,7 +772,7 @@ class OnboardingController extends Controller
                             core_territory t ON rtm.territory_id = t.id
                         WHERE 
                             zrm.zone_id = ?
-                    ", [$employee->emp_zone]);
+                    ", [$employee->zone]);
 
                         $territory_list = collect($mapping)
                             ->pluck('territory_name', 'territory_id')
@@ -783,7 +783,7 @@ class OnboardingController extends Controller
                         if (count($territory_list) === 1) {
                             $preselected['territory'] = array_key_first($territory_list);
                         }
-                    } elseif ($employee->emp_territory == 0 && $employee->emp_region > 0) {
+                    } elseif ($employee->territory == 0 && $employee->region > 0) {
                         $mapping = DB::select("
                         SELECT 
                             r.id as region_id,
@@ -804,7 +804,7 @@ class OnboardingController extends Controller
                             core_territory t ON rtm.territory_id = t.id
                         WHERE 
                             r.id = ?
-                    ", [$employee->emp_region]);
+                    ", [$employee->region]);
 
                         $territory_list = collect($mapping)
                             ->pluck('territory_name', 'territory_id')
@@ -815,7 +815,7 @@ class OnboardingController extends Controller
                         if (count($territory_list) === 1) {
                             $preselected['territory'] = array_key_first($territory_list);
                         }
-                    } elseif ($employee->emp_territory > 0) {
+                    } elseif ($employee->territory > 0) {
                         $territory = DB::table('core_territory')
                             ->where('id', $employee->territory)
                             ->first();

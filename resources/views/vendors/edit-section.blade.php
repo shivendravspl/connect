@@ -6,7 +6,7 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="mb-0">Edit {{ ucfirst($section) }} Information</h3>
+                    <h6 class="mb-0">Edit {{ ucfirst($section) }} Information</h6>
                 </div>
                 <div class="card-body">
                     @if(session('success'))
@@ -258,7 +258,7 @@
                         employeeSelect.innerHTML = '<option value="">Select Contact Person</option>';
                         data.forEach(employee => {
                             const option = document.createElement('option');
-                            option.value = employee.id;
+                            option.value = employee.employee_id;
                             option.textContent = employee.text;
                             employeeSelect.appendChild(option);
                         });

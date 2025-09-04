@@ -81,11 +81,11 @@ class VendorTempEdit extends Model
 
     public function department()
     {
-        return $this->belongsTo(CoreDepartment::class, 'vnr_contact_department_id');
+        return $this->belongsTo(Department::class, 'vnr_contact_department_id');
     }
 
     public function vnrContactPerson()
     {
-        return $this->belongsTo(Employee::class, 'vnr_contact_person_id');
+     return $this->belongsTo(Employee::class, 'vnr_contact_person_id', 'employee_id');
     }
 }

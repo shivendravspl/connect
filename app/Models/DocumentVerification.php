@@ -26,6 +26,6 @@ class DocumentVerification extends Model
 
     public function verifiedBy()
     {
-        return $this->belongsTo(Employee::class, 'verified_by', 'emp_id');
+        return $this->belongsTo(Employee::class, 'verified_by', 'employee_id');
     }
 }

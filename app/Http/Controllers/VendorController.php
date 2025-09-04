@@ -196,12 +196,15 @@ class VendorController extends Controller
 
         $employees = [];
         if ($vendor->vnr_contact_department_id) {
-            $employees = Employee::where('emp_dept_id', $vendor->vnr_contact_department_id)
-                ->where('status', 'A')
+            $employees = Employee::where('department', $vendor->vnr_contact_department_id)
+                ->where('emp_status', 'A')
                 ->orderBy('emp_name')
-                ->get(['id', 'emp_name', 'emp_contact', 'emp_department']);
+                ->get(['id','employee_id', 'emp_name']);
         }
-
+        // foreach ($employees as $emp) {
+        //     dump($emp->employee_id);
+        // }
+        // dd('done');
         return view('vendors.create', [
             'vendor' => $vendor,
             'states' => $states,
@@ -375,10 +378,10 @@ class VendorController extends Controller
 
     public function getEmployee($departmentId)
     {
-        return Employee::where('status', 'A')
-            ->where('emp_dept_id', $departmentId)
+        return Employee::where('emp_status', 'A')
+            ->where('department', $departmentId)
             ->orderBy('emp_name')
-            ->get(['id', 'emp_name as text', 'emp_contact', 'emp_department']);
+            ->get(['employee_id', 'emp_name as text', 'emp_contact', 'emp_department']);
     }
 
     public function destroy($id)

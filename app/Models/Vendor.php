@@ -63,7 +63,7 @@ class Vendor extends Model
 
     public function vnrContactPerson()
     {
-        return $this->belongsTo(Employee::class, 'vnr_contact_person_id'); // Assuming it's an employee
+        return $this->belongsTo(Employee::class, 'vnr_contact_person_id', 'employee_id');
     }
 
     public function user()

@@ -28,6 +28,6 @@ class DistributorMaster extends Model
 
     public function createdBy()
     {
-        return $this->belongsTo(Employee::class, 'created_by' ,'emp_id');
+        return $this->belongsTo(Employee::class, 'created_by' ,'employee_id');
     }
 }

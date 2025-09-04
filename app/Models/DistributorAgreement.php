@@ -17,6 +17,6 @@ class DistributorAgreement extends Model
 
     public function generatedBy()
     {
-        return $this->belongsTo(Employee::class, 'generated_by', 'emp_id');
+        return $this->belongsTo(Employee::class, 'generated_by', 'employee_id');
     }
 }

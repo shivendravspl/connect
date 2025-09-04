@@ -56,7 +56,7 @@ class User extends Authenticatable
 
     public function employee()
     {
-        return $this->belongsTo(Employee::class, 'emp_id', 'id');
+        return $this->belongsTo(Employee::class, 'emp_id', 'employee_id');
     }
 
     public function vendor()

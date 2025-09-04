@@ -6,7 +6,7 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3>Vendor Registrattion Form</h3>
+                    <h6>Vendor Registrattion Form</h6>
                 </div>
                 <div class="card-body">
                     <!-- Stepper -->
@@ -49,10 +49,10 @@
                         
                         <div class="form-footer mt-4">
                             @if($current_step > 1)
-                                <button type="button" class="btn btn-secondary prev-step me-2">Previous</button>
+                                <button type="button" class="btn btn-sm btn-secondary prev-step me-2">Previous</button>
                             @endif
                             
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-sm btn-primary">
                                 @if($current_step < 3) Continue @else Submit Application @endif
                             </button>
                         </div>
@@ -134,7 +134,7 @@
     }
 
     .step-title {
-        font-size: 14px;
+        font-size: 10px;
         color: #6c757d;
     }
 
@@ -200,7 +200,7 @@
                         $.each(data, function(key, employee) {
                             const option = new Option(
                                 employee.text,
-                                employee.id,
+                                employee.employee_id,
                                 false,
                                 employee.id == currentEmployeeId
                             );

@@ -152,7 +152,7 @@ class Onboarding extends Model
 
     public function createdBy()
     {
-        return $this->belongsTo(Employee::class, 'created_by', 'id');
+        return $this->belongsTo(Employee::class, 'created_by', 'employee_id');
     }
     /**
      * Get the current approver.
@@ -164,7 +164,7 @@ class Onboarding extends Model
 
     public function finalApprover() 
     { 
-        return $this->belongsTo(Employee::class, 'final_approver_id', 'id'); 
+        return $this->belongsTo(Employee::class, 'final_approver_id', 'employee_id'); 
     }
 
     /**

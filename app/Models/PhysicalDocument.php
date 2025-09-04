@@ -32,16 +32,16 @@ class PhysicalDocument extends Model
 
     public function agreementVerifiedBy()
     {
-        return $this->belongsTo(Employee::class, 'agreement_verified_by', 'emp_id');
+        return $this->belongsTo(Employee::class, 'agreement_verified_by', 'employee_id');
     }
 
     public function securityChequeVerifiedBy()
     {
-        return $this->belongsTo(Employee::class, 'security_cheque_verified_by', 'emp_id');
+        return $this->belongsTo(Employee::class, 'security_cheque_verified_by', 'employee_id');
     }
 
     public function securityDepositVerifiedBy()
     {
-        return $this->belongsTo(Employee::class, 'security_deposit_verified_by', 'emp_id');
+        return $this->belongsTo(Employee::class, 'security_deposit_verified_by', 'employee_id');
     }
 }

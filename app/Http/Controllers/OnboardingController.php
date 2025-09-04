@@ -43,16 +43,7 @@ class OnboardingController extends Controller
     public function datatable(Request $request)
     {
         try {
-            // Log request parameters
-            Log::info('DataTable Request Parameters', [
-                'territory' => $request->input('territory'),
-                'status' => $request->input('status'),
-                'search' => $request->input('search.value'),
-                'draw' => $request->input('draw'),
-                'start' => $request->input('start'),
-                'length' => $request->input('length')
-            ]);
-
+         
             $user = Auth::user();
             $query = Onboarding::query()->with(['entityDetails', 'territoryDetail']);
 

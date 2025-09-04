@@ -6,10 +6,10 @@ use App\Http\Controllers\OnboardingController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth')->group(function(){
-	 Route::resource('applications', OnboardingController::class);
+	Route::resource('applications', OnboardingController::class);
+    Route::post('applications/datatable', [OnboardingController::class, 'datatable'])->name('applications.datatable');
     Route::post('/applications/save-step/{stepNumber}', [OnboardingController::class, 'saveStep'])->name('applications.save-step');
     Route::post('/applications/remove-document/{application_id}', [OnboardingController::class, 'removeDocument'])->name('applications.remove-document');
-
     Route::get('/get-districts/{state_id}', [OnboardingController::class, 'getDistricts']);
     Route::get('/application/{id}/preview', [OnboardingController::class, 'preview'])->name('application.preview');
     Route::get('/application/{id}/download', [OnboardingController::class, 'downloadApplicationPdf'])->name('application.download');
@@ -32,4 +32,5 @@ Route::middleware('auth')->group(function(){
         Route::get('/{application}/track-documents', [MISProcessingController::class, 'showPhysicalDocumentTracking'])->name('approvals.track-documents');
         Route::post('/{application}/track-documents', [MISProcessingController::class, 'trackPhysicalDocuments'])->name('approvals.submit-documents');
     });
+
 });

@@ -12,7 +12,7 @@
     .table th,
     .table td {
         vertical-align: middle;
-        font-size: 0.6rem;
+        font-size: 0.6rem !important;
         padding: 0.5rem;
     }
 

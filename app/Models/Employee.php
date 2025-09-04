@@ -77,7 +77,7 @@ class Employee extends Model
         return $this->belongsTo(CoreBusinessUnit::class, 'bu');
     }
 
-    public function department()
+    public function departmentRelation()
     {
         return $this->belongsTo(Department::class, 'department');
     }
@@ -117,7 +117,7 @@ class Employee extends Model
 
     public function isMisTeam()
     {
-        return $this->department && $this->department->code === 'MIS';
+        return $this->departmentRelation && $this->departmentRelation->department_code === 'MIS';
     }
 
 }

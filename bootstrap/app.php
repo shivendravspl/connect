@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function(){
+            Route::middleware('web')->group(base_path('routes/home_route.php'));
+            Route::middleware('web')->group(base_path('routes/user_route.php'));
+            Route::middleware('web')->group(base_path('routes/core_route.php'));
             Route::middleware('web')->group(base_path('routes/vendor_route.php'));
             Route::middleware('web')->group(base_path('routes/distributor_route.php'));
             Route::middleware('web')->group(base_path('routes/item_indent_route.php'));

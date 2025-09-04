@@ -1,27 +1,13 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
 use Illuminate\Support\Facades\Auth;
 
-use App\Http\Controllers\Roles_Permission\PermissionController;
-use App\Http\Controllers\Roles_Permission\RoleController;
+
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\PasswordController;
-use App\Http\Controllers\CoreAPIController;
 use App\Http\Controllers\DistributorController;
-use App\Http\Controllers\CoreOrgFunctionController;
-use App\Http\Controllers\CoreBusinessUnitController;
-use App\Http\Controllers\CoreCategoryController;
-use App\Http\Controllers\CoreCompanyController;
-use App\Http\Controllers\CoreCropController;
-use App\Http\Controllers\CoreRegionController;
-use App\Http\Controllers\CoreTerritoryController;
-use App\Http\Controllers\CoreVarietyController;
-use App\Http\Controllers\CoreVerticalController;
-use App\Http\Controllers\CoreZoneController;
-use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\DB;
 
 
@@ -41,14 +27,6 @@ Route::get('/home', function () {
     return redirect()->route('dashboard');
 });
 
-// Main dashboard route - accessible to all authenticated users
-Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard')->middleware('auth');
-Route::get('/dashboard/status-counts', [HomeController::class, 'statusCounts'])
-    ->name('dashboard.status-counts')
-    ->middleware('auth');
-Route::post('notificationMarkRead', [HomeController::class, 'notificationMarkRead'])->name('notificationMarkRead')->middleware('auth');
-Route::post('markAllRead', [HomeController::class, 'markAllRead'])->name('markAllRead')->middleware('auth');
-
 
 
 Route::middleware('auth')->group(function () {
@@ -63,95 +41,9 @@ Route::middleware('auth')->group(function () {
         Route::post('getDistributorList', [DistributorController::class, 'getDistributorList'])->name('getDistributorList');
     });
 
-    // User Routes (restricted to list-user permission)
-    Route::middleware('permission:list-user')->group(function () {
-        Route::resource('users', UserController::class);
-        Route::post('getUserList', [UserController::class, 'getUserList'])->name('getUserList');
-        Route::post('/users/export', [UserController::class, 'export'])->name('users.export');
-        Route::put('/users/{user}/password', [UserController::class, 'changePassword'])->name('users.password');
-        Route::get('user/{user_id}/permission', [UserController::class, 'give_permission'])->name('give_permission');
-        Route::post('user/{user_id}/permission', [UserController::class, 'set_user_permission'])->name('set_user_permission');
 
-    });
 
-    // Role and Permission Routes (restricted to list-role permission)
-    Route::middleware('permission:list-role')->group(function () {
-        Route::resource('roles', RoleController::class);
-        Route::get('permission', [PermissionController::class, 'index'])->name('permission');
-    });
 
-    // Zone Routes (restricted to list-zone permission)
-    Route::middleware('permission:list-zone')->group(function () {
-        Route::get('zones', [CoreZoneController::class, 'index'])->name('zones.index');
-        Route::get('/zones/export', [CoreZoneController::class, 'export'])->name('zones.export');
-        Route::post('zones/getZoneList', [CoreZoneController::class, 'getZoneList'])->name('zones.getZoneList');
-    });
-
-    // Region Routes (restricted to list-region permission)
-    Route::middleware('permission:list-region')->group(function () {
-        Route::resource('regions', CoreRegionController::class)->only(['index']);
-        Route::get('/regions/export', [CoreRegionController::class, 'export'])->name('regions.export');
-        Route::post('regions/getRegionList', [CoreRegionController::class, 'getRegionList'])->name('regions.getRegionList');
-    });
-
-    // Territory Routes (restricted to list-territory permission)
-    Route::middleware('permission:list-territory')->group(function () {
-        Route::resource('territories', CoreTerritoryController::class)->only(['index']);
-        Route::get('/territories/export', [CoreTerritoryController::class, 'export'])->name('territories.export');
-        Route::post('territories/getTerritoryList', [CoreTerritoryController::class, 'getTerritoryList'])->name('territories.getTerritoryList');
-    });
-
-    // Category Routes (restricted to list-category permission)
-    Route::middleware('permission:list-category')->group(function () {
-        Route::resource('categories', CoreCategoryController::class)->only(['index']);
-        Route::get('/categories/export', [CoreCategoryController::class, 'export'])->name('categories.export');
-    });
-
-    // Crop Routes (restricted to list-crop permission)
-    Route::middleware('permission:list-crop')->group(function () {
-        Route::resource('crops', CoreCropController::class)->only(['index']);
-        Route::get('/crops/export', [CoreCropController::class, 'export'])->name('crops.export');
-        Route::post('crops/getCropList', [CoreCropController::class, 'getCropList'])->name('crops.getCropList');
-    });
-
-    // Variety Routes (restricted to list-variety permission)
-    Route::middleware('permission:list-variety')->group(function () {
-        Route::resource('varieties', CoreVarietyController::class)->only(['index']);
-        Route::get('/varieties/export', [CoreVarietyController::class, 'export'])->name('varieties.export');
-        Route::post('varieties/getVarietyList', [CoreVarietyController::class, 'getVarietyList'])->name('varieties.getVarietyList');
-    });
-
-    // Vertical Routes (restricted to list-vertical permission)
-    Route::middleware('permission:list-vertical')->group(function () {
-        Route::resource('verticals', CoreVerticalController::class)->only(['index']); // Changed to resource
-        Route::get('/verticals/export', [CoreVerticalController::class, 'export'])->name('verticals.export');
-    });
-
-    // Business Unit Routes (restricted to list-business-unit permission)
-    Route::middleware('permission:list-business-unit')->group(function () {
-        Route::resource('business-units', CoreBusinessUnitController::class)->only(['index']);
-        Route::get('/business-units/export', [CoreBusinessUnitController::class, 'export'])->name('business-units.export');
-        Route::post('business-units/getBusinessUnitList', [CoreBusinessUnitController::class, 'getBusinessUnitList'])->name('business-units.getBusinessUnitList');
-    });
-
-    // Organization Function Routes (restricted to list-org-function permission)
-    Route::middleware('permission:list-org-function')->group(function () {
-        Route::resource('org-functions', CoreOrgFunctionController::class)->only(['index']);
-        Route::get('/org-functions/export', [CoreOrgFunctionController::class, 'export'])->name('org-functions.export');
-    });
-
-    // Company Routes (restricted to list-company permission)
-    Route::middleware('permission:list-company')->group(function () {
-        Route::resource('companies', CoreCompanyController::class)->only(['index']); // Changed to resource
-        Route::get('/companies/export', [CoreCompanyController::class, 'export'])->name('companies.export');
-    });
-
-    // Core API Routes (restricted to list-core-api permission)
-    Route::middleware('permission:list-core-api')->group(function () {
-        Route::resource('core_api', CoreAPIController::class);
-        Route::get('core_api_sync', [CoreAPIController::class, 'sync'])->name('core_api_sync');
-        Route::post('importAPISData', [CoreAPIController::class, 'importAPISData'])->name('importAPISData');
-    });
 
     //============================Builder=================================================
     Route::resource('page-builder', \App\Http\Controllers\PageBuilderController::class);
@@ -186,17 +78,8 @@ Route::middleware('auth')->group(function () {
             ->where('core_zone.is_active', 1)
             ->pluck('core_zone.zone_name', 'core_zone.id')
             ->toArray();
-
         return response()->json(['zones' => $zones]);
     });
-
-    // Add these new API routes
-    Route::post('get_zone_by_bu', [CoreZoneController::class, 'get_zone_by_bu'])->name('get_zone_by_bu');
-    Route::post('get_region_by_zone', [CoreRegionController::class, 'get_region_by_zone'])->name('get_region_by_zone');
-    Route::post('get_territory_by_region', [CoreTerritoryController::class, 'get_territory_by_region'])->name('get_territory_by_region');
-
-    Route::get('get-regions-by-zone', [App\Http\Controllers\HomeController::class, 'getRegionsByZone'])->name('get.regions.by.zone');
-    Route::get('get-territories-by-region', [App\Http\Controllers\HomeController::class, 'getTerritoriesByRegion'])->name('get.territories.by.region');
 });
 
 // Password Reset Routes (public)
@@ -217,11 +100,9 @@ Route::view('view_distributor', 'page_builder.distributor1')->name('view_distrib
 
 // routes/web.php
 
-Route::middleware(['auth'])->group(function () { 
+Route::middleware(['auth'])->group(function () {
     // Route::get('/test-email', function() {
     //     Mail::to('vnrit156t@gmail.com')->send(new \App\Mail\TestEmail());
     //     return "Email sent!";
     // });
-    Route::get('/get-territory-data', [CoreTerritoryController::class, 'getMappingData']);
-    Route::get('/dashboard/dynamic-data', [App\Http\Controllers\HomeController::class, 'dynamicData'])->name('dashboard.dynamic-data');   
 });

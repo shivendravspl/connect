@@ -8,7 +8,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Vendor List</h5>
                     @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'Mis User']))
-                        <a href="{{ route('vendors.create') }}" class="btn btn-primary btn-sm">
+                        <a href="{{ route('vendors.create') }}" class="btn btn-primary btn-xs">
                             <i class="ri-add-box-fill"></i>
                         </a>
                     @endif
@@ -18,8 +18,8 @@
                         <div class="alert alert-success">{{ session('success') }}</div>
                     @endif
                     @if(session('info'))
-                    <div class="alert alert-info">{{ session('info') }}</div>
-                @endif
+                        <div class="alert alert-info">{{ session('info') }}</div>
+                    @endif
                     
                     <div class="table-responsive">
                         <table class="table table-bordered table-hover">
@@ -31,7 +31,7 @@
                                     <th>Email</th>
                                     <th>Phone</th>
                                     <th>Status</th>
-                                    <th width="250px">Actions</th>
+                                    <th width="200px">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -57,40 +57,37 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="d-flex justify-content-between">
-                                            <a href="{{ route('vendors.show', $vendor->id) }}" class="btn btn-info btn-sm" title="View">
+                                        <div class="d-flex justify-content-around gap-2">
+                                            <a href="{{ route('vendors.show', $vendor->id) }}" class="btn btn-info btn-xs" title="View">
                                                 <i class="ri-eye-line"></i>
                                             </a>
                                             @if(!$vendor->is_completed)
-                                                <a href="{{ route('vendors.edit', $vendor->id) }}" class="btn btn-primary btn-sm" title="Edit">
+                                                <a href="{{ route('vendors.edit', $vendor->id) }}" class="btn btn-primary btn-xs" title="Edit">
                                                     <i class="ri-pencil-fill"></i>
                                                 </a>
                                             @endif
                                             @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin']) && $vendor->is_completed && $vendor->approval_status == 'pending')
                                                 <form action="{{ route('approve', $vendor->id) }}" method="POST" class="d-inline">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-success btn-sm" title="Approve" onclick="return confirm('Are you sure you want to approve this vendor?')">
+                                                    <button type="submit" class="btn btn-success btn-xs" title="Approve" onclick="return confirm('Are you sure you want to approve this vendor?')">
                                                         <i class="ri-edit-circle-line"></i>
                                                     </button>
                                                 </form>
-                                                <button type="button" class="btn btn-danger btn-sm" title="Reject" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $vendor->id }}">
+                                                <button type="button" class="btn btn-danger btn-xs" title="Reject" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $vendor->id }}">
                                                     <i class="ri-chat-delete-fill"></i>
                                                 </button>
                                             @endif
                                             @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin']) && in_array($vendor->approval_status, ['approved', 'rejected']))
-                                                <form action="{{ route('vendors.toggle-active', $vendor->id) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm {{ $vendor->is_active ? 'btn-success' : 'btn-secondary' }}" title="{{ $vendor->is_active ? 'Active (Click to Deactivate)' : 'Inactive (Click to Activate)' }}">
-                                                        <i class="ri-{{ $vendor->is_active ? 'check-line' : 'close-line' }}"></i>
-                                                        {{ $vendor->is_active ? 'Active' : 'Inactive' }}
-                                                    </button>
-                                                </form>
+                                                <button type="button" class="btn btn-xs {{ $vendor->is_active ? 'btn-success' : 'btn-secondary' }}" title="{{ $vendor->is_active ? 'Active (Click to Deactivate)' : 'Inactive (Click to Activate)' }}" data-bs-toggle="modal" data-bs-target="#toggleActiveModal{{ $vendor->id }}">
+                                                    <i class="ri-{{ $vendor->is_active ? 'check-line' : 'close-line' }}"></i>
+                                                    {{ $vendor->is_active ? 'Active' : 'Inactive' }}
+                                                </button>
                                             @endif
                                             @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin']))
                                                 <form action="{{ route('vendors.destroy', $vendor->id) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger btn-sm" title="Delete" onclick="return confirm('Are you sure you want to delete this vendor?')">
+                                                    <button type="submit" class="btn btn-danger btn-xs" title="Delete" onclick="return confirm('Are you sure you want to delete this vendor?')">
                                                         <i class="ri-delete-bin-line"></i>
                                                     </button>
                                                 </form>
@@ -104,7 +101,7 @@
                                         <div class="modal-content">
                                             <div class="modal-header">
                                                 <h5 class="modal-title" id="rejectModalLabel{{ $vendor->id }}">Reject Vendor</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <form action="{{ route('reject', $vendor->id) }}" method="POST">
                                                 @csrf
@@ -115,8 +112,35 @@
                                                     </div>
                                                 </div>
                                                 <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-danger">Reject Vendor</button>
+                                                    <button type="button" class="btn btn-xs btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-xs btn-danger">Reject Vendor</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Toggle Active/Inactive Modal -->
+                                <div class="modal fade" id="toggleActiveModal{{ $vendor->id }}" tabindex="-1" aria-labelledby="toggleActiveModalLabel{{ $vendor->id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="toggleActiveModalLabel{{ $vendor->id }}">
+                                                    {{ $vendor->is_active ? 'Deactivate' : 'Activate' }} Vendor
+                                                </h5>
+                                                <button type="button" class="btn btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <form action="{{ route('vendors.toggle-active', $vendor->id) }}" method="POST">
+                                                @csrf
+                                                <div class="modal-body">
+                                                    <p>
+                                                        Are you sure you want to {{ $vendor->is_active ? 'deactivate' : 'activate' }} the vendor "{{ $vendor->company_name }}"?
+                                                    </p>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-xs btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <button type="submit" class="btn btn-xs {{ $vendor->is_active ? 'btn-danger' : 'btn-success' }}">
+                                                        {{ $vendor->is_active ? 'Deactivate' : 'Activate' }}
+                                                    </button>
                                                 </div>
                                             </form>
                                         </div>
@@ -169,6 +193,13 @@
     
     .btn-sm {   
         font-size: 0.640rem;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .btn-xs {   
+        font-size: 0.6rem;
+        padding: 0.2rem 0.4rem;
+        line-height: 1.2;
     }
     
     .btn-success {
@@ -179,6 +210,10 @@
     .btn-secondary {
         background-color: #6c757d;
         border-color: #6c757d;
+    }
+
+    .d-flex.gap-2 {
+        gap: 0.3rem; /* Reduced gap for smaller buttons */
     }
 </style>
 @endpush

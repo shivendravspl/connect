@@ -43,23 +43,6 @@ Route::middleware('auth')->group(function () {
 
 
 
-
-
-    //============================Builder=================================================
-    Route::resource('page-builder', \App\Http\Controllers\PageBuilderController::class);
-    Route::get('page-builder.page', [\App\Http\Controllers\PageBuilderController::class, 'formGenerate'])->name('page-builder.page');
-    Route::post('add_form_element', [\App\Http\Controllers\PageBuilderController::class, 'addFormElement'])->name('add_form_element');
-    Route::post('get_form_element_details', [\App\Http\Controllers\PageBuilderController::class, 'getFormElementDetails'])->name('get_form_element_details');
-    Route::post('form_element_update', [\App\Http\Controllers\PageBuilderController::class, 'updateFormElement'])->name('form_element_update');
-    Route::post('form_element_delete', [\App\Http\Controllers\PageBuilderController::class, 'deleteFormElement'])->name('form_element_delete');
-    Route::post('generate_form', [\App\Http\Controllers\PageBuilderController::class, 'generateForm'])->name('generate_form');
-    Route::post('update_sorting_order', [\App\Http\Controllers\PageBuilderController::class, 'updateSortingOrder'])->name('update_sorting_order');
-    Route::resource('menu-builder', \App\Http\Controllers\MenuController::class);
-    Route::post('menu-builder/setPosition', [\App\Http\Controllers\MenuController::class, 'setPosition'])->name('menu-builder.setPosition');
-    Route::post('menu-builder/getParentMenus', [\App\Http\Controllers\MenuController::class, 'getParentMenus'])->name('menu-builder.getParentMenus');
-    Route::post('menu-builder/show_menu', [\App\Http\Controllers\MenuController::class, 'show_menu'])->name('menu-builder.show_menu');
-    Route::post('get_source_table_columns', [\App\Http\Controllers\PageBuilderController::class, 'getSourceTableColumns'])->name('get_source_table_columns');
-
     // Add API routes for filter dependencies
     Route::get('api/get-territory-regions/{territoryId}', function ($territoryId) {
         $regions = DB::table('core_region_territory_mapping')
@@ -89,13 +72,6 @@ Route::get('password/reset/{token}', [ResetPasswordController::class, 'showReset
 Route::post('password/reset', [ResetPasswordController::class, 'reset'])->name('password.update');
 
 
-
-
-Route::resource('business_nature', \App\Http\Controllers\BusinessNature\BusinessNatureController::class);
-
-Route::resource('legal_status', \App\Http\Controllers\LegalStatus\LegalStatusController::class);
-
-Route::resource('gender', \App\Http\Controllers\Gender\GenderController::class);
 Route::view('view_distributor', 'page_builder.distributor1')->name('view_distributor');
 
 // routes/web.php

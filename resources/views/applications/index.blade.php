@@ -10,16 +10,16 @@
                     <div class="d-flex align-items-center" style="gap: 0.5rem;">
                         <!-- Filters -->
                         <div class="d-flex align-items-center" style="gap: 0.5rem;">
-                            <div>
-                                <select id="territory_filter" class="form-select form-select-sm">
+                            <div class="filter-container">
+                                <select id="territory_filter" class="select2-filter">
                                     <option value="">All Territories</option>
                                     @foreach($territories as $territory)
                                     <option value="{{ $territory->id }}">{{ $territory->territory_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div>
-                                <select id="status_filter" class="form-select form-select-sm">
+                            <div class="filter-container">
+                                <select id="status_filter" class="select2-filter">
                                     <option value="">All Statuses</option>
                                     @foreach($statuses as $status)
                                     <option value="{{ $status }}">{{ ucfirst($status) }}</option>
@@ -61,14 +61,21 @@
 </div>
 
 @push('scripts')
-<!-- DataTables CSS and JS -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap4.min.css">
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap4.min.js"></script>
 
 <script>
 $(document).ready(function() {
+    // Initialize Select2 for filters
+    $('.select2-filter').select2({
+        theme: 'bootstrap4',
+        width: '100%', // Full width of container
+        minimumResultsForSearch: 10,
+        placeholder: function() {
+            return $(this).find('option:first').text();
+        },
+        allowClear: true,
+        dropdownCssClass: 'custom-select2-dropdown'
+    });
+
     // Set CSRF token for AJAX requests
     $.ajaxSetup({
         headers: {
@@ -83,9 +90,8 @@ $(document).ready(function() {
             url: '{{ route("applications.datatable") }}',
             type: 'POST',
             data: function(d) {
-                // Ensure empty strings instead of null
-                d.territory = $('#territory_filter').val() ? $('#territory_filter').val() : '';
-                d.status = $('#status_filter').val() ? $('#status_filter').val() : '';
+                d.territory = $('#territory_filter').val() || '';
+                d.status = $('#status_filter').val() || '';
                 console.log('Sending AJAX Data:', {
                     territory: d.territory,
                     status: d.status,
@@ -122,7 +128,7 @@ $(document).ready(function() {
             { data: 'created_at', name: 'created_at', visible: window.innerWidth >= 768 },
             { data: 'actions', name: 'actions', searchable: false, orderable: false }
         ],
-        order: [[5, 'desc']], // Default sort by created_at (Submitted) descending
+        order: [[5, 'desc']],
         pageLength: 10,
         responsive: true,
         language: {
@@ -133,7 +139,7 @@ $(document).ready(function() {
             { className: 'py-1 px-1 text-center', targets: [0, 6] },
             { className: 'py-1 px-1', targets: '_all' },
             {
-                targets: 5, // created_at column
+                targets: 5,
                 render: function(data, type, row) {
                     return type === 'sort' ? new Date(data).getTime() : data;
                 }
@@ -148,6 +154,14 @@ $(document).ready(function() {
             status: $('#status_filter').val() || ''
         });
         table.draw();
+    });
+
+    // Ensure Select2 dropdowns stay within card boundaries
+    $('.select2-filter').on('select2:open', function() {
+        $('.custom-select2-dropdown').css({
+            'z-index': 1050, // Above card
+            'max-width': $(this).parent().width()
+        });
     });
 });
 </script>
@@ -183,16 +197,64 @@ $(document).ready(function() {
 
     .card {
         border-radius: 0.25rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     .card-header {
         padding: 0.5rem 0.75rem;
+        background-color: #f8f9fa;
+        border-bottom: 1px solid #dee2e6;
     }
 
-    .form-select-sm {
-        padding: 0.2rem 0.5rem;
+    .filter-container {
+        min-width: 120px;
+        max-width: 200px;
+    }
+
+    .select2-container {
+        width: 100% !important;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--single {
+        height: 28px !important;
+        line-height: 1.5 !important;
+        padding: 0.25rem 0.5rem !important;
+        font-size: 0.75rem !important;
+        border: 1px solid #ced4da;
+        border-radius: 0.2rem;
+        background-color: #fff;
+        display: flex;
+        align-items: center;
+    }
+
+    .select2-container--bootstrap4 .select2-selection__rendered {
+        color: #495057;
+        padding-left: 0;
+    }
+
+    .select2-container--bootstrap4 .select2-selection__arrow {
+        height: 28px !important;
+        right: 5px;
+    }
+
+    .select2-container--bootstrap4 .select2-selection__clear {
+        margin-right: 10px;
+        color: #6c757d;
+    }
+
+    .select2-container--bootstrap4 .select2-selection--single:focus {
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
+    }
+
+    .custom-select2-dropdown .select2-results__option {
         font-size: 0.75rem;
-        height: 28px;
+        padding: 0.25rem 0.5rem;
+    }
+
+    .custom-select2-dropdown .select2-results__option--highlighted {
+        background-color: #007bff !important;
+        color: #fff !important;
     }
 
     @media (max-width: 576px) {
@@ -225,9 +287,23 @@ $(document).ready(function() {
             padding-left: 0.5rem;
         }
 
-        .form-select-sm {
+        .filter-container {
+            min-width: 100px;
+            max-width: 150px;
+        }
+
+        .select2-container--bootstrap4 .select2-selection--single {
+            font-size: 0.7rem !important;
+            height: 26px !important;
+            padding: 0.2rem 0.4rem !important;
+        }
+
+        .select2-container--bootstrap4 .select2-selection__arrow {
+            height: 26px !important;
+        }
+
+        .custom-select2-dropdown .select2-results__option {
             font-size: 0.7rem;
-            height: 26px;
         }
     }
 </style>

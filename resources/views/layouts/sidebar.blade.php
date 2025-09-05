@@ -52,21 +52,7 @@
             </li>
 
             @hasanyrole('Admin|Super Admin')
-            <li class="nav-item">
-                <a class="nav-link menu-link {{ request()->routeIs('page-builder.*') ? 'active' : '' }}" href="#sidebarFormBuilder" data-bs-toggle="collapse" role="button" aria-expanded="{{ request()->routeIs('page-builder.*') ? 'true' : 'false' }}" aria-controls="sidebarFormBuilder">
-                    <i class="ri-survey-line"></i> <span>Form Builder</span>
-                </a>
-                <div class="collapse menu-dropdown {{ request()->routeIs('page-builder.*') ? 'show' : '' }}" id="sidebarFormBuilder">
-                    <ul class="nav nav-sm flex-column">
-                        <li class="nav-item">
-                            <a href="{{ route('page-builder.index') }}" class="nav-link">All Templates</a>
-                        </li>
-                        {{--<li class="nav-item">
-                                    <a href="{{ route('forms.index') }}#createForm" class="nav-link">Create New</a>
-            </li>--}}
-        </ul>
-    </div>
-    </li>
+          
     <li class="nav-item">
         <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
             <i class="ri-apps-2-line"></i> <span data-key="t-dashboards">Masters</span>
@@ -269,10 +255,16 @@
 
     @can('list-distributor')
     <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->routeIs('applications.*') ? 'active' : '' }}"
-            href="{{ route('applications.index') }}">
-            <i class="ri-apps-line"></i> <span>Distributor Applications</span>
+        <a class="nav-link menu-link {{ request()->is('applications*') ? 'active' : '' }}" href="#sidebarDistributor" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarDistributor">
+            <i class="ri-apps-line"></i> <span data-key="t-dashboards">Distributor</span>
         </a>
+        <div class="collapse menu-dropdown {{ request()->is('applications*') ? 'show' : '' }}" id="sidebarDistributor">
+             <ul class="nav nav-sm flex-column">
+                <li class="nav-item">
+                    <a href="{{ route('applications.index') }}" class="nav-link {{ request()->is('applications*') ? 'active' : '' }}" data-key="t-analytics">Distributor Onboarding</a>
+                </li>
+             </ul>                   
+        </div>
     </li>
     @endcan
     @can('menu-builder')
@@ -286,19 +278,26 @@
 
     @hasanyrole('Admin|Super Admin')
     <li class="nav-item">
-        <a href="{{ route('vendors.index') }}"
-            class="nav-link {{ request()->routeIs('vendors.index') ? 'active' : '' }}">
-            <i class="ri-user-add-line"></i> <span>Vendors</span>
+        <a class="nav-link menu-link {{ request()->is('vendors*') ? 'active' : '' }}" href="#vendorMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="vendorMaster">
+            <i class="ri-user-add-line"></i> <span data-key="t-dashboards">Vendors</span>
         </a>
+         <div class="collapse menu-dropdown {{ request()->is('vendors*','temp-edits*',) ? 'show' : '' }}" id="vendorMaster">
+            <ul class="nav nav-sm flex-column">
+                <li class="nav-item">
+                    <a href="{{ route('vendors.index') }}" class="nav-link {{ request()->is('vendors*') ? 'active' : '' }}" data-key="t-analytics">Vendors Onboarding</a>
+                </li>
+                 <li class="nav-item">
+                    <a href="{{ route('temp-edits') }}"
+                        class="nav-link {{ request()->routeIs('temp-edits') ? 'active' : '' }}" data-key="t-analytics">
+                       Vendors Change Request
+                    </a>
+                </li>
+            </ul>
+         </div>
     </li>
     @endhasanyrole
     @hasanyrole('Admin|Super Admin')
-    <li class="nav-item">
-        <a href="{{ route('temp-edits') }}"
-            class="nav-link {{ request()->routeIs('temp-edits') ? 'active' : '' }}">
-            <i class="ri-user-add-line"></i> <span>Vendors Change Request</span>
-        </a>
-    </li>
+   
     @endhasanyrole
     @if(Auth::user()->type === 'vendor')
     @php

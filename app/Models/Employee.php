@@ -84,12 +84,12 @@ class Employee extends Model
 
     public function reportingManager()
     {
-        return $this->belongsTo(Employee::class, 'emp_reporting');
+         return $this->belongsTo(Employee::class, 'emp_reporting', 'employee_id');
     }
 
     public function subordinates()
     {
-        return $this->hasMany(Employee::class, 'emp_reporting');
+        return $this->hasMany(Employee::class, 'emp_reporting', 'employee_id');
     }
 
     public function user()

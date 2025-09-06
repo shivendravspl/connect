@@ -261,18 +261,10 @@
         <div class="collapse menu-dropdown {{ request()->is('applications*') ? 'show' : '' }}" id="sidebarDistributor">
              <ul class="nav nav-sm flex-column">
                 <li class="nav-item">
-                    <a href="{{ route('applications.index') }}" class="nav-link {{ request()->is('applications*') ? 'active' : '' }}" data-key="t-analytics">Distributor Onboarding</a>
+                    <a href="{{ route('applications.index') }}" class="nav-link {{ request()->is('applications*') ? 'active' : '' }}" data-key="t-analytics">Onboarding</a>
                 </li>
              </ul>                   
         </div>
-    </li>
-    @endcan
-    @can('menu-builder')
-    <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->routeIs('menu-builder.*') ? 'active' : '' }}"
-            href="{{ route('menu-builder.index') }}">
-            <i class="ri-menu-2-line"></i> <span>Menu Builder</span>
-        </a>
     </li>
     @endcan
 
@@ -284,12 +276,12 @@
          <div class="collapse menu-dropdown {{ request()->is('vendors*','temp-edits*',) ? 'show' : '' }}" id="vendorMaster">
             <ul class="nav nav-sm flex-column">
                 <li class="nav-item">
-                    <a href="{{ route('vendors.index') }}" class="nav-link {{ request()->is('vendors*') ? 'active' : '' }}" data-key="t-analytics">Vendors Onboarding</a>
+                    <a href="{{ route('vendors.index') }}" class="nav-link {{ request()->is('vendors*') ? 'active' : '' }}" data-key="t-analytics">Onboarding</a>
                 </li>
                  <li class="nav-item">
                     <a href="{{ route('temp-edits') }}"
                         class="nav-link {{ request()->routeIs('temp-edits') ? 'active' : '' }}" data-key="t-analytics">
-                       Vendors Change Request
+                       Change Request
                     </a>
                 </li>
             </ul>
@@ -319,59 +311,7 @@
         </a>
     </li>
     @endif
-    @endif
-
-
-    <!-- Dynamic Menus from Database -->
-    @php
-    $menus = getMenuList();
-    @endphp
-
-    @if(isset($menus))
-    @foreach($menus as $menu)
-    @can($menu->permissions)
-    @if(empty($menu->children))
-    <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->routeIs($menu->menu_url.'.*') ? 'active' : '' }}"
-            href="{{ $menu->menu_url == '#' ? 'javascript:void(0);' : route($menu->menu_url.'.index') }}">
-            <i class="ri-file-list-line"></i> <span>{{ $menu->menu_name }}</span>
-        </a>
-    </li>
-    @else
-    @php
-    $childPermissions = collect($menu->children)->pluck('permissions')->toArray();
-    $activeChild = collect($menu->children)->contains(function ($child) {
-    return request()->routeIs($child['menu_url'].'.*');
-    });
-    @endphp
-    @canany($childPermissions)
-    <li class="nav-item">
-        <a class="nav-link menu-link {{ $activeChild ? 'active' : '' }}"
-            href="#sidebar{{ Str::studly($menu->menu_name) }}" data-bs-toggle="collapse" role="button"
-            aria-expanded="{{ $activeChild ? 'true' : 'false' }}"
-            aria-controls="sidebar{{ Str::studly($menu->menu_name) }}">
-            <i class="ri-folder-line"></i> <span>{{ $menu->menu_name }}</span>
-        </a>
-        <div class="collapse menu-dropdown {{ $activeChild ? 'show' : '' }}" id="sidebar{{ Str::studly($menu->menu_name) }}">
-            <ul class="nav nav-sm flex-column">
-                @foreach($menu->children as $child)
-                @can([$child->permissions])
-                <li class="nav-item">
-                    <a href="{{ route($child->menu_url.'.index') }}"
-                        class="nav-link {{ request()->routeIs($child['menu_url'].'.*') ? 'active' : '' }}">
-                        {{ $child->menu_name }}
-                    </a>
-                </li>
-                @endcan
-                @endforeach
-            </ul>
-        </div>
-    </li>
-    @endcanany
-    @endif
-    @endcan
-    @endforeach
-    @endif
+    @endif   
 
 
 

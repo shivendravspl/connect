@@ -113,7 +113,7 @@ class ApprovalController extends Controller
             return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
-        $currentApprover = Employee::findOrFail($user->emp_id);
+        $currentApprover = Employee::where('employee_id', $user->emp_id)->firstOrFail();
         $nextApprover = $currentApprover->manager;
 
         $this->createApprovalLog(
@@ -183,7 +183,7 @@ class ApprovalController extends Controller
             return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
-        $currentApprover = Employee::findOrFail($user->emp_id);
+        $currentApprover = Employee::where('employee_id', $user->emp_id)->firstOrFail();
         $this->createApprovalLog(
             $application->id,
             $user->emp_id,
@@ -247,7 +247,7 @@ class ApprovalController extends Controller
             return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
-        $currentApprover = Employee::findOrFail($user->emp_id);
+        $currentApprover = Employee::where('employee_id', $user->emp_id)->firstOrFail();
         $this->createApprovalLog(
             $application->id,
             $user->emp_id,
@@ -301,7 +301,7 @@ class ApprovalController extends Controller
             return redirect()->route('dashboard')->withErrors(['application_id' => 'Invalid application ID']);
         }
 
-        $currentApprover = Employee::findOrFail($user->emp_id);
+        $currentApprover = Employee::where('employee_id', $user->emp_id)->firstOrFail();
         $this->createApprovalLog(
             $application->id,
             $user->emp_id,
@@ -355,7 +355,7 @@ class ApprovalController extends Controller
             return false;
         }
 
-        $currentApprover = Employee::find($application->current_approver_id);
+        $currentApprover = Employee::where('employee_id', $application->current_approver_id)->first();
         if (!$currentApprover) {
             return false;
         }
@@ -456,7 +456,9 @@ class ApprovalController extends Controller
     private function notifySalesHierarchy($application, $mailSubject = 'Application Approved')
     {
         $approvers = collect();
-        $current = Employee::find($application->created_by);
+      
+        $current = Employee::where('employee_id', $application->created_by)->first();
+
 
         while ($current) {
             $approvers->push($current);
@@ -489,7 +491,8 @@ class ApprovalController extends Controller
 
     private function notifyCreator($application, $mailSubject, $remarks)
     {
-        $creator = Employee::find($application->created_by);
+        $creator = Employee::where('employee_id', $application->created_by)->first();
+
         if ($creator && $creator->emp_email) {
             Mail::to($creator->emp_email)->queue(
                 new ApplicationNotification(
@@ -503,7 +506,7 @@ class ApprovalController extends Controller
 
     private function scheduleFollowUp($application, $followUpDate)
     {
-        $creator = Employee::find($application->created_by);
+        $creator = Employee::where('employee_id', $application->created_by)->first();
         if ($creator && $creator->emp_email) {
             Mail::to($creator->emp_email)->queue(
                 new ApplicationNotification(

@@ -464,7 +464,7 @@ class VendorController extends Controller
             ->orderBy('department_name')
             ->get();
         $employees = $vendor->vnr_contact_department_id
-            ? Employee::where('emp_dept_id', $vendor->vnr_contact_department_id)
+            ? Employee::where('department', $vendor->vnr_contact_department_id)
             ->where('status', 'A')
             ->orderBy('emp_name')
             ->get(['id', 'emp_name', 'emp_contact', 'emp_department'])

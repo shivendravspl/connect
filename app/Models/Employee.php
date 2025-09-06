@@ -97,6 +97,11 @@ class Employee extends Model
         return $this->hasOne(User::class, 'emp_id');
     }
 
+    public function manager()
+    {
+        return $this->belongsTo(Employee::class, 'emp_reporting', 'employee_id');
+    }
+
     /**
      * Helpers for role/designation logic
      */

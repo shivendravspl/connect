@@ -304,7 +304,7 @@ class MISProcessingController extends Controller
 
     private function notifySalesTeam(Onboarding $application, $subject, $rejectionDetails = null)
     {
-        $salesTeam = Employee::whereIn('id', array_merge(
+        $salesTeam = Employee::whereIn('employee_id', array_merge(
             [$application->created_by],
             $application->approvalLogs->pluck('user_id')->toArray()
         ))->get();
@@ -328,7 +328,7 @@ class MISProcessingController extends Controller
             Employee::whereIn('emp_designation', ['RBM', 'ZBM', 'GM', 'Business Head'])->pluck('id')->toArray()
         ));
 
-        $employees = Employee::whereIn('id', $recipients)->get();
+        $employees = Employee::whereIn('employee_id', $recipients)->get();
 
         foreach ($employees as $employee) {
             if (filter_var($employee->emp_email, FILTER_VALIDATE_EMAIL)) {

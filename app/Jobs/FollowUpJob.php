@@ -24,7 +24,8 @@ class FollowUpJob implements ShouldQueue
 
     public function handle()
     {
-        $creator = Employee::find($this->application->created_by);
+        $creator = Employee::where('employee_id', $this->application->created_by)->firstOrFail();
+
         if ($creator && $creator->emp_email) {
             Mail::to($creator->emp_email)->send(
                 new ApplicationNotification(

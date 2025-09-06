@@ -28,7 +28,7 @@
                             </div>
                         </div>
                         <!-- New Button -->
-                        @if(auth()->user()->emp_id && auth()->user()->hasAnyRole(['Admin', 'Super Admin', 'Mis User']))
+                        @if((auth()->user()->emp_id && auth()->user()->hasAnyRole(['Admin', 'Super Admin', 'Mis User'])) || auth()->user()->hasPermissionTo('add-distributor'))
                         <a href="{{ route('applications.create') }}" class="btn btn-sm btn-primary py-1 px-3 fs-6">
                             <i class="fas fa-plus fa-sm"></i> <span class="d-none d-sm-inline">New</span>
                         </a>

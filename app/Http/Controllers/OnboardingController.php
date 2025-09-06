@@ -2192,7 +2192,7 @@ class OnboardingController extends Controller
                 ];
             }
             // Get approver information
-            $creator = Employee::findOrFail($user->emp_id);
+            $creator = Employee::where('employee_id', $user->emp_id)->firstOrFail();
 
             // Get first approver (creator's reporting manager)
             $firstApprover = $creator->reportingManager;
@@ -2206,7 +2206,7 @@ class OnboardingController extends Controller
 
             $application->update([
                 'status' => 'initiated',
-                'current_approver_id' => $firstApprover->id,
+                'current_approver_id' => $firstApprover->employee_id,
                 'approval_level' => $firstApprover->emp_designation,
                 'updated_at' => now()
             ]);

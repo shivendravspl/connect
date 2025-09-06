@@ -240,8 +240,8 @@ class HomeController extends Controller
         $pendingApplicationsQuery = Onboarding::query()
             ->with(['entityDetails', 'createdBy', 'currentApprover', 'territoryDetail', 'regionDetail', 'zoneDetail'])
             ->where('onboardings.current_approver_id', $user->emp_id)
-            ->whereIn('onboardings.status', ['initiated', 'under_review', 'on_hold', 'reverted'])
-            ->where('onboardings.approval_level', $employee_details->emp_designation ?? '');
+            ->whereIn('onboardings.status', ['initiated', 'under_review', 'on_hold', 'reverted']);
+            //->where('onboardings.approval_level', $employee_details->emp_designation ?? '');
         $pendingApplications = $pendingApplicationsQuery->paginate(10, ['*'], 'page_pending');
 //dd($pendingApplicationsQuery);
         $myApplicationsQuery = Onboarding::query()
@@ -408,7 +408,7 @@ class HomeController extends Controller
             }
         }
         $actionSummary = array_values($userActions);
-
+        
         return compact(
             'pendingApplications', 'myApplications', 'misApplications', 'masterReportApplications',
             'actionSummary', 'counts', 'tatData', 'kpi_trends', 'bu_list', 'zone_list', 'region_list', 'territory_list', 'access_level', 'filters'

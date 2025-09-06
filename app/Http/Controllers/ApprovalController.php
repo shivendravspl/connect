@@ -71,6 +71,7 @@ class ApprovalController extends Controller
 
     public function approve(Request $request, Onboarding $application)
     {
+
         $user = Auth::user();
         Log::info('Approve request received', [
             'application_id' => $application->id,
@@ -115,7 +116,7 @@ class ApprovalController extends Controller
 
         $currentApprover = Employee::where('employee_id', $user->emp_id)->firstOrFail();
         $nextApprover = $currentApprover->manager;
-
+        
         $this->createApprovalLog(
             $application->id,
             $user->emp_id,
@@ -398,7 +399,7 @@ class ApprovalController extends Controller
     {
         $application->update([
             'status' => 'under_review',
-            'current_approver_id' => $nextApprover ? $nextApprover->id : null,
+            'current_approver_id' => $nextApprover ? $nextApprover->employee_id : null,
             'approval_level' => $nextApprover ? $nextApprover->emp_designation : 'mis'
         ]);
     }

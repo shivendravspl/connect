@@ -302,12 +302,12 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                     </div>
                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
-                            <label for="proprietor_dob" class="form-label small">Date of Birth *</label>
-                            <input type="date" class="form-control form-control-sm dob-input" id="proprietor_dob" name="proprietor_dob"
-                                value="{{ old('proprietor_dob', optional($proprietor)->dob ? optional($proprietor->dob)->format('Y-m-d') : '') }}" required>
-                            <div class="invalid-feedback dob-error"></div>
-                            
-                        </div>
+    <label for="proprietor_dob" class="form-label small">Date of Birth *</label>
+    <input type="date" class="form-control form-control-sm dob-input" id="proprietor_dob" name="proprietor_dob"
+        value="{{ old('proprietor_dob', isset($proprietor->dob) ? $proprietor->dob->format('Y-m-d') : '') }}" required>
+    <div class="invalid-feedback dob-error"></div>
+</div>
+
                     </div>
                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
@@ -569,13 +569,14 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                                 value="{{ old('cin_number', $companyDetails->cin_number ?? '') }}" required>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Date of Incorporation *</label>
-                            <input type="date" class="form-control" id="incorporation_date" name="incorporation_date"
-                                value="{{ old('incorporation_date', optional(\Carbon\Carbon::parse($companyDetails->incorporation_date ?? null))->format('Y-m-d')) }}" required>
-                        </div>
-                    </div>
+                  <div class="col-md-6">
+    <div class="form-group mb-3">
+        <label class="form-label">Date of Incorporation *</label>
+        <input type="date" class="form-control" id="incorporation_date" name="incorporation_date"
+            value="{{ old('incorporation_date', isset($companyDetails->incorporation_date) ? \Carbon\Carbon::parse($companyDetails->incorporation_date)->format('Y-m-d') : '') }}" required>
+    </div>
+</div>
+
                 </div>
 
                 <!-- Directors Section -->
@@ -648,13 +649,14 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                                 value="{{ old('cooperative_reg_number', $cooperativeDetails->reg_number ?? '') }}" required>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Registration Date *</label>
-                            <input type="date" class="form-control" id="cooperative_reg_date" name="cooperative_reg_date"
-                               value="{{ old('cooperative_reg_date', optional(\Carbon\Carbon::parse($cooperativeDetails->reg_date ?? null))->format('Y-m-d')) }}" required>
-                        </div>
-                    </div>
+                  <div class="col-md-6">
+    <div class="form-group mb-3">
+        <label class="form-label">Registration Date *</label>
+        <input type="date" class="form-control" id="cooperative_reg_date" name="cooperative_reg_date"
+            value="{{ old('cooperative_reg_date', optional($cooperativeDetails?->reg_date ? \Carbon\Carbon::parse($cooperativeDetails->reg_date) : null)->format('Y-m-d')) }}" required>
+    </div>
+</div>
+
                 </div>
 
                 <!-- Committee Members Section -->
@@ -728,13 +730,14 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                                 value="{{ old('trust_reg_number', $trustDetails->reg_number ?? '') }}" required>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="form-group mb-3">
-                            <label class="form-label">Registration Date *</label>
-                            <input type="date" class="form-control" id="trust_reg_date" name="trust_reg_date"
-                                value="{{ old('trust_reg_date', optional(\Carbon\Carbon::parse($trustDetails->reg_date ?? null))->format('Y-m-d')) }}" required>
-                        </div>
-                    </div>
+                  <div class="col-md-6">
+    <div class="form-group mb-3">
+        <label class="form-label">Registration Date *</label>
+        <input type="date" class="form-control" id="trust_reg_date" name="trust_reg_date"
+            value="{{ old('trust_reg_date', isset($trustDetails->reg_date) ? \Carbon\Carbon::parse($trustDetails->reg_date)->format('Y-m-d') : '') }}" required>
+    </div>
+</div>
+
                 </div>
 
                 <!-- Trustees Section -->
@@ -1163,12 +1166,13 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
             <div class="invalid-feedback license-error">Please enter a valid Seed License number (6-15 alphanumeric characters).</div>
         </div>
         <div class="col-md-4">
-            <label for="seed_license_validity" class="form-label small">Validity Date *</label>
-            <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity" 
-                min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" 
-                value="{{ old('seed_license_validity', optional($application->entityDetails)->seed_license_validity?->format('Y-m-d') ?? '') }}"required
-                >
-        </div>
+    <label for="seed_license_validity" class="form-label small">Validity Date *</label>
+    <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity"
+        min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}"
+        value="{{ old('seed_license_validity', isset($application->entityDetails->seed_license_validity) ? \Carbon\Carbon::parse($application->entityDetails->seed_license_validity)->format('Y-m-d') : '') }}"
+        required>
+</div>
+
     </div>
 
     <!-- Bank Details -->

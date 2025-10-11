@@ -651,7 +651,7 @@ $(document).ready(function() {
                             // General handling for other steps
                             errorMessage = Object.values(response.error).flat().join(' ');
                             $('.form-group').find('.invalid-feedback').remove();
-                            $('.form-control, .form-select').removeClass('is-invalid');
+                            $('.form-control, .form-select, .input-group').removeClass('is-invalid');
                             for (const key in response.error) {
                                 let selector = `[name="${key}"]`;
                                 if (key.includes('.')) {
@@ -659,12 +659,22 @@ $(document).ready(function() {
                                     selector = `[name="${parts[0]}[${parts[1]}]"]`;
                                 }
                                 const input = $(selector);
-                                if (input.length) {
-                                    input.addClass('is-invalid');
-                                    input.closest('.form-group, .file-upload-wrapper').append(
-                                        `<div class="invalid-feedback text-danger">${response.error[key][0]}</div>`
-                                    );
-                                }
+                                 if (input.length) {
+        // Add is-invalid to input and visible parent (e.g., input-group or button)
+        input.addClass('is-invalid');
+        input.closest('.input-group').addClass('is-invalid');  // Highlights the whole upload group
+        
+        // Safer container for feedback: col-md-*, form-group, or fallback to mb-3 section
+        let container = input.closest('.form-group, .file-upload-wrapper, .col-md-*, .col-*, .mb-3');
+        if (container.length === 0) {
+            container = input.parent().parent();  // Fallback to col-md-4
+        }
+        if (container.length) {
+            container.append(
+                `<div class="invalid-feedback text-danger d-block">${response.error[key][0]}</div>`  // d-block forces show
+            );
+        }
+    }
                             }
                         }
                     } else if (response.error) {

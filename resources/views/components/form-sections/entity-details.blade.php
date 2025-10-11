@@ -1089,48 +1089,44 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
     </div>
 
     <!-- GST Details -->
-    <div id="gst_fields" style="display: {{ old('gst_applicable', $application->entityDetails->gst_applicable ?? 'no') === 'yes' ? 'block' : 'none' }};" class="mb-3">
-        <div class="row g-2">
-            <div class="col-md-4">
-                <label for="gst_file" class="form-label small">GST Document *</label>
-                <div class="input-group input-group-sm">
-                    <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
-                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="gst_file_upload_btn">Upload GST</button>
-                </div>
-                <div id="gst_file_name" class="small text-muted {{ $gstDoc && $gstDoc['path'] ? '' : 'd-none' }} mt-1">
-                    @if($gstDoc && $gstDoc['path'])
-                        <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" 
-                           data-src="{{ Storage::disk('s3')->url('Connect/Distributor/gst/' . $gstDoc['path']) }}" 
-                           data-type="GST Document">View</a> 
-                           ({{ $gstDoc['original_filename'] ?? basename($gstDoc['path']) }})
-                        <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
-                        <input type="hidden" name="existing_gst_file_original" value="{{ $gstDoc['original_filename'] ?? basename($gstDoc['path']) }}">
-                    @endif
-                </div>
-                @error('gst_file')
-    <div class="text-danger small mt-1">{{ $message }}</div>
-@enderror
+    <!-- GST Details -->
+<div id="gst_fields" style="display: {{ old('gst_applicable', $application->entityDetails->gst_applicable ?? 'no') === 'yes' ? 'block' : 'none' }};" class="mb-3">
+    <div class="row g-2">
+        <div class="col-md-4 form-group">  {{-- Add form-group here --}}
+            <label for="gst_file" class="form-label small">GST Document *</label>
+            <div class="input-group input-group-sm">
+                <input type="file" class="form-control form-control-sm d-none" id="gst_file" name="gst_file" accept=".pdf,.jpg,.jpeg,.png">
+                <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="gst_file_upload_btn">Upload GST</button>
             </div>
-            <div class="col-md-4">
-                <label for="gst_number" class="form-label small">GST Number *</label>
-                <div class="input-group input-group-sm">
-                    <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number" 
-                        value="{{ old('gst_number', $application->entityDetails->gst_number ?? '') }}" 
-                        pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}" maxlength="15" 
-                        title="GST must be 15 characters (e.g., 22AAAAA0000A1Z5)" placeholder="22AAAAA0000A1Z5" required 
-                        oninput="validateGST(this)">
-                    <div class="input-group-text">
-                        <input class="form-check-input mt-0" type="checkbox" id="gst_verified" name="gst_verified" 
-                               {{ old('gst_verified', $application->entityDetails->gst_verified ?? false) ? 'checked' : '' }}>
-                        <label for="gst_verified" class="ms-1 small mb-0">Verified</label>
-                    </div>
-                </div>
-                <div class="invalid-feedback gst-error">Please enter a valid GST number (e.g., 22AAAAA0000A1Z5).</div>
+            <div id="gst_file_name" class="small text-muted {{ $gstDoc && $gstDoc['path'] ? '' : 'd-none' }} mt-1">
+                @if($gstDoc && $gstDoc['path'])
+                    <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" 
+                       data-src="{{ Storage::disk('s3')->url('Connect/Distributor/gst/' . $gstDoc['path']) }}" 
+                       data-type="GST Document">View</a> 
+                       ({{ $gstDoc['original_filename'] ?? basename($gstDoc['path']) }})
+                    <input type="hidden" name="existing_gst_file" value="{{ $gstDoc['path'] }}">
+                    <input type="hidden" name="existing_gst_file_original" value="{{ $gstDoc['original_filename'] ?? basename($gstDoc['path']) }}">
+                @endif
             </div>
-           
+        </div>
+        <div class="col-md-4 form-group">  {{-- Add form-group here too, for consistency --}}
+            <label for="gst_number" class="form-label small">GST Number *</label>
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number" 
+                    value="{{ old('gst_number', $application->entityDetails->gst_number ?? '') }}" 
+                    pattern="[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}" maxlength="15" 
+                    title="GST must be 15 characters (e.g., 22AAAAA0000A1Z5)" placeholder="22AAAAA0000A1Z5" required 
+                    oninput="validateGST(this)">
+                <div class="input-group-text">
+                    <input class="form-check-input mt-0" type="checkbox" id="gst_verified" name="gst_verified" 
+                           {{ old('gst_verified', $application->entityDetails->gst_verified ?? false) ? 'checked' : '' }}>
+                    <label for="gst_verified" class="ms-1 small mb-0">Verified</label>
+                </div>
+            </div>
+            <div class="invalid-feedback gst-error">Please enter a valid GST number (e.g., 22AAAAA0000A1Z5).</div>
         </div>
     </div>
-
+</div>
     <!-- Seed License Details -->
     <div class="row g-2 mb-3">
         <div class="col-md-4">

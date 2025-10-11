@@ -13,7 +13,7 @@
                     <div class="stepper-wrapper" data-current-step="{{ $initialFrontendStep }}">
                         <div class="stepper d-flex flex-wrap justify-content-between mb-3">
                         @php
-$steps = ['Basic Details', 'Entity Details', 'Distribution Details', 'Business Plan', 'Financial & Distributorships', 'Bank Details', 'Declarations', 'Review & Submit'];
+$steps = ['Basic Details', 'Entity Details', 'Distribution Details', 'Business Plan', 'Financial & Distributorships', 'Financial Status & Banking Information', 'Declarations', 'Review & Submit'];
 
 $completedStepsData = [
     1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit), // Removed district and state
@@ -135,20 +135,28 @@ Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unkn
                         </div>
                     </div>
 
-                    <div class="form-navigation mt-3 d-flex justify-content-between sticky-bottom bg-white p-2 border-top">
-                        <button type="button" class="btn btn-sm btn-secondary previous" style="display:none; min-width:80px;">
-                            <i class="fas fa-arrow-left d-sm-none"></i>
-                            <span class="d-none d-sm-inline">Previous</span>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-primary next" style="min-width:80px;">
-                            <span class="d-none d-sm-inline">Next</span>
-                            <i class="fas fa-arrow-right d-sm-none"></i>
-                        </button>
-                        <button type="submit" class="btn btn-sm btn-success submit" style="display:none; min-width:80px;" name="submit" id="submit-application">
-                            <i class="fas fa-check d-sm-none"></i>
-                            <span class="d-none d-sm-inline">Submit</span>
-                        </button>
+                    <div class="form-navigation mt-3 d-flex justify-content-between align-items-center sticky-bottom bg-white p-2 border-top">
+    
+                        <div class="d-flex">
+                            <button type="button" class="btn btn-sm btn-secondary previous" style="display:none; min-width:80px;">
+                                <i class="fas fa-arrow-left d-sm-none"></i>
+                                <span class="d-none d-sm-inline">Previous</span>
+                            </button>
+                        </div>
+
+                        <div class="ms-auto d-flex gap-2">
+                            <button type="button" class="btn btn-sm btn-primary next" style="min-width:80px;">
+                                <span class="d-none d-sm-inline">Next</span>
+                                <i class="fas fa-arrow-right d-sm-none"></i>
+                            </button>
+                            <button type="submit" class="btn btn-sm btn-success submit" style="display:none; min-width:80px;" name="submit" id="submit-application">
+                                <i class="fas fa-check d-sm-none"></i>
+                                <span class="d-none d-sm-inline">Submit</span>
+                            </button>
+                        </div>
+
                     </div>
+
                 </form>
             </div>
         </div>

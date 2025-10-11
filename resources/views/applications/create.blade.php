@@ -12,7 +12,7 @@
                     <div class="stepper-wrapper" data-current-step="{{ $currentStep ?? 1 }}">
                         <div class="stepper d-flex flex-wrap justify-content-between mb-3">
                             @php
-                            $steps = ['Basic Details', 'Entity Details', 'Distribution Details', 'Business Plan', 'Financial & Distributorshipships', 'Bank Details', 'Declarations', 'Review & Submit'];
+                            $steps = ['Basic Details', 'Entity Details', 'Distribution Details', 'Business Plan', 'Financial & Distributorshipships', 'Financial Status & Banking Information', 'Declarations', 'Review & Submit'];
                             @endphp
 
                           @foreach($steps as $index => $stepName)
@@ -114,7 +114,7 @@
                             </div>
                         </div>
 
-                        <div class="form-navigation mt-3 d-flex justify-content-between">
+                        <div class="form-navigation mt-3 d-flex justify-content-between align-items-center sticky-bottom bg-white p-2 border-top">
                             <button type="button" class="btn btn-sm btn-secondary previous" style="display:none; min-width:80px;">
                                 <i class="fas fa-arrow-left d-sm-none"></i>
                                 <span class="d-none d-sm-inline">Previous</span>

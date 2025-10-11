@@ -73,7 +73,8 @@ $(document).ready(function() {
             return $(this).find('option:first').text();
         },
         allowClear: true,
-        dropdownCssClass: 'custom-select2-dropdown'
+        dropdownCssClass: 'custom-select2-dropdown',
+        escapeMarkup: function (markup) { return markup; }
     });
 
     // Set CSRF token for AJAX requests
@@ -156,12 +157,23 @@ $(document).ready(function() {
         table.draw();
     });
 
-    // Ensure Select2 dropdowns stay within card boundaries
+    // Ensure Select2 dropdowns stay within card boundaries and scroll internally
     $('.select2-filter').on('select2:open', function() {
-        $('.custom-select2-dropdown').css({
-            'z-index': 1050, // Above card
-            'max-width': $(this).parent().width()
-        });
+        setTimeout(() => {
+            const dropdown = $('.custom-select2-dropdown');
+            dropdown.css({
+                'z-index': 1050, // Above card
+                'max-width': $(this).parent().width(),
+                'max-height': '300px', // Limit height to prevent full page scroll
+                'overflow-y': 'auto' // Enable internal scrolling
+            });
+
+            // Also ensure the results container scrolls if needed
+            dropdown.find('.select2-results__options').css({
+                'max-height': '250px',
+                'overflow-y': 'auto'
+            });
+        }, 0);
     });
 });
 </script>
@@ -257,6 +269,18 @@ $(document).ready(function() {
         color: #fff !important;
     }
 
+    /* Ensure dropdown scrolls internally and doesn't affect page scroll */
+    .custom-select2-dropdown {
+        max-height: 300px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    .custom-select2-dropdown .select2-results__options {
+        max-height: 250px !important;
+        overflow-y: auto !important;
+    }
+
     @media (max-width: 576px) {
         .container-fluid {
             padding-left: 0.25rem;
@@ -304,6 +328,15 @@ $(document).ready(function() {
 
         .custom-select2-dropdown .select2-results__option {
             font-size: 0.7rem;
+        }
+
+        /* Adjust dropdown height for mobile */
+        .custom-select2-dropdown {
+            max-height: 250px !important;
+        }
+
+        .custom-select2-dropdown .select2-results__options {
+            max-height: 200px !important;
         }
     }
 </style>

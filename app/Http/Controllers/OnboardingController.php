@@ -8,8 +8,20 @@ use App\Models\DistributionDetail;
 use App\Models\BankDetail;
 use App\Models\FinancialInfo;
 use App\Models\ExistingDistributorship;
-use App\Models\Document;
 use App\Models\Employee;
+use App\Models\AuthorizedPerson;
+use App\Models\IndividualDetails;
+use App\Models\ProprietorDetails;
+use App\Models\PartnershipPartner;
+use App\Models\PartnershipSignatory;
+use App\Models\LlpDetails;
+use App\Models\LlpPartner;
+use App\Models\CompanyDetails;
+use App\Models\Director;
+use App\Models\CooperativeDetails;
+use App\Models\CommitteeMember;
+use App\Models\TrustDetails;
+use App\Models\Trustee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -19,9 +31,19 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use App\Models\Year;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ApplicationSubmitted;
+use App\Models\ApplicationAdditionalDocument;
+use App\Models\ApplicationAdditionalUpload;
+use App\Models\ApprovalLog;
+use App\Mail\DocumentResubmission;
+use Illuminate\Support\Str;
+use App\Models\Status;
+
 
 class OnboardingController extends Controller
 {
+    private $documentPaths = [];
     public function index()
     {
         $user = Auth::user();
@@ -36,126 +58,93 @@ class OnboardingController extends Controller
         // Fetch territories for filter dropdown
         $territories = DB::table('core_territory')->select('id', 'territory_name')->orderBy('territory_name')->get();
         // Define possible statuses
-        $statuses = ['draft', 'initiated', 'mis_processing', 'approved', 'rejected', 'reverted'];
+        $statuses = Status::where('is_active', 1)
+            ->orderBy('sort_order', 'asc')
+            ->pluck('name')
+            ->toArray();
         return view('applications.index', compact('applications', 'territories', 'statuses'));
     }
 
     public function datatable(Request $request)
     {
         try {
-         
             $user = Auth::user();
-            $query = Onboarding::query()->with(['entityDetails', 'territoryDetail']);
 
-            // Apply role-based filtering
+            // Base query with joins and eager loading
+            $query = Onboarding::query()
+                ->select('onboardings.*') // avoid ambiguous columns after join
+                ->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.application_id')
+                ->leftJoin('core_territory', 'onboardings.territory', '=', 'core_territory.id')
+                ->with(['entityDetails', 'territoryDetail']);
+
+            // Role-based filtering
             if (!$user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin'])) {
-                $query->where('created_by', $user->emp_id);
-                Log::info('Applied Role Filter', ['emp_id' => $user->emp_id]);
+                $query->where('onboardings.created_by', $user->emp_id);
             }
 
-            // Apply default DataTable-like search across visible columns
+            // Global search
             if ($request->has('search') && !empty($request->input('search.value'))) {
                 $search = trim($request->input('search.value'));
                 $query->where(function ($q) use ($search) {
-                    // Search application_code
-                    $q->where('application_code', 'like', "%{$search}%")
-                      // Search distributor (entity_details.establishment_name)
-                      ->orWhereHas('entityDetails', function ($q) use ($search) {
-                          $q->where('establishment_name', 'like', "%{$search}%");
-                      })
-                      // Search territory (core_territory.territory_name)
-                      ->orWhereHas('territoryDetail', function ($q) use ($search) {
-                          $q->where('territory_name', 'like', "%{$search}%");
-                      })
-                      // Search status
-                      ->orWhere('status', 'like', "%{$search}%")
-                      // Search created_at (formatted as d-M-Y)
-                      ->orWhereRaw("DATE_FORMAT(created_at, '%d-%b-%Y') LIKE ?", ["%{$search}%"]);
+                    $q->where('onboardings.application_code', 'like', "%{$search}%")
+                        ->orWhere('onboardings.status', 'like', "%{$search}%")
+                        ->orWhereRaw("DATE_FORMAT(onboardings.created_at, '%d-%b-%Y') LIKE ?", ["%{$search}%"])
+                        ->orWhere('entity_details.establishment_name', 'like', "%{$search}%")
+                        ->orWhere('core_territory.territory_name', 'like', "%{$search}%");
                 });
-                Log::info('Applied Search', ['search' => $search]);
             }
 
-            // Apply filters only if non-null and non-empty
-            $territory = $request->input('territory');
-            if ($territory !== null && $territory !== '') {
-                $query->where('territory', $territory);
-                Log::info('Applied Territory Filter', ['territory' => $territory]);
+            // Filters
+            if ($territory = $request->input('territory')) {
+                $query->where('onboardings.territory', $territory);
             }
 
-            $status = $request->input('status');
-            if ($status !== null && $status !== '') {
-                $query->where('status', $status);
-                Log::info('Applied Status Filter', ['status' => $status]);
+            if ($status = $request->input('status')) {
+                $query->where('onboardings.status', $status);
             }
 
-            // Log the query
-            Log::info('DataTable Query', [
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings()
-            ]);
+            // Sorting
+            $columns = [
+                'application_code' => 'onboardings.application_code',
+                'distributor' => 'entity_details.establishment_name',
+                'territory' => 'core_territory.territory_name',
+                'status' => 'onboardings.status',
+                'created_at' => 'onboardings.created_at',
+            ];
 
-            // Apply sorting
             if ($request->has('order')) {
                 $orderColumnIndex = $request->input('order.0.column');
-                $orderDir = $request->input('order.0.dir');
-                $columns = $request->input('columns');
-                $orderColumn = $columns[$orderColumnIndex]['data'];
+                $orderDir = $request->input('order.0.dir', 'asc');
+                $orderColumn = $request->input("columns.$orderColumnIndex.data");
 
-                $columnMap = [
-                    'application_code' => 'application_code',
-                    'distributor' => 'entity_details.establishment_name',
-                    'territory' => 'core_territory.territory_name',
-                    'status' => 'status',
-                    'created_at' => 'created_at',
-                ];
-
-                if (isset($columnMap[$orderColumn])) {
-                    if ($orderColumn === 'distributor') {
-                        $query->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.onboarding_id')
-                              ->orderBy('entity_details.establishment_name', $orderDir);
-                    } elseif ($orderColumn === 'territory') {
-                        $query->leftJoin('core_territory', 'onboardings.territory', '=', 'core_territory.id')
-                              ->orderBy('core_territory.territory_name', $orderDir);
-                    } else {
-                        $query->orderBy($columnMap[$orderColumn], $orderDir);
-                    }
+                if (isset($columns[$orderColumn])) {
+                    $query->orderBy($columns[$orderColumn], $orderDir);
                 }
             } else {
-                $query->orderBy('created_at', 'desc');
+                $query->orderBy('onboardings.created_at', 'desc');
             }
 
-            // Get total records before filtering
+            // Records count
             $totalRecords = Onboarding::count();
-            Log::info('Total Records', ['count' => $totalRecords]);
-
-            // Get filtered records count
             $totalFiltered = $query->count();
-            Log::info('Filtered Records', ['count' => $totalFiltered]);
 
-            // Apply pagination
+            // Pagination
             $start = $request->input('start', 0);
             $length = $request->input('length', 10);
             $applications = $query->skip($start)->take($length)->get();
 
-            // Log retrieved data
-            Log::info('DataTable Results', [
-                'count' => $applications->count(),
-                'data' => $applications->toArray()
-            ]);
-
-            // Prepare data for DataTables
-            $data = [];
-            foreach ($applications as $index => $application) {
-                $data[] = [
+            // Prepare data for DataTable
+            $data = $applications->map(function ($application, $index) use ($start) {
+                return [
                     's_no' => $start + $index + 1,
                     'application_code' => $application->application_code ?? 'N/A',
-                    'distributor' => $application->entityDetails ? ($application->entityDetails->establishment_name ?? 'N/A') : 'N/A',
-                    'territory' => $application->territoryDetail ? ($application->territoryDetail->territory_name ?? 'N/A') : 'N/A',
+                    'distributor' => $application->entityDetails?->establishment_name ?? 'N/A',
+                    'territory' => $application->territoryDetail?->territory_name ?? 'N/A',
                     'status' => '<span class="badge bg-' . ($application->status_badge ?? 'secondary') . '" style="font-size: 0.65rem;">' . ucfirst($application->status ?? 'unknown') . '</span>',
-                    'created_at' => $application->created_at ? $application->created_at->format('d-M-Y') : 'N/A',
+                    'created_at' => $application->created_at?->format('d-M-Y') ?? 'N/A',
                     'actions' => $this->getActions($application),
                 ];
-            }
+            });
 
             return response()->json([
                 'draw' => intval($request->input('draw')),
@@ -164,19 +153,16 @@ class OnboardingController extends Controller
                 'data' => $data,
             ]);
         } catch (\Exception $e) {
-            Log::error('DataTable Error', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
             return response()->json([
                 'draw' => intval($request->input('draw')),
                 'recordsTotal' => 0,
                 'recordsFiltered' => 0,
                 'data' => [],
-                'error' => 'An error occurred while fetching data: ' . $e->getMessage()
+                'error' => 'An error occurred while fetching data: ' . $e->getMessage(),
             ], 500);
         }
     }
+
 
     private function getActions($application)
     {
@@ -190,10 +176,22 @@ class OnboardingController extends Controller
 
         if ($application->status === 'draft' && ($application->created_by === $user->emp_id || $user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin']))) {
             $actions .= '<form action="' . route('applications.destroy', $application->id) . '" method="POST" class="d-inline" onsubmit="return confirm(\'Delete this application?\');">' .
-                        csrf_field() .
-                        method_field('DELETE') .
-                        '<button type="submit" class="btn btn-danger btn-action p-0" title="Delete"><i class="bx bx-trash fs-10 d-flex justify-content-center align-items-center"></i></button>' .
-                        '</form>';
+                csrf_field() .
+                method_field('DELETE') .
+                '<button type="submit" class="btn btn-danger btn-action p-0" title="Delete"><i class="bx bx-trash fs-10 d-flex justify-content-center align-items-center"></i></button>' .
+                '</form>';
+        }
+
+        // Dispatch Details button for initiated applications
+        if (
+            ($application->status !== 'draft')
+            && ($application->created_by === $user->emp_id)
+        ) {
+            $actions .= '<a href="' . route('dispatch.show', $application->id) . '" 
+                class="btn btn-primary btn-action p-0" 
+                title="Fill Dispatch Details">
+                <i class="ri-truck-line fs-10 d-flex justify-content-center align-items-center"></i>
+            </a>';
         }
 
         $actions .= '</div>';
@@ -268,20 +266,14 @@ class OnboardingController extends Controller
                 'declarations'
             ])->findOrFail($application_id) : new Onboarding();
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Application not found', [
-                'application_id' => $application_id,
-                'url' => $request->fullUrl(),
-                'step' => $step
-            ]);
             return redirect()->route('applications.create', ['step' => 1])
                 ->with('error', 'Application not found. Please start a new application.');
         }
 
-        
+
 
         // Enforce step 1 for new applications
         if (!$application_id && $step != 1) {
-            Log::info('Redirecting to step 1: No application_id provided');
             return redirect()->route('applications.create', ['step' => 1])
                 ->with('error', 'Please start from Basic Details.');
         }
@@ -315,7 +307,7 @@ class OnboardingController extends Controller
                             ->with('error', 'Please complete all previous steps.');
                     }
                 } elseif ($backendRelationship && !$application->$backendRelationship) {
-                   
+
                     return redirect()->route('applications.create', ['application_id' => $application_id, 'step' => $frontendStep - 1])
                         ->with('error', 'Please complete all previous steps.');
                 }
@@ -505,15 +497,52 @@ class OnboardingController extends Controller
                 $crops = $cropsQuery->get();
             }
 
-            $currentYear = now()->month >= 4 ? now()->year . '-' . (now()->year + 1)
-                : (now()->year - 1) . '-' . now()->year;
+            // $currentYear = now()->month >= 4 ? now()->year . '-' . (now()->year + 1)
+            //     : (now()->year - 1) . '-' . now()->year;
 
-            $financialYears = Year::where('status', 'active')
-                ->where('period', '<', $currentYear)
-                ->orderBy('start_year', 'desc')
-                ->take(3)
-                ->get();
+            // $financialYears = Year::where('status', 'active')
+            //     ->where('period', '<', $currentYear)
+            //     ->orderBy('start_year', 'desc')
+            //     ->take(3)
+            //     ->get();
 
+            // Determine current and next financial years
+            // In your create method, replace the financial year logic with this:
+
+            // Determine current and next financial years correctly
+            $currentDate = now();
+            $currentYear = $currentDate->year;
+            $currentMonth = $currentDate->month;
+            // Financial year starts in April (month 4)
+            if ($currentMonth >= 4) {
+                // April to December - current financial year is currentYear - nextYear
+                $currentFinancialYear = $currentYear . '-' . substr($currentYear + 1, -2);
+                $nextFinancialYear = ($currentYear + 1) . '-' . substr($currentYear + 2, -2);
+            } else {
+                // January to March - current financial year is previousYear - currentYear
+                $currentFinancialYear = ($currentYear - 1) . '-' . substr($currentYear, -2);
+                $nextFinancialYear = $currentYear . '-' . substr($currentYear + 1, -2);
+            }
+
+            // Get the year records from database
+            $currentFY = Year::where('period', $currentFinancialYear)->first();
+            $nextFY = Year::where('period', $nextFinancialYear)->first();
+
+            // If not found, get active years as fallback
+            if (!$currentFY) {
+                $currentFY = Year::where('status', 'active')
+                    ->orderBy('start_year', 'desc')
+                    ->first();
+            }
+
+            if (!$nextFY) {
+                $nextFY = Year::where('status', 'active')
+                    ->where('period', '!=', $currentFY->period ?? '')
+                    ->orderBy('start_year', 'desc')
+                    ->first() ?? $currentFY;
+            }
+
+            $financialYears = collect([$currentFY, $nextFY])->filter();
             // Define completedStepsData for create view
             $completedStepsData = [
                 1 => !empty($application->territory) && !empty($application->crop_vertical) && !empty($application->region) && !empty($application->zone) && !empty($application->business_unit),
@@ -523,7 +552,7 @@ class OnboardingController extends Controller
                 5 => !empty($application->financialInfo) && !empty($application->financialInfo->net_worth),
                 6 => !empty($application->bankDetail) && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
                 7 => $application->declarations->isNotEmpty(),
-                8 => in_array($application->status, ['initiated', 'approved']),
+                8 => in_array($application->status, ['under_level1_review', 'approved']),
             ];
 
             $currentStep = $application && $application->current_progress_step ? $application->current_progress_step : $step;
@@ -609,19 +638,39 @@ class OnboardingController extends Controller
             'entityDetails',
             'distributionDetail',
             'bankDetail',
-            'businessPlans', // Changed from businessPlan to businessPlans
+            'businessPlans',
             'financialInfo',
             'existingDistributorships',
             'declarations',
             'approvalLogs.user',
         ]);
         //dd($application->entityDetails->documents_data);
+
+        // Load filled by (created_by user)
+        $createdBy = Employee::where('employee_id', $application->created_by)->first();
+
+
+        // Load verification logs (document_verified and distributor_confirmed)
+        $verifications = ApprovalLog::where('application_id', $application->id)
+            ->whereIn('action', ['approved'])
+            ->with('employee')
+            ->orderBy('created_at', 'asc')
+            ->get();
+        //dd($verifications);
+        // Latest approval log
+        $approvals = ApprovalLog::where('application_id', $application->id)
+            ->where('action', 'approved')
+            ->with('employee')
+            ->orderBy('created_at', 'desc')
+            ->first();
+        //dd($approvals);
         // Pass additional data (e.g., territory_list, region_list) if needed
-        return view('applications.show', compact('application'));
+        return view('applications.show', compact('application', 'createdBy', 'verifications', 'approvals'));
     }
 
     public function edit(Onboarding $application, $step = 1)
     {
+
         $user = Auth::user();
         // Manual authorization: Check if user's emp_id matches application's created_by
         if (
@@ -657,7 +706,8 @@ class OnboardingController extends Controller
             'financialInfo',
             'existingDistributorships',
             'bankDetail',
-            'declarations'
+            'declarations',
+            'partnershipPartners'
         ]);
 
         $territory_list = [];
@@ -878,12 +928,41 @@ class OnboardingController extends Controller
         // Load `Year` models for business plan display
         $years = Year::all()->keyBy('id');
 
-        $currentYear = '2025-26';
-        $financialYears = Year::where('status', 'active')
-            ->where('period', '<', $currentYear)
-            ->orderBy('start_year', 'desc')
-            ->take(3)
-            ->get();
+        // Determine current and next financial years dynamically
+        $currentDate = now();
+        $currentYear = $currentDate->year;
+        $currentMonth = $currentDate->month;
+
+        // Financial year starts in April (month 4)
+        if ($currentMonth >= 4) {
+            // April to December - current financial year is currentYear - nextYear
+            $currentFinancialYear = $currentYear . '-' . substr($currentYear + 1, -2);
+            $nextFinancialYear = ($currentYear + 1) . '-' . substr($currentYear + 2, -2);
+        } else {
+            // January to March - current financial year is previousYear - currentYear
+            $currentFinancialYear = ($currentYear - 1) . '-' . substr($currentYear, -2);
+            $nextFinancialYear = $currentYear . '-' . substr($currentYear + 1, -2);
+        }
+
+        // Get the year records from database
+        $currentFY = Year::where('period', $currentFinancialYear)->first();
+        $nextFY = Year::where('period', $nextFinancialYear)->first();
+
+        // If not found, get active years as fallback
+        if (!$currentFY) {
+            $currentFY = Year::where('status', 'active')
+                ->orderBy('start_year', 'desc')
+                ->first();
+        }
+
+        if (!$nextFY) {
+            $nextFY = Year::where('status', 'active')
+                ->where('period', '!=', $currentFY->period ?? '')
+                ->orderBy('start_year', 'desc')
+                ->first() ?? $currentFY;
+        }
+
+        $financialYears = collect([$currentFY, $nextFY])->filter();
 
         // Define completedStepsData
         $completedStepsData = [
@@ -894,7 +973,7 @@ class OnboardingController extends Controller
             5 => !empty($application->financialInfo) && !empty($application->financialInfo->net_worth),
             6 => !empty($application->bankDetail) && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
             7 => $application->declarations->isNotEmpty(),
-            8 => in_array($application->status, ['initiated', 'approved']),
+            8 => in_array($application->status, ['under_level1_review', 'approved']),
         ];
 
         if ($step == 8) {
@@ -939,6 +1018,12 @@ class OnboardingController extends Controller
             // Set created_by for new applications
             if (!$application->exists) {
                 $application->created_by = $user->emp_id;
+            }
+
+            // **EDIT MODE CHECK**: Allow editing for documents_pending status
+            $isEditMode = $application->status === 'documents_pending';
+            if ($isEditMode && $user->emp_id !== $application->created_by) {
+                return response()->json(['success' => false, 'error' => 'Only application owner can edit.'], 403);
             }
 
             // Route to specific step handler
@@ -992,7 +1077,7 @@ class OnboardingController extends Controller
                     5 => !empty($application->financialInfo) && !empty($application->financialInfo->net_worth),
                     6 => !empty($application->bankDetail) && !empty($application->bankDetail->bank_name) && !empty($application->bankDetail->account_number),
                     7 => $application->declarations->isNotEmpty(),
-                    8 => in_array($application->status, ['initiated', 'approved']),
+                    8 => in_array($application->status, ['under_level1_review', 'approved', 'mis_processing', 'documents_pending']),
                 ];
 
                 // For Step 8, validate all previous steps
@@ -1022,7 +1107,6 @@ class OnboardingController extends Controller
 
             return response()->json($result, $result['status'] ?? 422);
         } catch (\Exception $e) {
-            Log::error("Error in saveStep: " . $e->getMessage(), ['step' => $stepNumber, 'trace' => $e->getTraceAsString()]);
             return response()->json(['success' => false, 'error' => 'An unexpected error occurred.'], 500);
         }
     }
@@ -1088,7 +1172,6 @@ class OnboardingController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error saving step 1: " . $e->getMessage());
             return [
                 'success' => false,
                 'error' => 'Failed to save step 1: ' . $e->getMessage()
@@ -1099,20 +1182,27 @@ class OnboardingController extends Controller
     // Step 2: Entity Details
     private function saveStep2(Request $request, $user, $application_id)
     {
+
+        //dd($request->all());
         if (!$application_id) {
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
-        //\Log::info('saveStep2 Request Data:', $request->all());
+
         DB::beginTransaction();
         try {
             // Fetch existing entity details
             $entityDetails = EntityDetails::where('application_id', $application_id)->first();
-            $existingDocuments = $entityDetails && $entityDetails->documents_data
-                ? json_decode($entityDetails->documents_data, true)
-                : [];
-            $existingAuthPersons = $entityDetails && isset($entityDetails->additional_data['authorized_persons'])
-                ? $entityDetails->additional_data['authorized_persons']
-                : [];
+            $existingDocuments = $entityDetails ? [
+                'pan' => $entityDetails->pan_path,
+                'gst' => $entityDetails->gst_path,
+                'seed_license' => $entityDetails->seed_license_path,
+                'entity_proof' => $entityDetails->entity_proof_path,
+                'ownership_info' => $entityDetails->ownership_info_path,
+                'bank_statement' => $entityDetails->bank_statement_path,
+                'itr_acknowledgement' => $entityDetails->itr_acknowledgement_path,
+                'balance_sheet' => $entityDetails->balance_sheet_path,
+                'bank' => $entityDetails->bank_document_path,
+            ] : [];
 
             // Define validation rules
             $rules = [
@@ -1128,7 +1218,7 @@ class OnboardingController extends Controller
                 'country_id' => 'required|exists:core_country,id',
                 'pincode' => 'required|string|max:10',
                 'mobile' => 'required|string|max:20',
-                'email' => 'required|email|max:255',
+                'email' => $request->has('no_email') ? 'nullable|email' : 'required|email',
                 'pan_number' => 'required|string|max:20',
                 'pan_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'existing_pan_file' => 'nullable|string',
@@ -1146,6 +1236,21 @@ class OnboardingController extends Controller
                 'existing_seed_license_file' => 'nullable|string',
                 'removed_seed_license_file' => 'nullable|integer',
                 'seed_license_verified' => 'nullable|boolean',
+                'entity_proof_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_entity_proof_file' => 'nullable|string',
+                'removed_entity_proof_file' => 'nullable|integer',
+                'ownership_info_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_ownership_info_file' => 'nullable|string',
+                'removed_ownership_info_file' => 'nullable|integer',
+                'bank_statement_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_bank_statement_file' => 'nullable|string',
+                'removed_bank_statement_file' => 'nullable|integer',
+                'itr_acknowledgement_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_itr_acknowledgement_file' => 'nullable|string',
+                'removed_itr_acknowledgement_file' => 'nullable|integer',
+                'balance_sheet_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_balance_sheet_file' => 'nullable|string',
+                'removed_balance_sheet_file' => 'nullable|integer',
                 'bank_name' => 'required|string|max:255',
                 'account_holder' => 'required|string|max:255',
                 'account_number' => 'required|string|max:20',
@@ -1172,6 +1277,9 @@ class OnboardingController extends Controller
                 'partner_name.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:255' : 'nullable|string|max:255',
                 'partner_pan.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:20|regex:/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/' : 'nullable|string|max:20',
                 'partner_contact.*' => $request->input('entity_type') === 'partnership' ? 'required|string|max:20|regex:/^[0-9]{10}$/' : 'nullable|string|max:20',
+                'partner_aadhar.*' => $request->input('entity_type') === 'partnership' ? 'nullable' : 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'existing_partner_aadhar_file.*' => 'nullable|string',
+                'existing_partner_aadhar_file_original.*' => 'nullable|string',
                 'signatory_name.*' => $request->input('entity_type') === 'partnership' ? 'nullable|string|max:255' : 'nullable|string|max:255',
                 'signatory_designation.*' => $request->input('entity_type') === 'partnership' ? 'required_with:signatory_contact.*|string|max:255' : 'nullable|string|max:255',
                 'signatory_contact.*' => $request->input('entity_type') === 'partnership' ? 'required_with:signatory_designation.*|string|max:20|regex:/^[0-9]{10}$/' : 'nullable|string|max:20',
@@ -1214,32 +1322,84 @@ class OnboardingController extends Controller
                 'auth_person_email.*' => 'nullable|email|max:255',
                 'auth_person_address.*' => 'nullable|string',
                 'auth_person_relation.*' => 'nullable|string|max:255',
+                'auth_person_aadhar_number.*' => 'nullable|string|max:12|regex:/^[0-9]{12}$/',
                 'auth_person_letter.*' => 'nullable|file|mimes:pdf,doc,docx|max:2048',
                 'auth_person_aadhar.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
                 'existing_auth_person_letter.*' => 'nullable|string',
                 'existing_auth_person_aadhar.*' => 'nullable|string',
+                'existing_auth_person_letter_original.*' => 'nullable|string',
+                'existing_auth_person_aadhar_original.*' => 'nullable|string',
                 'removed_auth_person_letter.*' => 'nullable|integer',
                 'removed_auth_person_aadhar.*' => 'nullable|integer',
             ];
 
+
+
             // Custom validation for file fields and authorized persons
             $validator = Validator::make($request->all(), $rules);
-            $validator->after(function ($validator) use ($request, $existingDocuments, $existingAuthPersons) {
+            $validator->after(function ($validator) use ($request, $existingDocuments) {
                 // Validate file fields
                 $fileFields = [
                     'bank_file' => 'A bank document is required.',
                     'seed_license_file' => 'A seed license document is required.',
                     'pan_file' => 'A PAN document is required.',
-                    'gst_file' => 'A GST document is required when GST is applicable.'
+                    'gst_file' => 'A GST document is required when GST is applicable.',
+                    'entity_proof_file' => 'An entity proof document is required.',
+                    'ownership_info_file' => 'An ownership information document is required.',
+                    'bank_statement_file' => 'A bank statement document is required.',
+                    'itr_acknowledgement_file' => 'An ITR acknowledgement document is required.',
                 ];
+
                 foreach ($fileFields as $field => $errorMessage) {
                     if ($field === 'gst_file' && $request->input('gst_applicable') !== 'yes') {
                         continue;
                     }
+                    // Skip balance_sheet_file as it's optional
+                    if ($field === 'balance_sheet_file') {
+                        continue;
+                    }
+                    // Skip ownership_info_file for partnership since partner_aadhar files are provided
+                    if ($field === 'ownership_info_file' && $request->input('entity_type') === 'partnership') {
+                        continue;
+                    }
+
+                    // Skip entity_proof_file for individual_person and sole_proprietorship
+                    if (
+                        in_array($request->input('entity_type'), ['individual_person', 'sole_proprietorship'])
+                        && $field === 'entity_proof_file'
+                    ) {
+                        continue;
+                    }
+
+
                     $hasNewFile = $request->hasFile($field);
                     $hasExistingFile = !empty($request->input("existing_$field")) && !$request->input("removed_$field");
-                    if (!$hasNewFile && !$hasExistingFile) {
+                    $hasExistingInDb = !empty($existingDocuments[str_replace('_file', '', str_replace('existing_', '', $field))]);
+
+                    if (!$hasNewFile && !$hasExistingFile && !$hasExistingInDb) {
                         $validator->errors()->add($field, $errorMessage);
+                    }
+                }
+
+
+
+                // Validate partnership Aadhar files
+                if ($request->input('entity_type') === 'partnership') {
+                    $partnerNames = $request->input('partner_name', []);
+                    $existingAadhars = $request->input('existing_partner_aadhar_file', []);
+
+                    // Use array_keys to get actual indices from partner_name
+                    $partnerIndices = array_keys($partnerNames);
+
+                    foreach ($partnerIndices as $index) {
+                        $name = $partnerNames[$index] ?? '';
+                        if (!empty($name)) {
+                            $hasNewAadhar = $request->hasFile("partner_aadhar.{$index}");
+                            $hasExistingAadhar = !empty($existingAadhars[$index] ?? '');
+                            if (!$hasNewAadhar && !$hasExistingAadhar) {
+                                $validator->errors()->add("partner_aadhar.{$index}", 'An Aadhar document is required for each partner.');
+                            }
+                        }
                     }
                 }
 
@@ -1263,19 +1423,20 @@ class OnboardingController extends Controller
                                 if (empty($request->input('auth_person_relation', [])[$index])) {
                                     $validator->errors()->add("auth_person_relation.$index", 'Relation is required for each authorized person.');
                                 }
+                                if (empty($request->input('auth_person_aadhar_number', [])[$index])) {
+                                    $validator->errors()->add("auth_person_aadhar_number.$index", 'Aadhar number is required for each authorized person.');
+                                }
 
                                 // Validate Letter of Authorization
                                 $hasNewLetter = $request->hasFile("auth_person_letter.$index");
-                                $hasExistingLetter = !empty($request->input("existing_auth_person_letter.$index")) ||
-                                    (isset($existingAuthPersons[$index]['letter']) && !in_array($index, $removedLetters));
+                                $hasExistingLetter = !empty($request->input("existing_auth_person_letter.$index")) && !in_array($index, $removedLetters);
                                 if (!$hasNewLetter && !$hasExistingLetter) {
                                     $validator->errors()->add("auth_person_letter.$index", 'A Letter of Authorization is required for each authorized person.');
                                 }
 
                                 // Validate Aadhar
                                 $hasNewAadhar = $request->hasFile("auth_person_aadhar.$index");
-                                $hasExistingAadhar = !empty($request->input("existing_auth_person_aadhar.$index")) ||
-                                    (isset($existingAuthPersons[$index]['aadhar']) && !in_array($index, $removedAadhars));
+                                $hasExistingAadhar = !empty($request->input("existing_auth_person_aadhar.$index")) && !in_array($index, $removedAadhars);
                                 if (!$hasNewAadhar && !$hasExistingAadhar) {
                                     $validator->errors()->add("auth_person_aadhar.$index", 'An Aadhar document is required for each authorized person.');
                                 }
@@ -1292,78 +1453,10 @@ class OnboardingController extends Controller
             $data = $validator->validated();
             $entity_type = $data['entity_type'];
 
-            // Initialize documents_data with existing documents
-            $documents_data = $existingDocuments ?: [];
+            // Process documents using S3 storage (adapted from original logic)
+            $documentPaths = $this->processDocumentsWithS3($request, $data, $existingDocuments, $application_id);
 
-            // Process new or updated documents
-            $documentTypes = [
-                'pan' => [
-                    'file_field' => 'pan_file',
-                    'existing_field' => 'existing_pan_file',
-                    'details' => ['pan_number' => $data['pan_number']],
-                    'verified_field' => 'pan_verified',
-                ],
-                'seed_license' => [
-                    'file_field' => 'seed_license_file',
-                    'existing_field' => 'existing_seed_license_file',
-                    'details' => [
-                        'seed_license_number' => $data['seed_license'],
-                        'seed_license_validity' => $data['seed_license_validity'],
-                    ],
-                    'verified_field' => 'seed_license_verified',
-                ],
-                'bank' => [
-                    'file_field' => 'bank_file',
-                    'existing_field' => 'existing_bank_file',
-                    'details' => [
-                        'bank_name' => $data['bank_name'],
-                        'account_holder' => $data['account_holder'],
-                        'account_number' => $data['account_number'],
-                        'ifsc_code' => $data['ifsc_code'],
-                    ],
-                ],
-                'gst' => [
-                    'file_field' => 'gst_file',
-                    'existing_field' => 'existing_gst_file',
-                    'details' => [
-                        'gst_number' => $data['gst_applicable'] === 'yes' ? $data['gst_number'] : null,
-                        'gst_validity' => $data['gst_applicable'] === 'yes' ? $data['gst_validity'] : null,
-                    ],
-                    'condition' => $data['gst_applicable'] === 'yes',
-                ],
-            ];
-
-            foreach ($documentTypes as $type => $config) {
-                if ($type === 'gst' && !$config['condition']) {
-                    $documents_data = array_filter($documents_data, fn($doc) => $doc['type'] !== $type);
-                    continue;
-                }
-
-                if ($request->hasFile($config['file_field'])) {
-                    $file = $request->file($config['file_field']);
-                    $path = $file->store('documents/' . $application_id, 'public');
-                    $documents_data = array_filter($documents_data, fn($doc) => $doc['type'] !== $type);
-                    $documents_data[] = [
-                        'type' => $type,
-                        'path' => $path,
-                        'details' => array_filter($config['details'], fn($value) => !is_null($value)),
-                        'status' => 'pending',
-                        'remarks' => 'Uploaded on ' . now()->toDateString(),
-                        'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : false) : false,
-                    ];
-                } elseif ($request->input($config['existing_field'])) {
-                    $existingDoc = collect($documents_data)->firstWhere('type', $type);
-                    if ($existingDoc) {
-                        $documents_data = array_filter($documents_data, fn($doc) => $doc['type'] !== $type);
-                        $documents_data[] = array_merge($existingDoc, [
-                            'details' => array_filter($config['details'], fn($value) => !is_null($value)),
-                            'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ? true : ($existingDoc['verified'] ?? false)) : ($existingDoc['verified'] ?? false),
-                        ]);
-                    }
-                }
-            }
-
-            // Common entity details
+            // Common entity details for EntityDetails table
             $entityData = [
                 'application_id' => $application_id,
                 'establishment_name' => $data['establishment_name'],
@@ -1377,210 +1470,50 @@ class OnboardingController extends Controller
                 'country_id' => $data['country_id'],
                 'pincode' => $data['pincode'],
                 'mobile' => $data['mobile'],
-                'email' => $data['email'],
+                'email' => $data['email'] ?? null,
                 'pan_number' => $data['pan_number'],
+                'pan_path' => $documentPaths['pan']['path'] ?? null,
+                'pan_verified' => $data['pan_verified'] ?? false,
                 'gst_applicable' => $data['gst_applicable'],
                 'gst_number' => $data['gst_applicable'] === 'yes' ? $data['gst_number'] : null,
+                'gst_path' => $documentPaths['gst']['path'] ?? null,
+                'gst_validity' => $data['gst_applicable'] === 'yes' ? $data['gst_validity'] : null,
                 'seed_license' => $data['seed_license'],
-                'documents_data' => json_encode(array_values($documents_data)),
-                'additional_data' => [],
+                'seed_license_path' => $documentPaths['seed_license']['path'] ?? null,
+                'seed_license_validity' => $data['seed_license_validity'],
+                'seed_license_verified' => $data['seed_license_verified'] ?? false,
+                'entity_proof_path' => $documentPaths['entity_proof']['path'] ?? null,
+                'ownership_info_path' => $documentPaths['ownership_info']['path'] ?? null,
+                'bank_statement_path' => $documentPaths['bank_statement']['path'] ?? null,
+                'itr_acknowledgement_path' => $documentPaths['itr_acknowledgement']['path'] ?? null,
+                'balance_sheet_path' => $documentPaths['balance_sheet']['path'] ?? null,
+                'bank_name' => $data['bank_name'],
+                'account_holder_name' => $data['account_holder'],
+                'account_number' => $data['account_number'],
+                'ifsc_code' => $data['ifsc_code'],
+                'bank_document_path' => $documentPaths['bank']['path'] ?? null,
+                'tan_number' => $data['tan_number'] ?? null,
+                'has_authorized_persons' => $data['has_authorized_persons'] ?? 'no',
                 'updated_at' => now(),
             ];
 
-            // Entity-specific and additional data
-            $additionalData = [
-                'tan_number' => $data['tan_number'] ?? null,
-                'gst_validity' => $data['gst_applicable'] === 'yes' ? $data['gst_validity'] : null,
-                'seed_license_validity' => $data['seed_license_validity'],
-                'bank_details' => [
-                    'bank_name' => $data['bank_name'],
-                    'account_holder' => $data['account_holder'],
-                    'account_number' => $data['account_number'],
-                    'ifsc_code' => $data['ifsc_code'],
-                ],
-                'partners' => [],
-                'authorized_persons' => [],
-            ];
+            // Process entity-specific data for separate tables
+            $additionalData = $this->processEntitySpecificData($request, $data, $entity_type, $application_id);
 
-            // Process entity-specific data
-            if ($entity_type === 'individual_person') {
-                $additionalData['individual'] = [
-                    'name' => $data['individual_name'],
-                    'dob' => $data['individual_dob'],
-                    'father_name' => $data['individual_father_name'],
-                    'age' => $data['individual_age'],
-                ];
-            } elseif ($entity_type === 'sole_proprietorship') {
-                $additionalData['proprietor'] = [
-                    'name' => $data['proprietor_name'],
-                    'dob' => $data['proprietor_dob'],
-                    'father_name' => $data['proprietor_father_name'],
-                    'age' => $data['proprietor_age'],
-                ];
-            } elseif ($entity_type === 'partnership') {
-                $partners = [];
-                if ($request->has('partner_name') && is_array($request->input('partner_name'))) {
-                    foreach ($request->input('partner_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            $partners[] = [
-                                'name' => $name,
-                                'pan' => $request->input('partner_pan', [])[$index],
-                                'contact' => $request->input('partner_contact', [])[$index],
-                            ];
-                        }
-                    }
-                }
-                $additionalData['partners'] = $partners;
-
-                // Process signatories
-                $signatories = [];
-                if ($request->has('signatory_name') && is_array($request->input('signatory_name'))) {
-                    foreach ($request->input('signatory_name', []) as $index => $name) {
-                        if (!empty($name) || !empty($request->input('signatory_designation', [])[$index])) {
-                            $signatories[] = [
-                                'name' => $name,
-                                'designation' => $request->input('signatory_designation', [])[$index],
-                                'contact' => $request->input('signatory_contact', [])[$index],
-                            ];
-                        }
-                    }
-                }
-                $additionalData['signatories'] = $signatories;
-            } elseif ($entity_type === 'llp') {
-                $additionalData['llp'] = [
-                    'llpin_number' => $data['llpin_number'],
-                    'incorporation_date' => $data['llp_incorporation_date'],
-                ];
-                $partners = [];
-                if ($request->has('llp_partner_name') && is_array($request->input('llp_partner_name'))) {
-                    foreach ($request->input('llp_partner_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            $partners[] = [
-                                'name' => $name,
-                                'dpin_number' => $request->input('llp_partner_dpin', [])[$index],
-                                'contact' => $request->input('llp_partner_contact', [])[$index],
-                                'address' => $request->input('llp_partner_address', [])[$index],
-                            ];
-                        }
-                    }
-                }
-                $additionalData['partners'] = $partners;
-            } elseif (in_array($entity_type, ['private_company', 'public_company'])) {
-                $additionalData['company'] = [
-                    'cin_number' => $data['cin_number'],
-                    'incorporation_date' => $data['incorporation_date'],
-                ];
-                $partners = [];
-                if ($request->has('director_name') && is_array($request->input('director_name'))) {
-                    foreach ($request->input('director_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            $partners[] = [
-                                'name' => $name,
-                                'din_number' => $request->input('director_din', [])[$index],
-                                'contact' => $request->input('director_contact', [])[$index],
-                                'address' => $request->input('director_address', [])[$index],
-                            ];
-                        }
-                    }
-                }
-                $additionalData['partners'] = $partners;
-            } elseif ($entity_type === 'cooperative_society') {
-                $additionalData['cooperative'] = [
-                    'reg_number' => $data['cooperative_reg_number'],
-                    'reg_date' => $data['cooperative_reg_date'],
-                ];
-                $partners = [];
-                if ($request->has('committee_name') && is_array($request->input('committee_name'))) {
-                    foreach ($request->input('committee_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            $partners[] = [
-                                'name' => $name,
-                                'designation' => $request->input('committee_designation', [])[$index],
-                                'contact' => $request->input('committee_contact', [])[$index],
-                                'address' => $request->input('committee_address', [])[$index],
-                            ];
-                        }
-                    }
-                }
-                $additionalData['partners'] = $partners;
-            } elseif ($entity_type === 'trust') {
-                $additionalData['trust'] = [
-                    'reg_number' => $data['trust_reg_number'],
-                    'reg_date' => $data['trust_reg_date'],
-                ];
-                $partners = [];
-                if ($request->has('trustee_name') && is_array($request->input('trustee_name'))) {
-                    foreach ($request->input('trustee_name', []) as $index => $name) {
-                        if (!empty($name)) {
-                            $partners[] = [
-                                'name' => $name,
-                                'designation' => $request->input('trustee_designation', [])[$index],
-                                'contact' => $request->input('trustee_contact', [])[$index],
-                                'address' => $request->input('trustee_address', [])[$index],
-                            ];
-                        }
-                    }
-                }
-                $additionalData['partners'] = $partners;
+            // Process and save authorized persons with S3 storage
+            $this->processAndSaveAuthorizedPersonsWithS3($request, $application_id, $data);
+            if ($data['entity_type'] === 'partnership') {
+                $documentPaths['partner_aadhar'] = $this->processPartnerAadharWithS3($request, $application_id);
             }
 
-            // Process authorized persons
-            $authorizedPersons = [];
-            $removedLetters = $request->input('removed_auth_person_letter', []);
-            $removedAadhars = $request->input('removed_auth_person_aadhar', []);
-            if ($request->has('auth_person_name') && is_array($request->input('auth_person_name'))) {
-                foreach ($request->input('auth_person_name', []) as $index => $name) {
-                    if (!empty($name) && !in_array($index, $removedLetters) && !in_array($index, $removedAadhars)) {
-                        $personData = [
-                            'name' => $name,
-                            'contact' => $request->input('auth_person_contact', [])[$index] ?? null,
-                            'email' => $request->input('auth_person_email', [])[$index] ?? null,
-                            'address' => $request->input('auth_person_address', [])[$index] ?? null,
-                            'relation' => $request->input('auth_person_relation', [])[$index] ?? null,
-                        ];
-
-                        // Handle Letter
-                        if ($request->hasFile("auth_person_letter.$index")) {
-                            $letterFile = $request->file("auth_person_letter.$index");
-                            $letterPath = $letterFile->store('documents/' . $application_id . '/authorized_persons', 'public');
-                            $personData['letter'] = $letterPath;
-                        } elseif ($request->input("existing_auth_person_letter.$index") && !in_array($index, $removedLetters)) {
-                            $personData['letter'] = $request->input("existing_auth_person_letter.$index");
-                        } elseif (isset($existingAuthPersons[$index]['letter']) && !in_array($index, $removedLetters)) {
-                            $personData['letter'] = $existingAuthPersons[$index]['letter'];
-                        }
-
-                        // Handle Aadhar
-                        if ($request->hasFile("auth_person_aadhar.$index")) {
-                            $aadharFile = $request->file("auth_person_aadhar.$index");
-                            $aadharPath = $aadharFile->store('documents/' . $application_id . '/authorized_persons', 'public');
-                            $personData['aadhar'] = $aadharPath;
-                        } elseif ($request->input("existing_auth_person_aadhar.$index") && !in_array($index, $removedAadhars)) {
-                            $personData['aadhar'] = $request->input("existing_auth_person_aadhar.$index");
-                        } elseif (isset($existingAuthPersons[$index]['aadhar']) && !in_array($index, $removedAadhars)) {
-                            $personData['aadhar'] = $existingAuthPersons[$index]['aadhar'];
-                        }
-
-                        if (!empty($personData['letter']) && !empty($personData['aadhar'])) {
-                            $authorizedPersons[] = $personData;
-                        }
-                    }
-                }
-            }
-
-            $additionalData['authorized_persons'] = $authorizedPersons;
-
-            // Remove empty arrays or null values from additional_data
-            $additionalData = array_filter($additionalData, fn($value) => is_array($value) ? !empty(array_filter($value, fn($subValue) => !is_null($subValue) && !(is_array($subValue) && empty($subValue)))) : !is_null($value));
-
-            // Set additional_data in entityData
-            $entityData['additional_data'] = $additionalData;
-
-            // Update or create EntityDetails
+            // Update or create EntityDetails record
             EntityDetails::updateOrCreate(
                 ['application_id' => $application_id],
                 $entityData
             );
+
+            // Save entity-specific data to respective tables
+            $this->saveEntitySpecificData($additionalData, $application_id, $entity_type);
 
             // Update application progress
             $application = Onboarding::find($application_id);
@@ -1589,17 +1522,579 @@ class OnboardingController extends Controller
             }
 
             DB::commit();
-            return ['success' => true, 'message' => 'Entity details and documents saved successfully', 'application_id' => $application_id, 'current_step' => 3];
+            return [
+                'success' => true,
+                'message' => 'Entity details and documents saved successfully',
+                'application_id' => $application_id,
+                'current_step' => 3,
+                'entity_type' => $entity_type
+            ];
         } catch (\Exception $e) {
             DB::rollBack();
-            //\Log::error('Error saving entity details: ' . $e->getMessage());
-            return ['success' => false, 'error' => 'An error occurred while saving entity details and documents.', 'status' => 500];
+
+            return [
+                'success' => false,
+                'error' => 'An error occurred while saving entity details and documents: ' . $e->getMessage(),
+                'status' => 500
+            ];
+        }
+    }
+
+    /**
+     * Process documents with S3 storage (adapted from original logic)
+     */
+    private function processDocumentsWithS3($request, $data, $existingDocuments, $application_id)
+    {
+        $documentPaths = [
+            'pan' => ['path' => null, 'verified' => false],
+            'gst' => ['path' => null, 'verified' => false],
+            'seed_license' => ['path' => null, 'verified' => false],
+            'entity_proof' => ['path' => null, 'verified' => false],
+            'ownership_info' => ['path' => null, 'verified' => false],
+            'bank_statement' => ['path' => null, 'verified' => false],
+            'itr_acknowledgement' => ['path' => null, 'verified' => false],
+            'balance_sheet' => ['path' => null, 'verified' => false],
+            'bank' => ['path' => null, 'verified' => false],
+        ];
+
+        $documentTypes = [
+            'pan' => [
+                'existing_field' => 'existing_pan_file',
+                'remove_field' => 'removed_pan_file',
+                'existing_path' => $existingDocuments['pan'] ?? null,
+                'verified_field' => 'pan_verified',
+                's3_folder' => 'pan',
+            ],
+            'seed_license' => [
+                'existing_field' => 'existing_seed_license_file',
+                'remove_field' => 'removed_seed_license_file',
+                'existing_path' => $existingDocuments['seed_license'] ?? null,
+                'verified_field' => 'seed_license_verified',
+                's3_folder' => 'seed_license',
+            ],
+            'bank' => [
+                'existing_field' => 'existing_bank_file',
+                'remove_field' => 'removed_bank_file',
+                'existing_path' => $existingDocuments['bank'] ?? null,
+                'verified_field' => null,
+                's3_folder' => 'bank',
+            ],
+            'gst' => [
+                'existing_field' => 'existing_gst_file',
+                'remove_field' => 'removed_gst_file',
+                'existing_path' => $existingDocuments['gst'] ?? null,
+                'verified_field' => null,
+                's3_folder' => 'gst',
+                'condition' => $data['gst_applicable'] === 'yes',
+            ],
+            'entity_proof' => [
+                'existing_field' => 'existing_entity_proof_file',
+                'remove_field' => 'removed_entity_proof_file',
+                'existing_path' => $existingDocuments['entity_proof'] ?? null,
+                's3_folder' => 'entity_proof',
+            ],
+            'ownership_info' => [
+                'existing_field' => 'existing_ownership_info_file',
+                'remove_field' => 'removed_ownership_info_file',
+                'existing_path' => $existingDocuments['ownership_info'] ?? null,
+                's3_folder' => 'ownership_info',
+            ],
+            'bank_statement' => [
+                'existing_field' => 'existing_bank_statement_file',
+                'remove_field' => 'removed_bank_statement_file',
+                'existing_path' => $existingDocuments['bank_statement'] ?? null,
+                's3_folder' => 'bank_statement',
+            ],
+            'itr_acknowledgement' => [
+                'existing_field' => 'existing_itr_acknowledgement_file',
+                'remove_field' => 'removed_itr_acknowledgement_file',
+                'existing_path' => $existingDocuments['itr_acknowledgement'] ?? null,
+                's3_folder' => 'itr_acknowledgement',
+            ],
+            'balance_sheet' => [
+                'existing_field' => 'existing_balance_sheet_file',
+                'remove_field' => 'removed_balance_sheet_file',
+                'existing_path' => $existingDocuments['balance_sheet'] ?? null,
+                's3_folder' => 'balance_sheet',
+            ],
+        ];
+
+        foreach ($documentTypes as $type => $config) {
+            // Skip GST if not applicable
+            if ($type === 'gst' && !$config['condition']) {
+                $documentPaths['gst'] = ['path' => null, 'verified' => false];
+                continue;
+            }
+
+            // Check if an existing file is provided and not removed
+            if ($request->input($config['existing_field']) && !$request->input($config['remove_field'])) {
+                $filename = $request->input($config['existing_field']);
+                $s3Path = "Connect/Distributor/{$config['s3_folder']}/{$filename}";
+
+                // Verify file exists in S3
+                if (!Storage::disk('s3')->exists($s3Path)) {
+                    Log::warning("Existing {$type} file not found in S3", ['s3Path' => $s3Path]);
+                    $documentPaths[$type] = ['path' => null, 'verified' => false];
+                } else {
+                    $documentPaths[$type] = [
+                        'path' => $filename,
+                        'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ?? false) : false,
+                    ];
+                }
+            } elseif ($config['existing_path'] && !$request->input($config['remove_field'])) {
+                // Use existing path from database
+                $filename = $config['existing_path'];
+                $s3Path = "Connect/Distributor/{$config['s3_folder']}/{$filename}";
+
+                // Verify file exists in S3
+                if (!Storage::disk('s3')->exists($s3Path)) {
+                    Log::warning("Existing {$type} file not found in S3", ['s3Path' => $s3Path]);
+                    $documentPaths[$type] = ['path' => null, 'verified' => false];
+                } else {
+                    $documentPaths[$type] = [
+                        'path' => $filename,
+                        'verified' => isset($config['verified_field']) ? ($request->input($config['verified_field']) ?? false) : false,
+                    ];
+                }
+            } else {
+                // No file available
+                $documentPaths[$type] = ['path' => null, 'verified' => false];
+            }
+        }
+
+        // Process partner Aadhar files for partnership entity
+        if ($data['entity_type'] === 'partnership') {
+            $documentPaths['partner_aadhar'] = $this->processPartnerAadharWithS3($request, $application_id);
+        }
+
+        return $documentPaths;
+    }
+
+    private function processPartnerAadharWithS3($request, $application_id)
+    {
+        $partnerAadharPaths = [];
+        $existingFiles = $request->input('existing_partner_aadhar_file', []);
+        $existingFileOriginals = $request->input('existing_partner_aadhar_file_original', []);
+
+        foreach ($request->input('partner_name', []) as $index => $name) {
+            if (!empty($name)) {
+                $partnerAadharPaths[$index] = [
+                    'path' => null,
+                    'original_filename' => null,
+                ];
+
+                // Handle existing Aadhar file from request (after re-indexing)
+                if (isset($existingFiles[$index]) && !empty($existingFiles[$index])) {
+                    $filename = $existingFiles[$index];
+                    $s3Path = "Connect/Distributor/partner_aadhar/{$filename}";
+
+                    if (Storage::disk('s3')->exists($s3Path)) {
+                        $partnerAadharPaths[$index] = [
+                            'path' => $filename,
+                            'original_filename' => $existingFileOriginals[$index] ?? $filename,
+                        ];
+                        Log::info("Retaining existing partner Aadhar", ['filename' => $filename, 'index' => $index]);
+                    } else {
+                        Log::warning("Existing partner_aadhar file not found in S3", ['s3Path' => $s3Path, 'index' => $index]);
+                    }
+                } else {
+                    // No Aadhar file for this partner
+                    Log::info("No Aadhar file for partner at index {$index}", ['name' => $name]);
+                }
+            }
+        }
+
+        // Store paths in class property for use in saveEntitySpecificData
+        $this->documentPaths['partner_aadhar'] = $partnerAadharPaths;
+        return $partnerAadharPaths;
+    }
+
+
+
+    /**
+     * Process and save authorized persons with S3 storage
+     */
+    private function processAndSaveAuthorizedPersonsWithS3($request, $application_id, $data)
+    {
+        if ($request->input('has_authorized_persons') !== 'yes') {
+            // If no authorized persons, clear existing ones
+            AuthorizedPerson::where('application_id', $application_id)->delete();
+            return;
+        }
+
+        $authorizedPersons = [];
+        $removedLetters = $request->input('removed_auth_person_letter', []);
+        $removedAadhars = $request->input('removed_auth_person_aadhar', []);
+
+        if ($request->has('auth_person_name') && is_array($request->input('auth_person_name'))) {
+            foreach ($request->input('auth_person_name', []) as $index => $name) {
+                if (!empty($name)) {
+                    $personData = [
+                        'application_id' => $application_id,
+                        'name' => $name,
+                        'contact' => $request->input('auth_person_contact', [])[$index] ?? null,
+                        'email' => $request->input('auth_person_email', [])[$index] ?? null,
+                        'address' => $request->input('auth_person_address', [])[$index] ?? null,
+                        'relation' => $request->input('auth_person_relation', [])[$index] ?? null,
+                        'aadhar_number' => $request->input('auth_person_aadhar_number', [])[$index] ?? null,
+                        'letter_path' => null,
+                        'aadhar_path' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    // Handle Letter of Authorization
+                    if (!empty($request->input("existing_auth_person_letter.$index")) && !in_array($index, $removedLetters)) {
+                        $letterFilename = $request->input("existing_auth_person_letter.$index");
+                        $letterS3Path = "Connect/Distributor/authorized_persons/{$letterFilename}";
+
+                        if (Storage::disk('s3')->exists($letterS3Path)) {
+                            $personData['letter_path'] = $letterFilename;
+                            Log::info("Retaining existing authorized person letter", ['filename' => $letterFilename]);
+                        } else {
+                            Log::warning("Existing authorized person letter not found in S3", ['s3Path' => $letterS3Path]);
+                        }
+                    }
+
+                    // Handle Aadhar Document
+                    if (!empty($request->input("existing_auth_person_aadhar.$index")) && !in_array($index, $removedAadhars)) {
+                        $aadharFilename = $request->input("existing_auth_person_aadhar.$index");
+                        $aadharS3Path = "Connect/Distributor/authorized_persons/{$aadharFilename}";
+
+                        if (Storage::disk('s3')->exists($aadharS3Path)) {
+                            $personData['aadhar_path'] = $aadharFilename;
+                            Log::info("Retaining existing authorized person Aadhar", ['filename' => $aadharFilename]);
+                        } else {
+                            Log::warning("Existing authorized person Aadhar not found in S3", ['s3Path' => $aadharS3Path]);
+                        }
+                    }
+
+                    $authorizedPersons[] = $personData;
+                }
+            }
+        }
+
+        // Clear existing authorized persons and save new ones
+        try {
+            AuthorizedPerson::where('application_id', $application_id)->delete();
+            if (!empty($authorizedPersons)) {
+                foreach ($authorizedPersons as $person) {
+                    AuthorizedPerson::create($person);
+                }
+            } else {
+                Log::warning("No authorized persons to save", ['application_id' => $application_id]);
+            }
+        } catch (\Exception $e) {
+            throw $e;
+        }
+    }
+    /**
+     * Process entity-specific data for separate tables (same as before)
+     */
+    private function processEntitySpecificData($request, $data, $entity_type, $application_id)
+    {
+        $additionalData = [];
+        // dd($data);
+        switch ($entity_type) {
+            case 'individual_person':
+                $additionalData['individual'] = [
+                    'application_id' => $application_id,
+                    'name' => $data['individual_name'],
+                    'dob' => $data['individual_dob'],
+                    'father_name' => $data['individual_father_name'],
+                    'age' => $data['individual_age'],
+                ];
+                break;
+
+            case 'sole_proprietorship':
+                $additionalData['proprietor'] = [
+                    'application_id' => $application_id,
+                    'name' => $data['proprietor_name'],
+                    'dob' => $data['proprietor_dob'],
+                    'father_name' => $data['proprietor_father_name'],
+                    'age' => $data['proprietor_age'],
+                ];
+                break;
+
+            case 'partnership':
+                $partners = [];
+                if ($request->has('partner_name') && is_array($request->input('partner_name'))) {
+                    foreach ($request->input('partner_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $partnerData = [
+                                'application_id' => $application_id,
+                                'name' => $name,
+                                'pan' => $request->input('partner_pan', [])[$index] ?? null,
+                                'contact' => $request->input('partner_contact', [])[$index] ?? null,
+                                'aadhar_path' => $this->documentPaths['partner_aadhar'][$index]['path'] ?? null,
+                                'aadhar_original_filename' => $this->documentPaths['partner_aadhar'][$index]['original_filename'] ?? null,
+                            ];
+                            $partners[] = $partnerData;
+                        }
+                    }
+                }
+                $additionalData['partners'] = $partners;
+
+                $signatories = [];
+                if ($request->has('signatory_name') && is_array($request->input('signatory_name'))) {
+                    foreach ($request->input('signatory_name', []) as $index => $name) {
+                        if (!empty($name) || !empty($request->input('signatory_designation', [])[$index])) {
+                            $signatories[] = [
+                                'application_id' => $application_id,
+                                'name' => $name ?? null,
+                                'designation' => $request->input('signatory_designation', [])[$index] ?? null,
+                                'contact' => $request->input('signatory_contact', [])[$index] ?? null,
+                            ];
+                        }
+                    }
+                }
+                $additionalData['signatories'] = $signatories;
+                break;
+
+            case 'llp':
+                $additionalData['llp'] = [
+                    'application_id' => $application_id,
+                    'llpin_number' => $data['llpin_number'],
+                    'incorporation_date' => $data['llp_incorporation_date'],
+                ];
+
+                $partners = [];
+                if ($request->has('llp_partner_name') && is_array($request->input('llp_partner_name'))) {
+                    foreach ($request->input('llp_partner_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $partners[] = [
+                                'application_id' => $application_id,
+                                'name' => $name,
+                                'dpin_number' => $request->input('llp_partner_dpin', [])[$index] ?? null,
+                                'contact' => $request->input('llp_partner_contact', [])[$index] ?? null,
+                                'address' => $request->input('llp_partner_address', [])[$index] ?? null,
+                            ];
+                        }
+                    }
+                }
+                $additionalData['llp_partners'] = $partners;
+                break;
+
+            case 'private_company':
+            case 'public_company':
+                $additionalData['company'] = [
+                    'application_id' => $application_id,
+                    'entity_type' => $entity_type,
+                    'cin_number' => $data['cin_number'],
+                    'incorporation_date' => $data['incorporation_date'],
+                ];
+
+                $directors = [];
+                if ($request->has('director_name') && is_array($request->input('director_name'))) {
+                    foreach ($request->input('director_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $directors[] = [
+                                'application_id' => $application_id,
+                                'name' => $name,
+                                'din_number' => $request->input('director_din', [])[$index] ?? null,
+                                'contact' => $request->input('director_contact', [])[$index] ?? null,
+                                'address' => $request->input('director_address', [])[$index] ?? null,
+                            ];
+                        }
+                    }
+                }
+                $additionalData['directors'] = $directors;
+                break;
+
+            case 'cooperative_society':
+                $additionalData['cooperative'] = [
+                    'application_id' => $application_id,
+                    'reg_number' => $data['cooperative_reg_number'],
+                    'reg_date' => $data['cooperative_reg_date'],
+                ];
+
+                $committee = [];
+                if ($request->has('committee_name') && is_array($request->input('committee_name'))) {
+                    foreach ($request->input('committee_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $committee[] = [
+                                'application_id' => $application_id,
+                                'name' => $name,
+                                'designation' => $request->input('committee_designation', [])[$index] ?? null,
+                                'contact' => $request->input('committee_contact', [])[$index] ?? null,
+                                'address' => $request->input('committee_address', [])[$index] ?? null,
+                            ];
+                        }
+                    }
+                }
+                $additionalData['committee_members'] = $committee;
+                break;
+
+            case 'trust':
+                $additionalData['trust'] = [
+                    'application_id' => $application_id,
+                    'reg_number' => $data['trust_reg_number'],
+                    'reg_date' => $data['trust_reg_date'],
+                ];
+
+                $trustees = [];
+                if ($request->has('trustee_name') && is_array($request->input('trustee_name'))) {
+                    foreach ($request->input('trustee_name', []) as $index => $name) {
+                        if (!empty($name)) {
+                            $trustees[] = [
+                                'application_id' => $application_id,
+                                'name' => $name,
+                                'designation' => $request->input('trustee_designation', [])[$index] ?? null,
+                                'contact' => $request->input('trustee_contact', [])[$index] ?? null,
+                                'address' => $request->input('trustee_address', [])[$index] ?? null,
+                            ];
+                        }
+                    }
+                }
+                $additionalData['trustees'] = $trustees;
+                break;
+        }
+
+        return $additionalData;
+    }
+    /**
+     * Save entity-specific data to respective tables
+     */
+    private function saveEntitySpecificData($additionalData, $application_id, $entity_type)
+    {
+        DB::beginTransaction();
+        try {
+            switch ($entity_type) {
+                case 'individual_person':
+                    if (isset($additionalData['individual'])) {
+                        IndividualDetails::updateOrCreate(
+                            ['application_id' => $application_id],
+                            $additionalData['individual']
+                        );
+                    }
+                    break;
+
+                case 'sole_proprietorship':
+                    if (isset($additionalData['proprietor'])) {
+                        ProprietorDetails::updateOrCreate(
+                            ['application_id' => $application_id],
+                            $additionalData['proprietor']
+                        );
+                    }
+                    break;
+
+                case 'partnership':
+                    if (isset($additionalData['partners'])) {
+                        // Clear existing partners
+                        PartnershipPartner::where('application_id', $application_id)->delete();
+                        // Insert new partners
+                        foreach ($additionalData['partners'] as $index => $partner) {
+                            if (!empty($partner['name'])) {
+                                // Merge Aadhar paths from processPartnerAadharWithS3
+                                if (isset($this->documentPaths['partner_aadhar'][$index])) {
+                                    $partner['aadhar_path'] = $this->documentPaths['partner_aadhar'][$index]['path'] ?? null;
+                                    $partner['aadhar_original_filename'] = $this->documentPaths['partner_aadhar'][$index]['original_filename'] ?? null;
+                                }
+                                $partner['application_id'] = $application_id;
+                                PartnershipPartner::create($partner);
+                            }
+                        }
+                    }
+
+                    if (isset($additionalData['signatories'])) {
+                        // Clear existing signatories
+                        PartnershipSignatory::where('application_id', $application_id)->delete();
+                        // Insert new signatories
+                        foreach ($additionalData['signatories'] as $signatory) {
+                            $signatory['application_id'] = $application_id;
+                            PartnershipSignatory::create($signatory);
+                        }
+                    }
+                    break;
+
+                case 'llp':
+                    if (isset($additionalData['llp'])) {
+                        LlpDetails::updateOrCreate(
+                            ['application_id' => $application_id],
+                            $additionalData['llp']
+                        );
+                    }
+
+                    if (isset($additionalData['llp_partners'])) {
+                        // Clear existing partners
+                        LlpPartner::where('application_id', $application_id)->delete();
+                        // Insert new partners
+                        foreach ($additionalData['llp_partners'] as $partner) {
+                            $partner['application_id'] = $application_id;
+                            LlpPartner::create($partner);
+                        }
+                    }
+                    break;
+
+                case 'private_company':
+                case 'public_company':
+                    if (isset($additionalData['company'])) {
+                        CompanyDetails::updateOrCreate(
+                            ['application_id' => $application_id],
+                            $additionalData['company']
+                        );
+                    }
+
+                    if (isset($additionalData['directors'])) {
+                        // Clear existing directors
+                        Director::where('application_id', $application_id)->delete();
+                        // Insert new directors
+                        foreach ($additionalData['directors'] as $director) {
+                            $director['application_id'] = $application_id;
+                            Director::create($director);
+                        }
+                    }
+                    break;
+
+                case 'cooperative_society':
+                    if (isset($additionalData['cooperative'])) {
+                        CooperativeDetails::updateOrCreate(
+                            ['application_id' => $application_id],
+                            $additionalData['cooperative']
+                        );
+                    }
+
+                    if (isset($additionalData['committee_members'])) {
+                        // Clear existing committee members
+                        CommitteeMember::where('application_id', $application_id)->delete();
+                        // Insert new committee members
+                        foreach ($additionalData['committee_members'] as $member) {
+                            $member['application_id'] = $application_id;
+                            CommitteeMember::create($member);
+                        }
+                    }
+                    break;
+
+                case 'trust':
+                    if (isset($additionalData['trust'])) {
+                        TrustDetails::updateOrCreate(
+                            ['application_id' => $application_id],
+                            $additionalData['trust']
+                        );
+                    }
+
+                    if (isset($additionalData['trustees'])) {
+                        // Clear existing trustees
+                        Trustee::where('application_id', $application_id)->delete();
+                        // Insert new trustees
+                        foreach ($additionalData['trustees'] as $trustee) {
+                            $trustee['application_id'] = $application_id;
+                            Trustee::create($trustee);
+                        }
+                    }
+                    break;
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
         }
     }
     // Step 3: Distribution Details
     private function saveStep3(Request $request, $user, $application_id)
     {
-        
+
         if (!$application_id) {
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
@@ -1687,7 +2182,6 @@ class OnboardingController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error saving distribution details: " . $e->getMessage());
             return ['success' => false, 'error' => 'Failed to save distribution details: ' . $e->getMessage()];
         }
     }
@@ -1699,19 +2193,22 @@ class OnboardingController extends Controller
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
 
-        // --- 1. VALIDATION ---
-        // Validate the incoming array of business plans.
+        // Validation
         $validator = Validator::make($request->all(), [
             'business_plans' => 'required|array|min:1',
             'business_plans.*.crop' => 'required|string|max:255',
-            'business_plans.*.fy2025_26' => 'required|numeric|min:0',
-            'business_plans.*.fy2026_27' => 'required|numeric|min:0',
+            'business_plans.*.current_financial_year_mt' => 'required|numeric|min:0',
+            'business_plans.*.current_financial_year_amount' => 'required|numeric|min:0',
+            'business_plans.*.next_financial_year_mt' => 'required|numeric|min:0',
+            'business_plans.*.next_financial_year_amount' => 'required|numeric|min:0',
         ], [
             'business_plans.required' => 'At least one business plan is required.',
             'business_plans.min' => 'At least one business plan is required.',
             'business_plans.*.crop.required' => 'The crop field is required for all plans.',
-            'business_plans.*.fy2025_26.required' => 'The FY 2025-26 field is required for all plans.',
-            'business_plans.*.fy2026_27.required' => 'The FY 2026-27 field is required for all plans.',
+            'business_plans.*.current_financial_year_mt.required' => 'The current financial year MT field is required for all plans.',
+            'business_plans.*.current_financial_year_amount.required' => 'The current financial year amount field is required for all plans.',
+            'business_plans.*.next_financial_year_mt.required' => 'The next financial year MT field is required for all plans.',
+            'business_plans.*.next_financial_year_amount.required' => 'The next financial year amount field is required for all plans.',
         ]);
 
         if ($validator->fails()) {
@@ -1723,48 +2220,114 @@ class OnboardingController extends Controller
         try {
             $validatedData = $validator->validated();
             $plansToInsert = [];
-            $year2025 = Year::where('period', '2025-26')->firstOrFail();
-            $year2026 = Year::where('period', '2026-27')->firstOrFail();
-            // Loop through each submitted plan and format it for the database.
-            foreach ($validatedData['business_plans'] as $planData) {
-                $plansToInsert[] = [
-                    'application_id' => $application_id,
-                    'crop' => $planData['crop'],
-                    'yearly_targets' => json_encode([
-                        $year2025->id => $planData['fy2025_26'],
-                        $year2026->id => $planData['fy2026_27'],
-                    ]),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+
+            // Get current and next financial years
+            $currentDate = now();
+            $currentYear = $currentDate->year;
+            $currentMonth = $currentDate->month;
+
+            if ($currentMonth >= 4) {
+                // April to December: current FY is currentYear-nextYear
+                $currentFinancialYearPeriod = $currentYear . '-' . substr($currentYear + 1, -2);
+                $nextFinancialYearPeriod = ($currentYear + 1) . '-' . substr($currentYear + 2, -2);
+            } else {
+                // January to March: current FY is previousYear-currentYear
+                $currentFinancialYearPeriod = ($currentYear - 1) . '-' . substr($currentYear, -2);
+                $nextFinancialYearPeriod = $currentYear . '-' . substr($currentYear + 1, -2);
             }
+
+            \Log::info("Calculated financial years - Current: {$currentFinancialYearPeriod}, Next: {$nextFinancialYearPeriod}");
+
+            $currentFinancialYear = Year::where('period', $currentFinancialYearPeriod)->first();
+            $nextFinancialYear = Year::where('period', $nextFinancialYearPeriod)->first();
+
+            // Fallback - get any active years if specific ones not found
+            if (!$currentFinancialYear) {
+                $currentFinancialYear = Year::where('status', 'active')
+                    ->orderBy('start_year', 'desc')
+                    ->first();
+            }
+
+            if (!$nextFinancialYear) {
+                $nextFinancialYear = Year::where('status', 'active')
+                    ->where('id', '!=', $currentFinancialYear->id ?? 0)
+                    ->orderBy('start_year', 'desc')
+                    ->first();
+            }
+
+            // Final fallback - if still no years found, use hardcoded ones
+            if (!$currentFinancialYear || !$nextFinancialYear) {
+                $currentFinancialYear = Year::where('period', '2025-26')->first();
+                $nextFinancialYear = Year::where('period', '2026-27')->first();
+            }
+
+            // Validate that we have both years
+            if (!$currentFinancialYear || !$nextFinancialYear) {
+                throw new \Exception("Could not determine financial years for business plan saving");
+            }
+
+            \Log::info("Final years - Current: {$currentFinancialYear->period}, Next: {$nextFinancialYear->period}");
+
+            // Loop through each submitted plan and use SEPARATE COLUMNS
+            foreach ($validatedData['business_plans'] as $planData) {
+                if (!empty($planData['crop'])) {
+                    $plansToInsert[] = [
+                        'application_id' => $application_id,
+                        'crop' => $planData['crop'],
+                        'current_financial_year' => $currentFinancialYear->period,
+                        'current_financial_year_mt' => $planData['current_financial_year_mt'],
+                        'current_financial_year_amount' => $planData['current_financial_year_amount'],
+                        'next_financial_year' => $nextFinancialYear->period,
+                        'next_financial_year_mt' => $planData['next_financial_year_mt'],
+                        'next_financial_year_amount' => $planData['next_financial_year_amount'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+            }
+
+            // Delete existing and insert new
             DB::table('business_plans')->where('application_id', $application_id)->delete();
+
             if (!empty($plansToInsert)) {
                 DB::table('business_plans')->insert($plansToInsert);
+                \Log::info("Inserted " . count($plansToInsert) . " business plans for application: " . $application_id);
+            } else {
+                \Log::warning("No business plans to insert for application: " . $application_id);
             }
+
+            // Update progress
             $application = Onboarding::find($application_id);
             if ($application) {
                 if ($application->current_progress_step < 5) {
                     $application->update(['current_progress_step' => 5]);
+                    \Log::info("Updated application progress to step 5 for application: " . $application_id);
                 }
+            } else {
+                \Log::error("Application not found: " . $application_id);
+                throw new \Exception("Application not found");
             }
 
             DB::commit();
 
             return [
                 'success' => true,
-                'message' => 'Step 4 saved successfully!', // Corrected step number
+                'message' => 'Business plans saved successfully!',
                 'application_id' => $application_id,
                 'current_step' => 5
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error saving step 4 for application ID {$application_id}: " . $e->getMessage());
-            Log::error($e->getTraceAsString());
-            return ['success' => false, 'error' => 'An unexpected error occurred while saving step 4.'];
+            \Log::error('Error saving business plans for application ' . $application_id . ': ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return [
+                'success' => false,
+                'error' => 'An unexpected error occurred while saving business plans: ' . $e->getMessage(),
+                'status' => 500
+            ];
         }
     }
-
     // Step 5: Financial Info
     private function saveStep5(Request $request, $user, $application_id)
     {
@@ -1775,55 +2338,104 @@ class OnboardingController extends Controller
         DB::beginTransaction();
 
         try {
-            $currentYear = date('Y');
+            // Match view: 2 future years for Oct 2025
+            $currentYear = 2025;
             $defaultYears = [
-                ($currentYear - 3) . '-' . substr($currentYear - 2, -2), // 2022-23 format
-                ($currentYear - 2) . '-' . substr($currentYear - 1, -2), // 2023-24 format
-                ($currentYear - 1) . '-' . substr($currentYear, -2)       // 2024-25 format
+                $currentYear . '-' . substr($currentYear + 1, -2),  // 2025-26
+                ($currentYear + 1) . '-' . substr($currentYear + 2, -2)  // 2026-27
             ];
 
             $rules = [
+                'annual_turnover.year' => 'required|array|min:2|max:2', // Fixed: exactly 2 years
+                'annual_turnover.year.*' => ['required', 'string', Rule::in($defaultYears)],
+                'annual_turnover.amount' => 'required|array|min:2|max:2', // Fixed: exactly 2 amounts
+                'annual_turnover.amount.*' => 'nullable|numeric|min:0',
                 'net_worth' => 'required|numeric|min:0',
                 'shop_ownership' => 'required|string|in:owned,rented,lease',
-                'godown_area' => 'required|string|max:255|regex:/^[a-zA-Z0-9\s]+$/',
+                'shop_uom' => 'required|string|in:sq_ft,sq_m',
+                'shop_area' => 'required|numeric|min:0',
+                'godown_uom' => 'required|string|in:sq_ft,sq_m',
+                'godown_area' => 'required|numeric|min:0',
+                'godown_ownership' => 'required|string|in:owned,rented',
                 'years_in_business' => 'required|integer|min:0',
-                'annual_turnover.year' => 'required|array|min:1|max:3',
-                'annual_turnover.year.*' => ['required', 'string', Rule::in($defaultYears)], // Use Rule::in for dynamic values
-                'annual_turnover.amount' => [
-                    'required',
-                    'array',
-                    'size:3',
-                    function ($attribute, $value, $fail) {
-                        $nonEmpty = array_filter($value, fn($v) => !is_null($v) && $v !== '');
-                        if (empty($nonEmpty)) {
-                            $fail('At least one financial year must have a non-empty turnover amount.');
-                        }
-                    },
-                ],
-                'annual_turnover.amount.*' => 'nullable|numeric|min:0',
+
                 'existing_distributorships' => 'sometimes|array',
                 'existing_distributorships.*.company_name' => 'nullable|string|max:255',
             ];
 
-            $validator = Validator::make($request->all(), $rules, [
+            $messages = [
+                'godown_uom.required' => 'Godown UOM is required.',
+                'godown_uom.in' => 'Godown UOM must be Square Feet or Square Meter.',
+                'godown_area.required' => 'Godown area is required.',
+                'godown_area.numeric' => 'Godown area must be a valid number.',
+                'godown_area.min' => 'Godown area cannot be negative.',
+                'godown_ownership.required' => 'Godown ownership is required.',
+                'godown_ownership.in' => 'Godown ownership must be Owned or Rented.',
+                'shop_uom.in' => 'Shop UOM must be Square Feet or Square Meter.',
+                'shop_area.numeric' => 'Shop area must be a valid number.',
+                'shop_area.min' => 'Shop area cannot be negative.',
                 'annual_turnover.year.*.in' => 'The financial year must be one of: ' . implode(', ', $defaultYears) . '.',
-            ]);
+                'annual_turnover.amount.required' => 'Turnover amounts are required.',
+            ];
+
+            $validator = Validator::make($request->all(), $rules, $messages);
+
+            // Add custom validation for at least one non-empty turnover amount
+            $validator->after(function ($validator) use ($request, $defaultYears) {
+                $amounts = $request->annual_turnover['amount'] ?? [];
+                $hasValidAmount = false;
+
+                foreach ($amounts as $amount) {
+                    if (!is_null($amount) && $amount !== '' && $amount >= 0) {
+                        $hasValidAmount = true;
+                        break;
+                    }
+                }
+
+                if (!$hasValidAmount) {
+                    $validator->errors()->add(
+                        'annual_turnover.amount',
+                        'At least one financial year must have a turnover amount.'
+                    );
+                }
+
+                // Validate that all default years are present
+                $submittedYears = $request->annual_turnover['year'] ?? [];
+                foreach ($defaultYears as $defaultYear) {
+                    if (!in_array($defaultYear, $submittedYears)) {
+                        $validator->errors()->add(
+                            'annual_turnover.year',
+                            "Financial year {$defaultYear} is required."
+                        );
+                    }
+                }
+            });
 
             if ($validator->fails()) {
                 return ['success' => false, 'error' => $validator->errors()->toArray(), 'status' => 422];
             }
 
-            $turnover = array_combine(
-                $request->annual_turnover['year'],
-                array_map(fn($amount) => $amount !== '' ? $amount : null, $request->annual_turnover['amount'])
-            );
-            $turnover = array_filter($turnover, fn($value) => !is_null($value));
+            // Process turnover data
+            $turnover = [];
+            $years = $request->annual_turnover['year'] ?? [];
+            $amounts = $request->annual_turnover['amount'] ?? [];
+
+            foreach ($years as $index => $year) {
+                $amount = $amounts[$year] ?? null;
+                if (!is_null($amount) && $amount !== '' && $amount >= 0) {
+                    $turnover[$year] = (float) $amount;
+                }
+            }
 
             $data = [
                 'application_id' => $application_id,
                 'net_worth' => $request->net_worth,
                 'shop_ownership' => $request->shop_ownership,
-                'godown_area' => trim($request->godown_area),
+                'shop_uom' => $request->shop_uom,
+                'shop_area' => $request->shop_area,
+                'godown_uom' => $request->godown_uom,
+                'godown_area' => $request->godown_area,
+                'godown_ownership' => $request->godown_ownership,
                 'years_in_business' => $request->years_in_business,
                 'annual_turnover' => json_encode($turnover),
             ];
@@ -1832,6 +2444,7 @@ class OnboardingController extends Controller
                 ['application_id' => $application_id],
                 $data
             );
+
             // Process existing distributorships if present
             if ($request->has('existing_distributorships')) {
                 $submittedCompanies = $request->input('existing_distributorships', []);
@@ -1854,12 +2467,14 @@ class OnboardingController extends Controller
                     );
                 }
             }
+
             $application = Onboarding::find($application_id);
             if ($application) {
                 if ($application->current_progress_step < 6) {
                     $application->update(['current_progress_step' => 6]);
                 }
             }
+
             DB::commit();
             return [
                 'success' => true,
@@ -1869,7 +2484,6 @@ class OnboardingController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error saving financial info: " . $e->getMessage());
             return [
                 'success' => false,
                 'error' => 'Failed to save financial info: ' . $e->getMessage(),
@@ -1927,7 +2541,6 @@ class OnboardingController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error saving bank details: " . $e->getMessage());
             return ['success' => false, 'error' => 'Failed to save bank details.'];
         }
     }
@@ -1936,11 +2549,9 @@ class OnboardingController extends Controller
     private function saveStep7(Request $request, $user, $application_id)
     {
         if (!$application_id) {
-            Log::error('saveStep7: Application ID is missing.');
             return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
         }
-        // Log incoming request data for debugging
-       
+
         DB::beginTransaction();
 
         try {
@@ -2120,7 +2731,6 @@ class OnboardingController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error saving step 7: " . $e->getMessage(), ['request_data' => $request->all()]);
             return ['success' => false, 'error' => 'Failed to save step 7.'];
         }
     }
@@ -2161,7 +2771,6 @@ class OnboardingController extends Controller
         $missingSteps = array_keys(array_filter($requiredSteps));
 
         if (!empty($missingSteps)) {
-            Log::warning('Submission blocked - missing steps:', ['missing_steps' => $missingSteps]);
             return [
                 'success' => false,
                 'error' => 'Please complete all required steps before submitting.',
@@ -2191,6 +2800,38 @@ class OnboardingController extends Controller
                     'redirect' => route('applications.show', $application_id)
                 ];
             }
+
+            if ($application->status === 'documents_pending' && $application->is_hierarchy_approved) {
+                // This is a resubmission after MIS rejection - skip hierarchy, go directly to MIS
+                $application->update([
+                    'status' => 'mis_processing',
+                    'current_approver_id' => null, // No approver needed for MIS processing
+                    'approval_level' => 'MIS Resubmission',
+                    'resubmitted_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                // Clear previous MIS feedback since documents are updated
+                $application->checkpoints()->delete();
+                ApplicationAdditionalDocument::where('application_id', $application->id)->delete();
+
+                $application->update(['mis_feedback' => null, 'mis_rejected_at' => null]);
+
+                // Notify MIS team about resubmission
+                $this->notifyMisTeamOfResubmission($application, $user);
+
+                DB::commit();
+
+                return [
+                    'success' => true,
+                    'message' => 'Application resubmitted successfully! Documents sent back to MIS for verification.',
+                    'application_id' => $application_id,
+                    'current_step' => 8,
+                    'redirect' => route('applications.show', $application_id),
+                    'resubmission' => true,
+                    'new_status' => 'mis_processing'
+                ];
+            }
             // Get approver information
             $creator = Employee::where('employee_id', $user->emp_id)->firstOrFail();
 
@@ -2205,11 +2846,17 @@ class OnboardingController extends Controller
             // $approvalLevel = $this->getApprovalLevelFromDesignation($firstApprover->emp_designation);
 
             $application->update([
-                'status' => 'initiated',
+                'status' => 'under_level1_review',
                 'current_approver_id' => $firstApprover->employee_id,
                 'approval_level' => $firstApprover->emp_designation,
+                'is_hierarchy_approved' => false,
                 'updated_at' => now()
             ]);
+
+            try {
+                Mail::to($firstApprover->emp_email)->send(new ApplicationSubmitted($application, $user, $firstApprover));
+            } catch (\Exception $e) {
+            }
 
             DB::commit();
 
@@ -2223,14 +2870,27 @@ class OnboardingController extends Controller
             ];
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error in saveStep8: " . $e->getMessage(), [
-                'application_id' => $application_id,
-                'user_id' => $user->id
-            ]);
             return [
                 'success' => false,
                 'error' => 'Failed to submit application. ' . $e->getMessage()
             ];
+        }
+    }
+
+    private function notifyMisTeamOfResubmission($application, $user)
+    {
+        try {
+            // Get MIS team members
+            $misTeam = Employee::whereHas('roles', function ($q) {
+                $q->whereIn('name', ['Mis User', 'Mis Admin']);
+            })->where('is_active', 1)->get();
+
+            foreach ($misTeam as $misMember) {
+                if ($misMember->emp_email) {
+                    Mail::to($misMember->emp_email)->send(new DocumentResubmission($application, $user));
+                }
+            }
+        } catch (\Exception $e) {
         }
     }
 
@@ -2254,7 +2914,6 @@ class OnboardingController extends Controller
             $application->created_by !== $user->emp_id &&
             !$user->hasAnyRole(['Admin', 'Mis Admin', 'Super Admin'])
         )) {
-            //Log::warning("Unauthorized delete attempt by emp_id: {$user->emp_id} for application_id: {$application->id}");
             abort(403, 'Unauthorized action');
         }
 
@@ -2311,62 +2970,11 @@ class OnboardingController extends Controller
         return response()->json($districts);
     }
 
-
-    public function removeDocument(Request $request, $applicationId)
-    {
-        DB::beginTransaction();
-        try {
-            $type = $request->input('type');
-            if (!$type) {
-                return response()->json(['success' => false, 'error' => 'Document type is missing.'], 400);
-            }
-
-            $validTypes = [
-                'business_entity',
-                'ownership',
-                'pan',
-                'address',
-                'bank',
-                'photo',
-                'shop_photo',
-                'gst',
-                'seed_license',
-                'other'
-            ];
-            if (!in_array($type, $validTypes)) {
-                return response()->json(['success' => false, 'error' => 'Invalid document type.'], 400);
-            }
-
-            $application = DB::table('onboardings')->where('id', $applicationId)->first();
-            if (!$application) {
-                return response()->json(['success' => false, 'error' => 'Application not found.'], 404);
-            }
-
-            $document = Document::where('application_id', $applicationId)
-                ->where('type', $type)
-                ->first();
-
-            if ($document) {
-                Storage::disk('public')->delete($document->path);
-                $document->delete();
-                DB::commit();
-                return response()->json(['success' => true, 'message' => 'Document removed successfully']);
-            }
-
-            DB::commit();
-            return response()->json(['success' => false, 'error' => 'Document not found']);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("Error removing document for application {$applicationId}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
-            return response()->json(['success' => false, 'error' => 'Failed to remove document: ' . $e->getMessage()], 500);
-        }
-    }
-
     public function preview($id)
     {
 
         try {
-            // Load application with all necessary columns
+            // Load application with all necessary relationships and columns
             $application = Onboarding::select([
                 'id',
                 'application_code',
@@ -2383,6 +2991,7 @@ class OnboardingController extends Controller
                 'zoneDetail:id,zone_name',
                 'regionDetail:id,region_name',
                 'territoryDetail:id,territory_name',
+                // **UPDATED: EntityDetails - Core entity information**
                 'entityDetails' => function ($query) {
                     $query->select([
                         'id',
@@ -2400,12 +3009,93 @@ class OnboardingController extends Controller
                         'mobile',
                         'email',
                         'pan_number',
+                        'pan_path',
+                        'pan_verified',
                         'gst_applicable',
                         'gst_number',
+                        'gst_path',
+                        'gst_validity',
+                        'gst_verified',
                         'seed_license',
-                        'additional_data',
-                        'documents_data'
+                        'seed_license_path',
+                        'seed_license_validity',
+                        'seed_license_verified',
+                        'entity_proof_path',
+                        'ownership_info_path',
+                        'bank_statement_path',
+                        'itr_acknowledgement_path',
+                        'balance_sheet_path',
+                        // **UPDATED: Direct bank columns**
+                        'bank_name',
+                        'account_holder_name',
+                        'account_number',
+                        'ifsc_code',
+                        'bank_document_path',
+                        'tan_number',
+                        'has_authorized_persons'
                     ]);
+                },
+
+                // **UPDATED: All entity-specific relationships**
+                'individualDetails:id,application_id,name,father_name,dob,age',
+                'proprietorDetails:id,application_id,name,father_name,dob,age',
+
+                // Partnership
+                'partnershipPartners:id,application_id,name,pan,contact,aadhar_path,aadhar_original_filename',
+                'partnershipSignatories:id,application_id,name,designation,contact',
+
+                // LLP
+                'llpDetails:id,application_id,llpin_number,incorporation_date',
+                'llpPartners:id,application_id,name,dpin_number,contact,address',
+
+                // Company
+                'companyDetails:id,application_id,entity_type,cin_number,incorporation_date',
+                'directors:id,application_id,name,din_number,contact,address',
+
+                // Cooperative
+                'cooperativeDetails:id,application_id,reg_number,reg_date',
+                'committeeMembers:id,application_id,name,designation,contact,address',
+
+                // Trust
+                'trustDetails:id,application_id,reg_number,reg_date',
+                'trustees:id,application_id,name,designation,contact,address',
+
+                // **UPDATED: Authorized Persons - Direct relationship**
+                'authorizedPersons:id,application_id,name,contact,email,address,relation,aadhar_number,letter_path,aadhar_path',
+
+                // **UPDATED: BankDetail - Only additional fields**
+                'bankDetail' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'financial_status',
+                        'retailer_count',
+                        'account_type',
+                        'relationship_duration',
+                        'od_limit',
+                        'od_security',
+                    ]);
+                },
+
+                'financialInfo' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'net_worth',
+                        'shop_ownership',
+                        'godown_area',
+                        'years_in_business',
+                        'annual_turnover'
+                    ]);
+                },
+                'businessPlans' => function ($query) {
+                    $query->select('id', 'application_id', 'crop', 'current_financial_year_amount')->limit(5);
+                },
+                'existingDistributorships' => function ($query) {
+                    $query->select('id', 'application_id', 'company_name');
+                },
+                'declarations' => function ($query) {
+                    $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
                 },
                 'distributionDetail' => function ($query) {
                     $query->select([
@@ -2419,42 +3109,6 @@ class OnboardingController extends Controller
                         'previous_firm_code',
                         'earlier_distributor'
                     ]);
-                },
-                'bankDetail' => function ($query) {
-                    $query->select([
-                        'id',
-                        'application_id',
-                        'financial_status',
-                        'retailer_count',
-                        'bank_name',
-                        'account_holder',
-                        'account_number',
-                        'ifsc_code',
-                        'account_type',
-                        'relationship_duration',
-                        'od_limit',
-                        'od_security'
-                    ]);
-                },
-                'financialInfo' => function ($query) {
-                    $query->select([
-                        'id',
-                        'application_id',
-                        'net_worth',
-                        'shop_ownership',
-                        'godown_area',
-                        'years_in_business',
-                        'annual_turnover'
-                    ]);
-                },
-                'businessPlans' => function ($query) {
-                    $query->select('id', 'application_id', 'crop', 'yearly_targets')->limit(5);
-                },
-                'existingDistributorships' => function ($query) {
-                    $query->select('id', 'application_id', 'company_name');
-                },
-                'declarations' => function ($query) {
-                    $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
                 }
             ])->findOrFail($id);
 
@@ -2464,22 +3118,38 @@ class OnboardingController extends Controller
             $countries = DB::table('core_country')->select('id', 'country_name')->get()->keyBy('id');
             $years = Year::select('id', 'period')->get()->keyBy('id');
 
+            // Entity type labels for display
+            $entityTypeLabels = [
+                'individual_person' => 'Individual Person',
+                'sole_proprietorship' => 'Sole Proprietorship',
+                'partnership' => 'Partnership',
+                'llp' => 'Limited Liability Partnership (LLP)',
+                'private_company' => 'Private Company',
+                'public_company' => 'Public Company',
+                'cooperative_society' => 'Cooperative Society',
+                'trust' => 'Trust'
+            ];
+
             return response()->view('components.form-sections.preview-pdf', [
                 'application' => $application,
                 'years' => $years,
                 'states' => $states,
                 'districts' => $districts,
-                'countries' => $countries
+                'countries' => $countries,
+                'entityTypeLabels' => $entityTypeLabels
             ])->header('Content-Security-Policy', "frame-ancestors 'self'");
         } catch (\Exception $e) {
-            Log::error("Preview Error: {$e->getMessage()}", ['id' => $id, 'trace' => $e->getTraceAsString()]);
-            return response("Error generating preview", 500);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating preview: ' . $e->getMessage()
+            ], 500);
         }
     }
-
     public function downloadApplicationPdf($id)
     {
         try {
+            // **UPDATED: Same eager loading structure as preview method**
             $application = Onboarding::select([
                 'id',
                 'application_code',
@@ -2496,6 +3166,8 @@ class OnboardingController extends Controller
                 'zoneDetail:id,zone_name',
                 'regionDetail:id,region_name',
                 'territoryDetail:id,territory_name',
+
+                // **UPDATED: EntityDetails - All direct columns, no additional_data**
                 'entityDetails' => function ($query) {
                     $query->select([
                         'id',
@@ -2513,12 +3185,94 @@ class OnboardingController extends Controller
                         'mobile',
                         'email',
                         'pan_number',
+                        'pan_path',
+                        'pan_verified',
                         'gst_applicable',
                         'gst_number',
+                        'gst_path',
+                        'gst_validity',
+                        'gst_verified',
                         'seed_license',
-                        'additional_data',
-                        'documents_data'
+                        'seed_license_path',
+                        'seed_license_validity',
+                        'seed_license_verified',
+                        'entity_proof_path',
+                        'ownership_info_path',
+                        'bank_statement_path',
+                        'itr_acknowledgement_path',
+                        'balance_sheet_path',
+                        // **ADDED: Direct bank columns**
+                        'bank_name',
+                        'account_holder_name',
+                        'account_number',
+                        'ifsc_code',
+                        'bank_document_path',
+                        'tan_number',
+                        'has_authorized_persons'
                     ]);
+                },
+
+                // **UPDATED: All entity-specific relationships**
+                'individualDetails:id,application_id,name,father_name,dob,age',
+                'proprietorDetails:id,application_id,name,father_name,dob,age',
+
+                // Partnership
+                'partnershipPartners:id,application_id,name,pan,contact,aadhar_path,aadhar_original_filename',
+
+                'partnershipSignatories:id,application_id,name,designation,contact',
+
+                // LLP
+                'llpDetails:id,application_id,llpin_number,incorporation_date',
+                'llpPartners:id,application_id,name,dpin_number,contact,address',
+
+                // Company
+                'companyDetails:id,application_id,entity_type,cin_number,incorporation_date',
+                'directors:id,application_id,name,din_number,contact,address',
+
+                // Cooperative
+                'cooperativeDetails:id,application_id,reg_number,reg_date',
+                'committeeMembers:id,application_id,name,designation,contact,address',
+
+                // Trust
+                'trustDetails:id,application_id,reg_number,reg_date',
+                'trustees:id,application_id,name,designation,contact,address',
+
+                // **UPDATED: Authorized Persons - Direct relationship**
+                'authorizedPersons:id,application_id,name,contact,email,address,relation,aadhar_number,letter_path,aadhar_path',
+
+                // **UPDATED: BankDetail - Only additional fields**
+                'bankDetail' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'financial_status',
+                        'retailer_count',
+                        'account_type',
+                        'relationship_duration',
+                        'od_limit',
+                        'od_security',
+                    ]);
+                },
+
+                'financialInfo' => function ($query) {
+                    $query->select([
+                        'id',
+                        'application_id',
+                        'net_worth',
+                        'shop_ownership',
+                        'godown_area',
+                        'years_in_business',
+                        'annual_turnover'
+                    ]);
+                },
+                'businessPlans' => function ($query) {
+                    $query->select('id', 'application_id', 'crop', 'current_financial_year_amount')->limit(5);
+                },
+                'existingDistributorships' => function ($query) {
+                    $query->select('id', 'application_id', 'company_name');
+                },
+                'declarations' => function ($query) {
+                    $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
                 },
                 'distributionDetail' => function ($query) {
                     $query->select([
@@ -2532,62 +3286,408 @@ class OnboardingController extends Controller
                         'previous_firm_code',
                         'earlier_distributor'
                     ]);
-                },
-                'bankDetail' => function ($query) {
-                    $query->select([
-                        'id',
-                        'application_id',
-                        'financial_status',
-                        'retailer_count',
-                        'bank_name',
-                        'account_holder',
-                        'account_number',
-                        'ifsc_code',
-                        'account_type',
-                        'relationship_duration',
-                        'od_limit',
-                        'od_security'
-                    ]);
-                },
-                'financialInfo' => function ($query) {
-                    $query->select([
-                        'id',
-                        'application_id',
-                        'net_worth',
-                        'shop_ownership',
-                        'godown_area',
-                        'years_in_business',
-                        'annual_turnover'
-                    ]);
-                },
-                'businessPlans' => function ($query) {
-                    $query->select('id', 'application_id', 'crop', 'yearly_targets')->limit(5);
-                },
-                'existingDistributorships' => function ($query) {
-                    $query->select('id', 'application_id', 'company_name');
-                },
-                'declarations' => function ($query) {
-                    $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
                 }
             ])->findOrFail($id);
 
+            // **UPDATED: Same lookup data as preview method**
             $states = DB::table('core_state')->select('id', 'state_name')->get()->keyBy('id');
             $districts = DB::table('core_district')->select('id', 'district_name')->get()->keyBy('id');
             $countries = DB::table('core_country')->select('id', 'country_name')->get()->keyBy('id');
             $years = Year::select('id', 'period')->get()->keyBy('id');
+            // **ADDED: Entity type labels**
+            $entityTypeLabels = [
+                'individual_person' => 'Individual Person',
+                'sole_proprietorship' => 'Sole Proprietorship',
+                'partnership' => 'Partnership',
+                'llp' => 'Limited Liability Partnership (LLP)',
+                'private_company' => 'Private Company',
+                'public_company' => 'Public Company',
+                'cooperative_society' => 'Cooperative Society',
+                'trust' => 'Trust'
+            ];
 
+            // **UPDATED: Generate PDF with same view data**
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('components.form-sections.preview-pdf', [
                 'application' => $application,
                 'years' => $years,
                 'states' => $states,
                 'districts' => $districts,
-                'countries' => $countries
-            ])->setPaper('a4', 'portrait');
+                'countries' => $countries,
+                'entityTypeLabels' => $entityTypeLabels
+            ])->setPaper('a4', 'portrait')
+                ->setOptions([
+                    'isHtml5ParserEnabled' => true,
+                    'isRemoteEnabled' => true,
+                    'defaultFont' => 'Arial'
+                ]);
 
-            return $pdf->download("Distributor_Application_{$application->application_code}.pdf");
+            // **UPDATED: Better filename with entity name**
+            $entityNameSlug = Str::slug($application->entityDetails->establishment_name ?? 'Application');
+
+            $filename = "Distributor_Application_{$application->application_code}_{$entityNameSlug}.pdf";
+
+            return $pdf->download($filename);
         } catch (\Exception $e) {
-            Log::error("PDF Download Error: {$e->getMessage()}", ['id' => $id, 'trace' => $e->getTraceAsString()]);
-            return response("Error generating PDF", 500);
+
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error generating PDF download: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function pendingDocuments()
+    {
+        $user = Auth::user();
+
+        // Only show for user's own pending applications
+        $applications = Onboarding::where('status', 'documents_pending')
+            ->where('created_by', $user->emp_id)
+            ->with(['entityDetails', 'checkpoints', 'additionalDocs', 'authorizedPersons'])
+            ->orderBy('mis_rejected_at', 'desc')
+            ->get();
+
+        if ($applications->isEmpty()) {
+            return view('applications.pending-documents', compact('applications'))
+                ->with('message', 'No pending documents at the moment. All your applications are up to date!');
+        }
+
+        return view('applications.pending-documents', compact('applications'));
+    }
+
+    public function uploadPendingDocuments(Request $request, Onboarding $application)
+    {
+        $user = Auth::user();
+
+        if ($user->emp_id !== $application->created_by) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        if ($application->status !== 'documents_pending') {
+            return response()->json(['success' => false, 'message' => 'Not pending'], 400);
+        }
+
+        // Extract only documents that actually have files
+        $documentsWithFiles = [];
+        if (isset($request->documents) && is_array($request->documents)) {
+            foreach ($request->documents as $index => $doc) {
+                if ($request->hasFile("documents.{$index}.file")) {
+                    $documentsWithFiles[] = [
+                        'index' => $index,
+                        'type' => $doc['type'],
+                        'item_name' => $doc['item_name'],
+                        'checkpoint_name' => $doc['checkpoint_name'] ?? null,
+                        'file' => $request->file("documents.{$index}.file")
+                    ];
+                }
+            }
+        }
+
+        if (empty($documentsWithFiles)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid files found. Please select files and try again.'
+            ], 422);
+        }
+
+        // Validate request
+        $request->validate([
+            'documents' => 'required|array',
+            'documents.*.type' => 'required|string|in:main_documents,authorized_persons,additional_documents',
+            'documents.*.item_name' => 'required|string|max:255',
+            'documents.*.checkpoint_name' => 'required|string|max:255',
+            'documents.*.file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $entityDetails = $application->entityDetails;
+            if (!$entityDetails) {
+                return response()->json(['success' => false, 'message' => 'Entity not found'], 404);
+            }
+
+            // Count pending checkpoints for logging
+            $pendingCheckpoints = $application->checkpoints()
+                ->where('status', 'not_verified')
+                ->pluck('checkpoint_name')
+                ->toArray();
+            $pendingAdditionalDocs = $application->additionalDocs()
+                ->pluck('id')
+                ->map(fn($id) => "additional_doc_{$id}")
+                ->toArray();
+            $totalPending = count($pendingCheckpoints) + count($pendingAdditionalDocs);
+
+            // if (count($documentsWithFiles) < $totalPending) {
+            //     Log::warning('Fewer documents uploaded than pending', [
+            //         'application_id' => $application->id,
+            //         'uploaded_count' => count($documentsWithFiles),
+            //         'pending_count' => $totalPending,
+            //         'missing_checkpoints' => array_diff(
+            //             array_merge($pendingCheckpoints, $pendingAdditionalDocs),
+            //             array_column($documentsWithFiles, 'checkpoint_name')
+            //         ),
+            //     ]);
+            // }
+
+            $uploadedCount = 0;
+            $updatedFields = [];
+
+            // Define document types configuration consistent with saveStep2
+            $documentTypes = [
+                'main_document_pan' => [
+                    'column' => 'pan_path',
+                    'prefix' => 'pandoc',
+                    's3_folder' => 'pan',
+                    'table' => 'entity_details',
+                ],
+                'main_document_gst' => [
+                    'column' => 'gst_path',
+                    'prefix' => 'gstdoc',
+                    's3_folder' => 'gst',
+                    'table' => 'entity_details',
+                ],
+                'main_document_seed_license' => [
+                    'column' => 'seed_license_path',
+                    'prefix' => 'seeddoc',
+                    's3_folder' => 'seed_license',
+                    'table' => 'entity_details',
+                ],
+                'main_document_entity_proof' => [
+                    'column' => 'entity_proof_path',
+                    'prefix' => 'entitydoc',
+                    's3_folder' => 'entity_proof',
+                    'table' => 'entity_details',
+                ],
+                'main_document_bank' => [
+                    'column' => 'bank_document_path',
+                    'prefix' => 'bankdoc',
+                    's3_folder' => 'bank',
+                    'table' => 'entity_details',
+                ],
+                'main_document_bank_statement' => [ // ADD THIS
+                    'column' => 'bank_statement_path',
+                    'prefix' => 'bankstmt',
+                    's3_folder' => 'bank_statement',
+                    'table' => 'entity_details',
+                ],
+                'main_document_itr_acknowledgement' => [ // ADD THIS
+                    'column' => 'itr_acknowledgement_path',
+                    'prefix' => 'itrack',
+                    's3_folder' => 'itr_acknowledgement',
+                    'table' => 'entity_details',
+                ],
+                'authorized_letter' => [
+                    'column' => 'letter_path',
+                    'prefix' => 'auth_letter',
+                    's3_folder' => 'authorized_persons',
+                    'table' => 'authorized_persons',
+                ],
+                'authorized_aadhar' => [
+                    'column' => 'aadhar_path',
+                    'prefix' => 'auth_aadhar',
+                    's3_folder' => 'authorized_persons',
+                    'table' => 'authorized_persons',
+                ],
+                'additional_document' => [
+                    'column' => 'path',
+                    'prefix' => 'additionaldoc',
+                    's3_folder' => 'additional_documents',
+                    'table' => 'application_additional_uploads',
+                ],
+            ];
+
+            foreach ($documentsWithFiles as $docInfo) {
+                $frontendType = $docInfo['type'];
+                $itemName = $docInfo['item_name'];
+                $checkpointName = $docInfo['checkpoint_name'];
+                $file = $docInfo['file'];
+
+                // Extract document type
+                $docType = $this->extractDocumentType($checkpointName, $frontendType);
+                $config = $documentTypes[$docType] ?? null;
+
+
+
+                // Check GST applicability for GST document
+                // if ($checkpointName === 'main_document_gst' && $entityDetails->gst_applicable === 'no') {
+                //     Log::warning('GST document upload attempted when GST is not applicable', [
+                //         'application_id' => $application->id,
+                //         'checkpoint_name' => $checkpointName,
+                //     ]);
+                //     continue;
+                // }
+
+                // Generate filename consistent with saveStep2
+                $filename = "{$config['prefix']}_" . time() . "_{$application->id}.{$file->getClientOriginalExtension()}";
+                $s3Path = "Connect/Distributor/{$config['s3_folder']}/{$filename}";
+
+                // Delete old file if it exists
+                if ($config['table'] === 'entity_details' && $entityDetails->{$config['column']}) {
+                    $oldPath = "Connect/Distributor/{$config['s3_folder']}/{$entityDetails->{$config['column']}}";
+                    if (Storage::disk('s3')->exists($oldPath)) {
+                        Storage::disk('s3')->delete($oldPath);
+                    }
+                } elseif ($config['table'] === 'authorized_persons') {
+                    if (preg_match('/authorized_(letter|aadhar)_(\d+)/', $checkpointName, $matches)) {
+                        $personIndex = $matches[2];
+                        $person = $application->authorizedPersons()->skip($personIndex)->first();
+                        if ($person && $person->{$config['column']}) {
+                            $oldPath = "Connect/Distributor/{$config['s3_folder']}/{$person->{$config['column']}}";
+                            if (Storage::disk('s3')->exists($oldPath)) {
+                                Storage::disk('s3')->delete($oldPath);
+                            }
+                        }
+                    }
+                } elseif ($config['table'] === 'application_additional_uploads') {
+                    if ($frontendType === 'additional_documents' && str_starts_with($checkpointName, 'additional_doc_')) {
+                        $docId = str_replace('additional_doc_', '', $checkpointName);
+                        $oldUpload = ApplicationAdditionalUpload::where('additional_doc_id', $docId)->first();
+                        if ($oldUpload && $oldUpload->path) {
+                            $oldPath = "Connect/Distributor/{$config['s3_folder']}/{$oldUpload->path}";
+                            if (Storage::disk('s3')->exists($oldPath)) {
+                                Storage::disk('s3')->delete($oldPath);
+                                Log::info('Deleted old file from S3', ['old_path' => $oldPath]);
+                            }
+                            $oldUpload->delete();
+                        }
+                    }
+                }
+
+                // Upload new file to S3 (consistent with saveStep2)
+                Storage::disk('s3')->put($s3Path, file_get_contents($file->getRealPath()), 'public');
+
+                // Update the relevant table
+                if ($config['table'] === 'entity_details') {
+                    $entityDetails->{$config['column']} = $filename;
+                    $updatedFields[] = $itemName;
+                    $uploadedCount++;
+                } elseif ($config['table'] === 'authorized_persons') {
+                    if (preg_match('/authorized_(letter|aadhar)_(\d+)/', $checkpointName, $matches)) {
+                        $personIndex = $matches[2];
+                        $person = $application->authorizedPersons()->skip($personIndex)->first();
+                        if ($person) {
+                            $person->{$config['column']} = $filename;
+                            $person->save();
+                            $updatedFields[] = $itemName;
+                            $uploadedCount++;
+                        } else {
+
+                            continue;
+                        }
+                    }
+                } elseif ($config['table'] === 'application_additional_uploads') {
+                    if ($frontendType === 'additional_documents' && str_starts_with($checkpointName, 'additional_doc_')) {
+                        $docId = str_replace('additional_doc_', '', $checkpointName);
+                        $uploadModel = ApplicationAdditionalUpload::create([
+                            'application_id' => $application->id,
+                            'additional_doc_id' => $docId,
+                            'path' => $filename,
+                            'uploaded_by' => $user->emp_id,
+                            'status' => 'pending'
+                        ]);
+                        $updatedFields[] = $itemName;
+                        $uploadedCount++;
+                    }
+                }
+            }
+
+            // Save entity_details changes
+            $entityDetails->save();
+
+            // Update application status
+            $newStatus = $uploadedCount > 0 ? 'documents_resubmitted' : 'documents_pending';
+            $application->update([
+                'status' => $newStatus,
+                'resubmitted_at' => $uploadedCount > 0 ? now() : $application->resubmitted_at,
+                'updated_at' => now()
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully uploaded {$uploadedCount} document(s)! MIS will review your updates.",
+                'uploaded_count' => $uploadedCount,
+                'files_uploaded' => $updatedFields,
+                'status_updated_to' => $newStatus,
+                'redirect' => route('applications.index')
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Upload failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function extractDocumentType($checkpointName, $frontendType)
+    {
+        if ($frontendType === 'main_documents' && $checkpointName) {
+            return $checkpointName; // e.g., main_document_gst
+        }
+
+        if ($frontendType === 'authorized_persons' && $checkpointName) {
+            if (preg_match('/authorized_(letter|aadhar)_(\d+)/', $checkpointName, $matches)) {
+                return "authorized_{$matches[1]}"; // e.g., authorized_letter, authorized_aadhar
+            }
+        }
+
+        if ($frontendType === 'additional_documents' && $checkpointName) {
+            return 'additional_document';
+        }
+
+        return $frontendType;
+    }
+
+    public function getLocationByPincode($pincode)
+    {
+        try {
+            $locations = DB::table('core_city_village_by_state')
+                ->select(
+                    'core_city_village_by_state.state_id',
+                    'core_state.state_name',
+                    'core_city_village_by_state.district_id',
+                    'core_district.district_name',
+                    'core_city_village_by_state.city_village_name as city'
+                )
+                ->join('core_state', 'core_city_village_by_state.state_id', '=', 'core_state.id')
+                ->join('core_district', 'core_city_village_by_state.district_id', '=', 'core_district.id')
+                ->where('core_city_village_by_state.pincode', $pincode)
+                ->where('core_city_village_by_state.is_active', 1)
+                ->where('core_state.is_active', 1)
+                ->where('core_district.is_active', 1)
+                ->get();
+
+            if ($locations->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No locations found for the provided PIN code',
+                    'data' => []
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $locations->map(function ($location) {
+                    return [
+                        'state_id' => $location->state_id,
+                        'state_name' => $location->state_name,
+                        'district_id' => $location->district_id,
+                        'district_name' => $location->district_name,
+                        'city' => $location->city,
+                    ];
+                })->values()
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error fetching location by PIN code', ['pincode' => $pincode, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching location data',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }

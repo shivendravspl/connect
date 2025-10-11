@@ -38,7 +38,7 @@
                         <div class="mb-3">
                             <h5>Application Details</h5>
                             <p><strong>Territory:</strong> {{ $application->territoryDetail->territory_name ?? 'N/A' }}</p>
-                            <p><strong>Legal Name:</strong> {{ $application->entityDetails->legal_name ?? 'N/A' }}</p>
+                            <p><strong>Legal Name:</strong> {{ $application->entityDetails->establishment_name ?? 'N/A' }}</p>
                             <p><strong>Status:</strong> {{ ucwords(str_replace('_', ' ', $application->status)) }}</p>
                         </div>
 

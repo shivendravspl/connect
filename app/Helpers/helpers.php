@@ -13,7 +13,7 @@ class helpers
     function getAssociatedBusinessUnitList($employeeId)
     {
         $user = Auth::user();
-        if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management'])) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management', 'Mis Admin', 'Mis User'])) {
             return DB::table('core_business_unit')
                 ->where('is_active', '1')
                 ->where('business_type', '1')
@@ -23,8 +23,8 @@ class helpers
 
         $buId = DB::table('core_employee')
             ->where('employee_id', $employeeId)
-            ->where('emp_zone', 0)
-            ->value('emp_bu');
+            ->where('zone', 0)
+            ->value('bu');
 
         if ($buId > 0) {
             return DB::table('core_business_unit')
@@ -40,7 +40,7 @@ class helpers
     function getAssociatedZoneList($employeeId)
     {
         $user = Auth::user();
-        if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management'])) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management', 'Mis Admin', 'Mis User'])) {
             return DB::table('core_zone')
                 ->where('is_active', '1')
                 ->where('business_type', '1')
@@ -50,8 +50,8 @@ class helpers
 
         $zoneId = DB::table('core_employee')
             ->where('employee_id', $employeeId)
-            ->where('emp_region', 0)
-            ->value('emp_zone');
+            ->where('region', 0)
+            ->value('zone');
         if ($zoneId > 0) {
             return DB::table('core_zone')
                 ->where('id', $zoneId)
@@ -68,7 +68,7 @@ class helpers
     {
         $user = Auth::user();
 
-        if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management'])) {
+        if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management', 'Mis Admin', 'Mis User'])) {
             return DB::table('core_region')
                 ->where('is_active', '1')
                 ->where('business_type', '1')
@@ -78,8 +78,8 @@ class helpers
 
         $regionId = DB::table('core_employee')
             ->where('employee_id', $employeeId)
-            ->where('emp_territory', 0)
-            ->value('emp_region');
+            ->where('territory', 0)
+            ->value('region');
 
         if ($regionId > 0) {
             return DB::table('core_region')
@@ -102,7 +102,7 @@ class helpers
                 ->prepend('All Territory', 'All')->toArray();
         }
         
-        $territoryId = DB::table('core_employee')->where('employee_id', $employeeId)->value('emp_territory');
+        $territoryId = DB::table('core_employee')->where('employee_id', $employeeId)->value('territory');
 
         if ($territoryId > 0) {
             return DB::table('core_territory')

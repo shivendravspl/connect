@@ -15,6 +15,7 @@ return new class extends Migration
             $table->string('role'); // rbm, zbm, gm, etc.
             $table->string('action'); // approve, reject, revert, hold
             $table->text('remarks')->nullable();
+            $table->date('follow_up_date')->nullable();
             $table->timestamps();
         });
     }

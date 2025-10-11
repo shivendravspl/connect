@@ -16,59 +16,49 @@ class ApplicationNotification extends Mailable implements ShouldQueue
 
     public const TYPE_REJECTED = 'rejected';
     public const TYPE_REVERTED = 'reverted';
-    public const TYPE_HOLD = 'hold';
+    public const TYPE_HOLD     = 'hold';
     public const TYPE_APPROVAL = 'approval';
-    public const TYPE_MIS = 'mis';
-    public const TYPE_INFO = 'info';
+    public const TYPE_MIS      = 'mis';
+    public const TYPE_INFO     = 'info';
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(
         public Onboarding $application,
-        protected string $mailSubject,  // Changed from 'subject' to 'mailSubject'
+        protected string $mailSubject,
         public ?string $remarks = null
     ) {
         $this->afterCommit();
+        $this->application->load(['createdBy', 'currentApprover']);
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: $this->mailSubject,  // Use the renamed property here
+            subject: $this->mailSubject,
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
+    public function build()
     {
-        return new Content(
-            view: 'emails.application_notification',
-            with: [
+        return $this->subject($this->mailSubject)
+            ->view('emails.application_notification')
+            ->with([
                 'application' => $this->application,
-                'remarks' => $this->remarks,
-                'actionType' => $this->determineActionType(),
-            ],
-        );
+                'mailSubject' => $this->mailSubject,
+                'remarks'     => $this->remarks,
+                'actionType'  => $this->determineActionType(),
+            ]);
     }
 
-    /**
-     * Determine action type based on subject.
-     */
+
     private function determineActionType(): string
     {
         return match (true) {
-            str_contains($this->mailSubject, 'Rejected') => self::TYPE_REJECTED,
-            str_contains($this->mailSubject, 'Reverted') => self::TYPE_REVERTED,
-            str_contains($this->mailSubject, 'Hold') => self::TYPE_HOLD,
+            str_contains($this->mailSubject, 'Rejected')          => self::TYPE_REJECTED,
+            str_contains($this->mailSubject, 'Reverted')          => self::TYPE_REVERTED,
+            str_contains($this->mailSubject, 'Hold')              => self::TYPE_HOLD,
             str_contains($this->mailSubject, 'Approval Required') => self::TYPE_APPROVAL,
-            str_contains($this->mailSubject, 'MIS') => self::TYPE_MIS,
-            default => self::TYPE_INFO,
+            str_contains($this->mailSubject, 'MIS')               => self::TYPE_MIS,
+            default                                               => self::TYPE_INFO,
         };
     }
 }

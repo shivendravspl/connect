@@ -587,8 +587,68 @@ $(document).ready(function() {
                 error(xhr) {
                     const response = xhr.responseJSON || {};
                     let errorMessage = 'Failed to save data.';
-                    if (response.error) {
-                        if (typeof response.error === 'object') {
+                    if (response.error && typeof response.error === 'object') {
+                        if (step === 5) {
+                            // Special handling for step 5
+                            // Clear errors
+                            $('.step-content[data-step="5"]').find('.form-control, .form-select').removeClass('is-invalid');
+                            $('.step-content[data-step="5"]').find('.invalid-feedback').remove();
+                            $('#annual-turnover-error').hide().empty();
+                            $('.step-content[data-step="5"] tbody tr').removeClass('table-danger');
+
+                            let hasTurnoverError = false;
+
+                            // Handle turnover amount error
+                            if (response.error['annual_turnover.amount']) {
+                                const message = Array.isArray(response.error['annual_turnover.amount']) ? response.error['annual_turnover.amount'][0] : response.error['annual_turnover.amount'];
+                                $('#annual-turnover-error').text(message).show();
+                                $('.step-content[data-step="5"] input[name^="annual_turnover[amount]"]').addClass('is-invalid');
+                                $('.step-content[data-step="5"] input[name^="annual_turnover[amount]"]').closest('tr').addClass('table-danger');
+                                hasTurnoverError = true;
+                            }
+
+                            // Handle turnover year error if any
+                            if (response.error['annual_turnover.year']) {
+                                const messages = Array.isArray(response.error['annual_turnover.year']) ? response.error['annual_turnover.year'] : [response.error['annual_turnover.year']];
+                                let message = messages.join(', ');
+                                let currentError = $('#annual-turnover-error').text();
+                                if (currentError) {
+                                    currentError += ' ' + message;
+                                } else {
+                                    currentError = message;
+                                }
+                                $('#annual-turnover-error').text(currentError).show();
+                                $('.step-content[data-step="5"] .table-responsive table tbody tr').addClass('table-danger');
+                                hasTurnoverError = true;
+                            }
+
+                            // Handle other fields in step 5
+                            const step5Fields = ['net_worth', 'shop_ownership', 'shop_uom', 'shop_area', 'godown_uom', 'godown_area', 'godown_ownership', 'years_in_business'];
+                            $.each(response.error, function(field, messages) {
+                                if (step5Fields.includes(field)) {
+                                    const message = Array.isArray(messages) ? messages[0] : messages;
+                                    let $input = $('.step-content[data-step="5"] [name="' + field + '"]');
+                                    if ($input.length) {
+                                        $input.addClass('is-invalid');
+                                        $input.after('<div class="invalid-feedback d-block">' + message + '</div>');
+                                    }
+                                }
+                            });
+
+                            // Scroll to errors
+                            if (hasTurnoverError) {
+                                $('html, body').animate({
+                                    scrollTop: $('.step-content[data-step="5"] .table-responsive').offset().top - 100
+                                }, 500);
+                            } else {
+                                $('html, body').animate({
+                                    scrollTop: $('.step-content[data-step="5"]').offset().top - 100
+                                }, 500);
+                            }
+
+                            errorMessage = Object.values(response.error).flat().join(' ');
+                        } else {
+                            // General handling for other steps
                             errorMessage = Object.values(response.error).flat().join(' ');
                             $('.form-group').find('.invalid-feedback').remove();
                             $('.form-control, .form-select').removeClass('is-invalid');
@@ -606,9 +666,9 @@ $(document).ready(function() {
                                     );
                                 }
                             }
-                        } else {
-                            errorMessage = response.error;
                         }
+                    } else if (response.error) {
+                        errorMessage = response.error;
                     } else {
                         errorMessage = xhr.statusText || 'An unexpected error occurred.';
                     }

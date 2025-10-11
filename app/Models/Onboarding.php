@@ -9,34 +9,49 @@ use Illuminate\Support\Facades\Log;
 class Onboarding extends Model
 {
     use HasFactory;
-
+    public $timestamps = true;
     protected $fillable = [
+        'application_code',
         'territory',
         'crop_vertical',
         'region',
         'zone',
         'business_unit',
+        'district',
+        'state',
         'status',
         'current_progress_step',
         'current_approver_id',
         'final_approver_id',
-        'approval_level',  
+        'approval_level',
         'created_by',
+        'is_hierarchy_approved',
+        'mis_rejected_at',
+        'resubmitted_at',
+        'mis_verified_at',
+        'doc_verification_status',
+        'agreement_status',
+        'physical_docs_status',
+        'final_status'
     ];
 
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'is_hierarchy_approved' => 'boolean',
+        'mis_rejected_at' => 'datetime',
+        'resubmitted_at' => 'datetime',
+        'mis_verified_at' => 'datetime',
     ];
 
 
-     // Add these properties
-    
-  
+    // Add these properties
+
+
     /**
      * Get the badge class for the current status
      */
-       public function getStatusBadgeAttribute()
+    public function getStatusBadgeAttribute()
     {
         return match ($this->status) {
             'initiated' => 'primary',
@@ -55,10 +70,9 @@ class Onboarding extends Model
     }
 
 
-     protected static function boot()
+    protected static function boot()
     {
         parent::boot();
-
         static::deleting(function ($application) {
             $deletedRecords = [];
 
@@ -162,9 +176,9 @@ class Onboarding extends Model
         return $this->belongsTo(User::class, 'current_approver_id', 'emp_id');
     }
 
-    public function finalApprover() 
-    { 
-        return $this->belongsTo(Employee::class, 'final_approver_id', 'employee_id'); 
+    public function finalApprover()
+    {
+        return $this->belongsTo(Employee::class, 'final_approver_id', 'employee_id');
     }
 
     /**
@@ -197,17 +211,17 @@ class Onboarding extends Model
 
     public function documentVerifications()
     {
-         return $this->hasMany(DocumentVerification::class, 'application_id'); 
+        return $this->hasMany(DocumentVerification::class, 'application_id');
     }
 
-    public function physicalDocuments() 
-    { 
-        return $this->hasMany(PhysicalDocument::class, 'application_id'); 
+    public function physicalDocumentChecks()
+    {
+        return $this->hasMany(PhysicalDocumentCheck::class, 'application_id');
     }
 
     public function distributorAgreements()
     {
-        return $this->hasMany(DistributorAgreement::class, 'application_id');
+        return $this->hasOne(DistributorAgreement::class, 'application_id');
     }
 
     public function distributorMaster()
@@ -215,4 +229,84 @@ class Onboarding extends Model
         return $this->hasOne(DistributorMaster::class, 'application_id');
     }
 
+    public function vertical()
+    {
+        return $this->belongsTo(CoreVertical::class, 'crop_vertical', 'id');
+    }
+
+    public function checkpoints()
+    {
+        return $this->hasMany(ApplicationCheckpoint::class, 'application_id');
+    }
+
+    public function additionalDocs()
+    {
+        return $this->hasMany(ApplicationAdditionalDocument::class, 'application_id');
+    }
+
+    public function individualDetails()
+    {
+        return $this->hasOne(IndividualDetails::class, 'application_id', 'id');
+    }
+
+    public function proprietorDetails()
+    {
+        return $this->hasOne(ProprietorDetails::class, 'application_id', 'id');
+    }
+
+    public function authorizedPersons()
+    {
+        return $this->hasMany(AuthorizedPerson::class, 'application_id', 'id');
+    }
+
+    public function partnershipPartners()
+    {
+        return $this->hasMany(PartnershipPartner::class, 'application_id', 'id');
+    }
+    public function partnershipSignatories()
+    {
+        return $this->hasMany(PartnershipSignatory::class, 'application_id', 'id');
+    }
+    public function llpDetails()
+    {
+        return $this->hasOne(LlpDetails::class, 'application_id', 'id');
+    }
+    public function llpPartners()
+    {
+        return $this->hasMany(LlpPartner::class, 'application_id', 'id');
+    }
+    public function companyDetails()
+    {
+        return $this->hasOne(CompanyDetails::class, 'application_id', 'id');
+    }
+    public function directors()
+    {
+        return $this->hasMany(Director::class, 'application_id', 'id');
+    }
+    public function cooperativeDetails()
+    {
+        return $this->hasOne(CooperativeDetails::class, 'application_id', 'id');
+    }
+    public function committeeMembers()
+    {
+        return $this->hasMany(CommitteeMember::class, 'application_id', 'id');
+    }
+    public function trustDetails()
+    {
+        return $this->hasOne(TrustDetails::class, 'application_id', 'id');
+    }
+    public function trustees()
+    {
+        return $this->hasMany(Trustee::class, 'application_id', 'id');
+    }
+
+    public function physicalDispatch()
+    {
+        return $this->hasOne(PhysicalDispatch::class, 'application_id', 'id');
+    }
+
+    public function documentChecklists()
+    {
+        return $this->hasMany(ApplicationCheckpoint::class, 'application_id');
+    }
 }

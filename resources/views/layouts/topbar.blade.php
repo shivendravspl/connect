@@ -145,7 +145,7 @@
 
                     @if (Auth::check())
                    <div class="dropdown ms-sm-3 header-item topbar-user">
-                       <button type="button" class="btn material-shadow-none" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                       <button type="button" class="btn material-shadow-none" id="" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                            <span class="d-flex align-items-center">
                                <img class="rounded-circle header-profile-user" src="{{ asset('assets/images/avatar-1.png') }}" alt="Header Avatar">
                                <span class="text-start ms-xl-2">

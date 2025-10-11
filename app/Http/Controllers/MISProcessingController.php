@@ -219,7 +219,7 @@ class MISProcessingController extends Controller
             'security_deposit_amount' => 'nullable|numeric|min:0|required_if:security_deposit_received,1',
         ]);
 
-        PhysicalDocument::updateOrCreate(
+        PhysicalDocumentCheck::updateOrCreate(
             ['application_id' => $application->id],
             [
                 'agreement_received' => $request->agreement_received,
@@ -241,7 +241,7 @@ class MISProcessingController extends Controller
             ]
         );
 
-        $docs = PhysicalDocument::where('application_id', $application->id)->first();
+        $docs = PhysicalDocumentCheck::where('application_id', $application->id)->first();
         $allVerified = $docs && $docs->agreement_verified && $docs->security_cheque_verified && $docs->security_deposit_verified;
 
         if ($allVerified) {
@@ -271,7 +271,7 @@ class MISProcessingController extends Controller
             'application_id' => $application->id,
             'territory_id' => $application->territory,
             'distributor_code' => $this->generateDistributorCode($application),
-            'name' => $application->entityDetails->legal_name ?? 'Distributor ' . $application->id,
+            'name' => $application->entityDetails->establishment_name ?? 'Distributor ' . $application->id,
             'entity_type' => $application->entityDetails->entity_type ?? 'Unknown',
             'pan_number' => $application->entityDetails->pan_number ?? 'N/A',
             'gst_number' => $application->entityDetails->gst_number ?? 'N/A',
@@ -298,7 +298,7 @@ class MISProcessingController extends Controller
     private function generateDistributorCode(Onboarding $application)
     {
         $prefix = 'DIST';
-        $namePart = strtoupper(substr($application->entityDetails->legal_name ?? 'UNK', 0, 3));
+        $namePart = strtoupper(substr($application->entityDetails->establishment_name ?? 'UNK', 0, 3));
         return $prefix . $namePart . $application->id;
     }
 

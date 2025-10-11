@@ -15,11 +15,16 @@ class FinancialInfo extends Model
 
     protected $casts = [
         'annual_turnover' => 'array',
-        'net_worth' => 'float',
+        'net_worth' => 'decimal:2',
+        'shop_area' => 'decimal:2',
+        'godown_area' => 'decimal:2',
         'years_in_business' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    public $timestamps = true;
+    public function application()
+    {
+        return $this->belongsTo(Onboarding::class, 'application_id');
+    }
 }

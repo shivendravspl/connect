@@ -51,13 +51,12 @@
                 </div>
             </li>
 
-            @hasanyrole('Admin|Super Admin')
-          
+    @hasanyrole('Admin|Super Admin')          
     <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
+        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
             <i class="ri-apps-2-line"></i> <span data-key="t-dashboards">Masters</span>
         </a>
-        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'show' : '' }}" id="sidebarMaster">
+        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'show' : '' }}" id="sidebarMaster">
             <ul class="nav nav-sm flex-column">
                 <li class="nav-item">
                     <a href="{{ route('distributor.index') }}" class="nav-link {{ request()->is('distributor*') ? 'active' : '' }}" data-key="t-analytics">Distributor</a>
@@ -139,16 +138,20 @@
                             @endif --}}
                         </a>
                     </li>
+
+                    <li class="nav-item">
+                          <a href="{{ route('communication.index') }}" class="nav-link {{ request()->routeIs('communication.index') ? 'active' : '' }}" data-key="t-analytics">Communication Controls</a>
+                    </li>
             </ul>
         </div>
     </li>
     @else
     @canany(['list-distributor', 'list-user', 'list-role', 'list-zone', 'list-region', 'list-territory', 'list-category', 'list-crop', 'list-variety', 'list-vertical', 'list-business-unit', 'list-org-function', 'list-company', 'list-core-api'])
     <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
+        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
             <i class="ri-apps-2-line"></i> <span data-key="t-dashboards">Masters</span>
         </a>
-        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*') ? 'show' : '' }}" id="sidebarMaster">
+        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'show' : '' }}" id="sidebarMaster">
             <ul class="nav nav-sm flex-column">
                 @can('list-distributor')
                 <li class="nav-item">
@@ -253,20 +256,54 @@
     @endcanany
     @endrole
 
-    @can('list-distributor')
+  @can('list-distributor')
     <li class="nav-item">
         <a class="nav-link menu-link {{ request()->is('applications*') ? 'active' : '' }}" href="#sidebarDistributor" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarDistributor">
             <i class="ri-apps-line"></i> <span data-key="t-dashboards">Distributor</span>
         </a>
         <div class="collapse menu-dropdown {{ request()->is('applications*') ? 'show' : '' }}" id="sidebarDistributor">
-             <ul class="nav nav-sm flex-column">
+            <ul class="nav nav-sm flex-column">
                 <li class="nav-item">
                     <a href="{{ route('applications.index') }}" class="nav-link {{ request()->is('applications*') ? 'active' : '' }}" data-key="t-analytics">Onboarding</a>
                 </li>
-             </ul>                   
-        </div>
+                @php
+                    $pendingCount = \App\Models\Onboarding::where('status', 'documents_pending')
+                        ->where('created_by', auth()->user()->emp_id)
+                        ->count();
+                @endphp
+                @if($pendingCount > 0)
+                <li class="nav-item">
+                    <a href="{{ route('applications.pending-documents') }}" 
+                       class="nav-link {{ request()->routeIs('applications.pending-documents') ? 'active' : '' }}">
+                        <i class="nav-icon ri-file-upload-line"></i>
+                        <p>
+                            Pending Documents
+                            <span class="badge bg-danger ms-1">{{ $pendingCount }}</span>
+                        </p>
+                    </a>
+                </li>
+                @endif
+            </ul>                   
+        </div>      
     </li>
-    @endcan
+@endcan
+
+
+    {{--@if(Auth::user()->employee && Auth::user()->employee->isMisTeam())
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('mis.verification-list') ? 'active' : '' }}" 
+                       href="{{ route('mis.verification-list') }}">
+                         <i class="ri-apps-line"></i>
+                        <span class="nav-text">Onboarding Request Received</span>
+                        @php
+                            $pendingCount = \App\Models\Onboarding::whereIn('status', ['mis_processing', 'documents_pending','documents_resubmitted','physical_docs_verified'])->count();
+                        @endphp
+                        @if($pendingCount > 0)
+                            <span class="badge bg-danger ms-auto">{{ $pendingCount }}</span>
+                        @endif
+                    </a>
+                </li>
+    @endif --}}
 
     @hasanyrole('Admin|Super Admin')
     <li class="nav-item">

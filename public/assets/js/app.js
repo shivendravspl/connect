@@ -1,5 +1,11 @@
-!function () {
-    var d = document.querySelector(".navbar-menu").innerHTML, M = 7, t = "en", a = localStorage.getItem("language");
+!function() {
+    var navbarMenu = document.querySelector(".navbar-menu");
+    if (!navbarMenu) return; // Add this null check
+    
+    var d = navbarMenu.innerHTML
+      , M = 7
+      , t = "en"
+      , a = localStorage.getItem("language");
 
     function o() {
         n(null === a ? t : a);

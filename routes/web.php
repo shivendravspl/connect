@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Auth;
 
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\CommunicationControlController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\DistributorController;
 use Illuminate\Support\Facades\DB;
@@ -63,6 +64,10 @@ Route::middleware('auth')->group(function () {
             ->toArray();
         return response()->json(['zones' => $zones]);
     });
+
+    Route::get('/communication-controls', [CommunicationControlController::class, 'index'])->name('communication.index');
+    Route::post('/communication-controls', [CommunicationControlController::class, 'store'])->name('communication.store');
+    Route::post('/communication-controls/{communicationControl}/toggle', [CommunicationControlController::class, 'toggle'])->name('communication.toggle');
 });
 
 // Password Reset Routes (public)

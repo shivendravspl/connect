@@ -17,6 +17,8 @@ class Document extends Model
         'path',
         'status',
         'remarks',
+        'created_at',
+        'updated_at'
     ];
 
     public $timestamps = true;

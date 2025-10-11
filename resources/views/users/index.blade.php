@@ -413,8 +413,10 @@
                                 <button class="btn btn-xs btn-warning change-password" data-id="${row.id}" title="Change Password">
                                     <i class="ri-lock-password-line fs-14"></i>
                                 </button>
-                                <a href="/user/${row.id}/permission" class="btn btn-xs btn-secondary" title="Manage Permissions">
-                                    <i class="ri-shield-keyhole-line align-bottom"></i>
+                                <a href="/user/${row.id}/permission" 
+                                class="btn btn-xs btn-secondary d-inline-flex align-items-center justify-content-center" 
+                                title="Manage Permissions">
+                                    <i class="ri-shield-keyhole-line fs-14"></i>
                                 </a>
                                 <button class="btn btn-xs btn-danger delete-user" data-id="${row.id}" title="Delete">
                                     <i class="bx bx-trash fs-14"></i>

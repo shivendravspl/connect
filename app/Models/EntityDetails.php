@@ -9,7 +9,7 @@ class EntityDetails extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'application_id',
+       'application_id',
         'establishment_name',
         'entity_type',
         'business_address',
@@ -22,23 +22,56 @@ class EntityDetails extends Model
         'pincode',
         'mobile',
         'email',
+
+        // PAN
         'pan_number',
+        'pan_path',
+        'pan_verified',
+
+        // GST
         'gst_applicable',
         'gst_number',
+        'gst_path',
+        'gst_validity',
+        'gst_verified',
+
+        // Seed License
         'seed_license',
-        'additional_data',
-        'documents_data',
+        'seed_license_path',
+        'seed_license_validity',
+        'seed_license_verified',
+
+        // New field
+        'entity_proof_path',
+        'ownership_info_path', 
+        'bank_statement_path',
+        'itr_acknowledgement_path',
+        'balance_sheet_path', // New field
+
+        // Bank
+        'bank_name',
+        'account_holder_name',
+        'account_number',
+        'ifsc_code',
+        'bank_document_path',
+
+        // Additional Identifiers
+        'tan_number',
+        'has_authorized_persons',
         'created_at',
         'updated_at',
     ];
 
+    
     protected $casts = [
-        'additional_data' => 'array',
-        'documents_data' => 'array',
+        'pan_verified' => 'boolean',
+        'gst_verified' => 'boolean',
+        'seed_license_verified' => 'boolean',
+        'gst_validity' => 'date',
+        'seed_license_validity' => 'date:Y-m-d',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
-
     /**
      * Get the Onboarding application that owns the entity details.
      */

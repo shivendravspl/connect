@@ -11,6 +11,6 @@ class Notification extends Model
     protected $table = 'notification';
     public $timestamps = false;
     protected $fillable = [
-        'userid', 'title', 'description',
+        'userid', 'notification_read', 'title', 'description',
     ];
 }

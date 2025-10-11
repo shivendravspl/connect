@@ -22,12 +22,12 @@ class Indent extends Model
         'quotation_file',
         'purpose',
         'status',
-        'approved_by', 
+        'approved_by',
         'approved_at',
         'rejection_reason'
     ];
 
-     protected $casts = [
+    protected $casts = [
         'indent_date' => 'date',
         'estimated_supply_date' => 'date',
         'approved_at' => 'datetime',
@@ -44,9 +44,9 @@ class Indent extends Model
     }
 
     public function items()
-{
-    return $this->hasMany(IndentItem::class);
-}
+    {
+        return $this->hasMany(IndentItem::class);
+    }
 
     public function getStatusClassAttribute()
     {
@@ -57,7 +57,7 @@ class Indent extends Model
             'rejected' => 'danger',
             'processed' => 'primary'
         ];
-        
+
         return $statusClasses[$this->status] ?? 'secondary';
     }
 
@@ -76,13 +76,18 @@ class Indent extends Model
         return $this->items->count();
     }
 
-      public function orderByUser()
+    public function orderByUser()
     {
         return $this->belongsTo(User::class, 'order_by');
     }
 
-      public function department()
+    public function department()
     {
         return $this->belongsTo(Department::class, 'department_id');
+    }
+
+    public function purchaseOrder()
+    {
+        return $this->hasOne(PurchaseOrder::class, 'indent_id');
     }
 }

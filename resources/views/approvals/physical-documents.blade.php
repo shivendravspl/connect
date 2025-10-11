@@ -3,9 +3,9 @@
 @section('content')
 <div class="container-fluid px-3 px-md-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="mb-0">
+        <h6 class="mb-0">
             <i class="ri-file-text-line me-2"></i> Manage Physical Documents for {{ $application->entityDetails->establishment_name }}
-        </h5>
+        </h6>
         <a href="{{ route('mis.verification-list') }}" class="btn btn-outline-secondary btn-sm">
             <i class="ri-arrow-left-line me-1"></i> Back to List
         </a>

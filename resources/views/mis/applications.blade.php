@@ -195,11 +195,12 @@
 			<div class="card">
 				<div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
 					<h6 class="card-title mb-0 small font-weight-bold">
-						MIS Applications Management
-						@if($filters['kpi_filter'])
-						<span class="text-muted">- {{ ucfirst(str_replace('_', ' ', $filters['kpi_filter'])) }}</span>
-						@endif
+						MIS Applications Management 
+						
 					</h6>
+					<a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">
+        <i class="ri-arrow-left-line align-middle"></i> Back
+    </a>
 				</div>
 				<div class="card-body p-1">
 					<form id="mis-filter-form" method="GET" class="row g-1 align-items-end">

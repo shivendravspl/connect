@@ -47,7 +47,6 @@
                 <p><strong>GST Applicable:</strong> {{ Str::title($application->entityDetails->gst_applicable ?? 'N/A') }}</p>
                 @if($application->entityDetails->gst_applicable == 'yes')
                     <p><strong>GST Number:</strong> {{ $application->entityDetails->gst_number ?? 'N/A' }}</p>
-                    <p><strong>GST Validity:</strong> {{ $application->entityDetails->additional_data['gst_validity'] ?? 'N/A' }}</p>
                 @endif
                 <p><strong>Seed License:</strong> {{ $application->entityDetails->seed_license ?? 'N/A' }}</p>
                 <p><strong>Seed License Validity:</strong> {{ $application->entityDetails->additional_data['seed_license_validity'] ?? 'N/A' }}</p>

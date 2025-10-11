@@ -32,7 +32,7 @@ class EntityDetails extends Model
         'gst_applicable',
         'gst_number',
         'gst_path',
-        'gst_validity',
+        //'gst_validity',
         'gst_verified',
 
         // Seed License
@@ -67,7 +67,7 @@ class EntityDetails extends Model
         'pan_verified' => 'boolean',
         'gst_verified' => 'boolean',
         'seed_license_verified' => 'boolean',
-        'gst_validity' => 'date',
+        //'gst_validity' => 'date',
         'seed_license_validity' => 'date:Y-m-d',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

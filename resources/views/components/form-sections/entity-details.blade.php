@@ -13,7 +13,6 @@ $gstDoc = $application->entityDetails && $application->entityDetails->gst_applic
     'verified' => $application->entityDetails->gst_verified ?? false,
     'details' => [
         'gst_number' => $application->entityDetails->gst_number,
-        'gst_validity' => $application->entityDetails->gst_validity
     ]
 ] : null;
 
@@ -1108,6 +1107,9 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                         <input type="hidden" name="existing_gst_file_original" value="{{ $gstDoc['original_filename'] ?? basename($gstDoc['path']) }}">
                     @endif
                 </div>
+                @error('gst_file')
+    <div class="text-danger small mt-1">{{ $message }}</div>
+@enderror
             </div>
             <div class="col-md-4">
                 <label for="gst_number" class="form-label small">GST Number *</label>
@@ -1125,12 +1127,7 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                 </div>
                 <div class="invalid-feedback gst-error">Please enter a valid GST number (e.g., 22AAAAA0000A1Z5).</div>
             </div>
-            <div class="col-md-4">
-                <label for="gst_validity" class="form-label small">GST Validity *</label>
-                <input type="date" class="form-control form-control-sm" id="gst_validity" name="gst_validity" 
-                    min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}" 
-                    value="{{ old('gst_validity', optional($application->entityDetails)->gst_validity?->format('Y-m-d') ?? '') }}" required>
-            </div>
+           
         </div>
     </div>
 
@@ -2578,7 +2575,6 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
             gstFields.style.display = 'block';
             gstFields.querySelectorAll('input, textarea').forEach(input => input.disabled = false);
             document.getElementById('gst_number').required = true;
-            document.getElementById('gst_validity').required = true;
             document.getElementById('gst_file').required = true;
         } else {
             gstFields.style.display = 'none';
@@ -2589,7 +2585,6 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
             document.getElementById('gst_file').value = '';
             document.getElementById('gst_file_name').classList.add('d-none');
             document.getElementById('gst_number').required = false;
-            document.getElementById('gst_validity').required = false;
             document.getElementById('gst_file').required = false;
         }
     }

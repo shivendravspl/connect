@@ -95,10 +95,6 @@
                     <td class="value">{{ $entityDetails->gst_number ?? 'N/A' }}</td>
                 </tr>
                 <tr>
-                    <td class="label">GST Validity:</td>
-                    <td class="value">{{ $entityDetails->gst_validity ? \Carbon\Carbon::parse($entityDetails->gst_validity)->format('d-m-Y') : 'N/A' }}</td>
-                </tr>
-                <tr>
                     <td class="label">GST Verified:</td>
                     <td class="value">{{ isset($entityDetails->gst_verified) ? ($entityDetails->gst_verified ? 'Yes' : 'No') : 'N/A' }}</td>
                 </tr>

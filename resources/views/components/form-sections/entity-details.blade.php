@@ -489,7 +489,7 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                         <div class="form-group mb-2">
                             <label for="llp_incorporation_date" class="form-label small">Date of Incorporation *</label>
                             <input type="date" class="form-control form-control-sm" id="llp_incorporation_date" name="llp_incorporation_date"
-                                value="{{ old('llp_incorporation_date', optional($llpDetails->incorporation_date ? \Carbon\Carbon::parse($llpDetails->incorporation_date) : null)->format('Y-m-d')) }}" required>
+                                value="{{ old('llp_incorporation_date', isset($llpDetails->incorporation_date) ? \Carbon\Carbon::parse($llpDetails->incorporation_date)->format('Y-m-d') : '') }}" required>
                         </div>
                     </div>
                 </div>

@@ -1,26 +1,41 @@
-
-       @php
-    // Get the latest log for each role
-    $latestLogs = [];
+@php
+    // DEBUG: Comprehensive debugging
+    $applicationId = $application->id;
     
-    foreach ($application->approvalLogs as $log) {
-        $role = $log->role;
-        // Always use the latest log for each role
-        if (!isset($latestLogs[$role]) || $log->created_at > $latestLogs[$role]->created_at) {
-            $latestLogs[$role] = $log;
+    echo "<!-- DEBUG: Application ID: {$applicationId} -->\n";
+    
+    // Method 1: Direct query
+    $directLogs = \App\Models\ApprovalLog::where('application_id', $applicationId)->get();
+    echo "<!-- DEBUG: Direct query count: " . $directLogs->count() . " -->\n";
+    
+    // Method 2: Relationship
+    $relationshipLogs = $application->approvalLogs;
+    echo "<!-- DEBUG: Relationship count: " . $relationshipLogs->count() . " -->\n";
+    
+    // Method 3: Check SQL
+    $sql = $application->approvalLogs()->toSql();
+    $bindings = $application->approvalLogs()->getBindings();
+    echo "<!-- DEBUG: SQL: {$sql} -->\n";
+    echo "<!-- DEBUG: Bindings: " . json_encode($bindings) . " -->\n";
+    
+    // Use direct logs for now
+    $allLogs = $directLogs;
+    
+    if ($allLogs->isEmpty()) {
+        echo "<!-- DEBUG: No logs found for application ID: {$applicationId} -->\n";
+        echo "<!-- DEBUG: Available application IDs in logs: " . 
+             \App\Models\ApprovalLog::distinct()->pluck('application_id')->implode(', ') . " -->\n";
+    }
+
+    // Group logs by role and get the latest log for each role
+    $roleLogs = [];
+    foreach ($allLogs as $log) {
+        if (!isset($roleLogs[$log->role]) || $log->created_at > $roleLogs[$log->role]->created_at) {
+            $roleLogs[$log->role] = $log;
         }
     }
 
-    // Map roles to approval levels - CORRECTED MAPPING
-    $approvalLevels = [
-        'Regional Business Manager' => $latestLogs['Regional Business Manager'] ?? null,
-        'Zonal Business Manager' => $latestLogs['Zonal Business Manager'] ?? null,
-        'General Manager' => $latestLogs['General Manager'] ?? null,
-        'MIS' => $latestLogs['MIS'] ?? $latestLogs['Senior Executive'] ?? null,
-    ];
-
     $currentStatus = $application->status;
-    $currentApprovalLevel = $application->approval_level;
 
     // Build stages
     $stages = [];
@@ -28,34 +43,27 @@
     // Stage 1: Draft/Initiated
     $stages[] = [
         'label' => 'Draft/Initiated',
-        'log' => null,
-        'status' => in_array($currentStatus, ['draft', 'initiated']) ? 'pending' : 'approved',
+        'status' => 'approved',
         'date' => $application->created_at->format('d M Y'),
         'remarks' => 'Application submitted',
         'icon' => 'ri-draft-fill'
     ];
 
     // Stage 2: Regional Business Manager
-    $rbmLog = $approvalLevels['Regional Business Manager'];
-    $rbmStatus = $rbmLog ? $rbmLog->action : 'not-started';
-    $rbmDate = $rbmLog ? $rbmLog->created_at->format('d M Y') : '-';
-    $rbmRemarks = $rbmLog ? $rbmLog->remarks : '-';
-
+    $rbmLog = $roleLogs['Regional Business Manager'] ?? null;
     $stages[] = [
         'label' => 'RBM',
-        'log' => $rbmLog,
-        'status' => $rbmStatus,
-        'date' => $rbmDate,
-        'remarks' => $rbmRemarks,
+        'status' => $rbmLog ? $rbmLog->action : 'not-started',
+        'date' => $rbmLog ? $rbmLog->created_at->format('d M Y') : '-',
+        'remarks' => $rbmLog ? $rbmLog->remarks : '-',
         'icon' => 'ri-user-3-fill'
     ];
 
-    // Stage 3: Zonal Business Manager (only if exists)
-    $zbmLog = $approvalLevels['Zonal Business Manager'];
+    // Stage 3: Zonal Business Manager (if exists)
+    $zbmLog = $roleLogs['Zonal Business Manager'] ?? null;
     if ($zbmLog) {
         $stages[] = [
             'label' => 'ZBM',
-            'log' => $zbmLog,
             'status' => $zbmLog->action,
             'date' => $zbmLog->created_at->format('d M Y'),
             'remarks' => $zbmLog->remarks,
@@ -64,56 +72,36 @@
     }
 
     // Stage 4: General Manager
-    $gmLog = $approvalLevels['General Manager'];
-    $gmStatus = 'not-started';
-    $gmDate = '-';
-    $gmRemarks = '-';
-
-    if ($gmLog) {
-        $gmStatus = $gmLog->action;
-        $gmDate = $gmLog->created_at->format('d M Y');
-        $gmRemarks = $gmLog->remarks;
-    } elseif ($rbmStatus == 'approved' && !$zbmLog) {
-        // If RBM approved and no ZBM, GM should be pending
-        $gmStatus = 'pending';
-    } elseif ($zbmLog && $zbmLog->action == 'approved') {
-        // If ZBM approved, GM should be pending
-        $gmStatus = 'pending';
-    }
-
+    $gmLog = $roleLogs['General Manager'] ?? null;
     $stages[] = [
         'label' => 'GM',
-        'log' => $gmLog,
-        'status' => $gmStatus,
-        'date' => $gmDate,
-        'remarks' => $gmRemarks,
+        'status' => $gmLog ? $gmLog->action : 'not-started',
+        'date' => $gmLog ? $gmLog->created_at->format('d M Y') : '-',
+        'remarks' => $gmLog ? $gmLog->remarks : '-',
         'icon' => 'ri-user-5-fill'
     ];
 
-    // Stage 5: MIS
-    $misLog = $approvalLevels['MIS'];
+    // Stage 5: MIS/Senior Executive
+    $misLog = $roleLogs['MIS'] ?? $roleLogs['Senior Executive'] ?? null;
     $misStatus = 'not-started';
     $misDate = '-';
     $misRemarks = '-';
 
     if ($misLog) {
         $misStatus = $misLog->action;
+        if (in_array($misStatus, ['documents_verified', 'distributor_confirmed', 'approved'])) {
+            $misStatus = 'approved';
+        }
         $misDate = $misLog->created_at->format('d M Y');
         $misRemarks = $misLog->remarks;
-    } elseif ($gmStatus == 'approved' && in_array($currentStatus, ['mis_processing', 'documents_pending', 'documents_resubmitted', 'documents_verified', 'agreement_created', 'documents_received', 'physical_docs_verified'])) {
-        $misStatus = 'pending';
-        $misDate = $application->updated_at->format('d M Y');
     } elseif ($currentStatus == 'distributorship_created') {
         $misStatus = 'approved';
         $misDate = $application->updated_at->format('d M Y');
-    } elseif ($currentStatus == 'mis_rejected') {
-        $misStatus = 'rejected';
-        $misDate = $application->updated_at->format('d M Y');
+        $misRemarks = 'Distributorship created';
     }
 
     $stages[] = [
         'label' => 'MIS',
-        'log' => $misLog,
         'status' => $misStatus,
         'date' => $misDate,
         'remarks' => $misRemarks,
@@ -126,44 +114,48 @@
 
     $stages[] = [
         'label' => 'Final',
-        'log' => null,
         'status' => $finalStatus,
         'date' => $finalDate,
         'remarks' => $currentStatus == 'distributorship_created' ? 'Distributorship created successfully' : '-',
         'icon' => 'ri-checkbox-circle-fill'
     ];
 
-    // Handle special statuses
-    if ($currentStatus == 'reverted') {
-        foreach ($stages as &$stage) {
-            if ($stage['label'] == $currentApprovalLevel) {
-                $stage['status'] = 'reverted';
-                $stage['remarks'] = 'Application reverted for corrections';
-            }
-        }
-    }
+    // Debug info
+    $debugInfo = [
+        'application_id' => $application->id,
+        'logs_count' => $allLogs->count(),
+        'roles_found' => array_keys($roleLogs),
+        'status' => $currentStatus,
+    ];
 @endphp
 
-        <div class="timeline-container d-flex flex-row align-items-center justify-content-start p-3 overflow-x-auto overflow-y-hidden bg-light rounded">
-            @foreach($stages as $index => $stage)
-            <div class="timeline-item text-center px-2" style="min-width: 140px;">
-                <i class="{{ $stage['icon'] }} mb-2 {{ $stage['status'] == 'approved' ? 'text-success' : ($stage['status'] == 'rejected' ? 'text-danger' : ($stage['status'] == 'pending' ? 'text-warning' : ($stage['status'] == 'hold' ? 'text-info' : ($stage['status'] == 'reverted' ? 'text-info' : 'text-muted')))) }}"
-                    title="{{ $stage['label'] }} - {{ ucfirst($stage['status']) }}"
-                    style="font-size: 1.2rem;"></i>
-                <div class="timeline-stage-info">
-                    <strong class="small">{{ $stage['label'] }}</strong><br>
-                    <span class="badge bg-{{ $stage['status'] == 'approved' ? 'success' : ($stage['status'] == 'rejected' ? 'danger' : ($stage['status'] == 'pending' ? 'warning' : ($stage['status'] == 'hold' ? 'info' : ($stage['status'] == 'reverted' ? 'info' : 'secondary')))) }} small">
-                        {{ ucfirst($stage['status']) }}
-                    </span><br>
-                    <small class="text-muted d-block"><strong>Date:</strong> {{ $stage['date'] }}</small>
-                    <small class="text-muted d-block"><strong>Remarks:</strong> {{ \Illuminate\Support\Str::limit($stage['remarks'], 30) }}</small>
-                </div>
-            </div>
-            @if(!$loop->last)
-            <div class="arrow px-1 d-flex align-items-center">
-                <span style="font-size: 1.2rem; color: #6c757d;">→</span>
-            </div>
-            @endif
-            @endforeach
+<!-- Debug Info -->
+<div class="alert alert-info small mb-2">
+    <strong>Timeline Debug:</strong> 
+    App ID: {{ $debugInfo['application_id'] }} | 
+    Logs: {{ $debugInfo['logs_count'] }} | 
+    Roles: {{ implode(', ', $debugInfo['roles_found']) }} |
+    Status: {{ $debugInfo['status'] }}
+</div>
+
+<div class="timeline-container d-flex flex-row align-items-center justify-content-start p-3 overflow-x-auto overflow-y-hidden bg-light rounded">
+    @foreach($stages as $index => $stage)
+    <div class="timeline-item text-center px-2" style="min-width: 140px;">
+        <i class="{{ $stage['icon'] }} mb-2 {{ $stage['status'] == 'approved' ? 'text-success' : ($stage['status'] == 'rejected' ? 'text-danger' : ($stage['status'] == 'pending' ? 'text-warning' : ($stage['status'] == 'hold' ? 'text-info' : ($stage['status'] == 'reverted' ? 'text-info' : 'text-muted')))) }}"
+            style="font-size: 1.2rem;"></i>
+        <div class="timeline-stage-info">
+            <strong class="small">{{ $stage['label'] }}</strong><br>
+            <span class="badge bg-{{ $stage['status'] == 'approved' ? 'success' : ($stage['status'] == 'rejected' ? 'danger' : ($stage['status'] == 'pending' ? 'warning' : ($stage['status'] == 'hold' ? 'info' : ($stage['status'] == 'reverted' ? 'info' : 'secondary')))) }} small">
+                {{ ucfirst($stage['status']) }}
+            </span><br>
+            <small class="text-muted d-block"><strong>Date:</strong> {{ $stage['date'] }}</small>
+            <small class="text-muted d-block"><strong>Remarks:</strong> {{ \Illuminate\Support\Str::limit($stage['remarks'], 30) }}</small>
         </div>
- 
+    </div>
+    @if(!$loop->last)
+    <div class="arrow px-1 d-flex align-items-center">
+        <span style="font-size: 1.2rem; color: #6c757d;">→</span>
+    </div>
+    @endif
+    @endforeach
+</div>

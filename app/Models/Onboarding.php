@@ -184,10 +184,11 @@ class Onboarding extends Model
     /**
      * Get the approval logs for this application.
      */
+
     public function approvalLogs()
-    {
-        return $this->hasMany(ApprovalLog::class, 'application_id');
-    }
+{
+    return $this->hasMany(ApprovalLog::class, 'application_id');
+}
 
     public function territoryDetail()
     {

@@ -2,11 +2,27 @@
 
 @section('content')
 <div class="container-fluid px-2 px-sm-3">
+    <!-- start page title -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
+                <h4 class="mb-sm-0">Onboarding</h4>
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
+                        <li class="breadcrumb-item active">My Applications</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end page title -->
+
     <div class="row justify-content-center">
         <div class="col-12 px-0 px-sm-2">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
-                    <h5 class="mb-0 small font-weight-bold">My Applications</h5>
+                    <h5 class="card-title mb-0">My Applications</h5>
                     <div class="d-flex align-items-center" style="gap: 0.5rem;">
                         <!-- Filters -->
                         <div class="d-flex align-items-center" style="gap: 0.5rem;">

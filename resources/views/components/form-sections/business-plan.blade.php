@@ -57,6 +57,11 @@
             font-size: 0.75rem;
             font-weight: normal;
         }
+        .mt-or-amount-required {
+            color: #6c757d;
+            font-size: 0.65rem;
+            font-style: italic;
+        }
         @media (max-width: 768px) {
             .table th, .table td {
                 font-size: 0.70rem;
@@ -84,11 +89,23 @@
                 <tr>
                     <th></th>
                     <!-- Current FY Sub-headers -->
-                    <th class="form-label fw-normal sub-header" style="width: 15%;">MT *</th>
-                    <th class="form-label fw-normal sub-header" style="width: 15%;">Amount *</th>
+                    <th class="form-label fw-normal sub-header" style="width: 15%;">
+                        MT 
+                        <div class="mt-or-amount-required">(Either MT or Amount required)</div>
+                    </th>
+                    <th class="form-label fw-normal sub-header" style="width: 15%;">
+                        Amount 
+                        <div class="mt-or-amount-required">(Either MT or Amount required)</div>
+                    </th>
                     <!-- Next FY Sub-headers -->
-                    <th class="form-label fw-normal sub-header" style="width: 15%;">MT *</th>
-                    <th class="form-label fw-normal sub-header" style="width: 15%;">Amount *</th>
+                    <th class="form-label fw-normal sub-header" style="width: 15%;">
+                        MT 
+                        <div class="mt-or-amount-required">(Either MT or Amount required)</div>
+                    </th>
+                    <th class="form-label fw-normal sub-header" style="width: 15%;">
+                        Amount 
+                        <div class="mt-or-amount-required">(Either MT or Amount required)</div>
+                    </th>
                     <th></th>
                 </tr>
             </thead>
@@ -108,33 +125,33 @@
                     </td>
                     <!-- Current FY Columns -->
                     <td>
-                        <input type="number" class="form-control"
+                        <input type="number" class="form-control current-mt"
                                name="business_plans[{{ $index }}][current_financial_year_mt]"
                                value="{{ old('business_plans.' . $index . '.current_financial_year_mt', $plan['current_financial_year_mt']) }}"
                                min="0" step="0.01" 
-                               placeholder="MT" required>
+                               placeholder="MT">
                     </td>
                     <td>
-                        <input type="number" class="form-control"
+                        <input type="number" class="form-control current-amount"
                                name="business_plans[{{ $index }}][current_financial_year_amount]"
                                value="{{ old('business_plans.' . $index . '.current_financial_year_amount', $plan['current_financial_year_amount']) }}"
                                min="0" step="0.01" 
-                               placeholder="Amount" required>
+                               placeholder="Amount">
                     </td>
                     <!-- Next FY Columns -->
                     <td>
-                        <input type="number" class="form-control"
+                        <input type="number" class="form-control next-mt"
                                name="business_plans[{{ $index }}][next_financial_year_mt]"
                                value="{{ old('business_plans.' . $index . '.next_financial_year_mt', $plan['next_financial_year_mt']) }}"
                                min="0" step="0.01" 
-                               placeholder="MT" required>
+                               placeholder="MT">
                     </td>
                     <td>
-                        <input type="number" class="form-control"
+                        <input type="number" class="form-control next-amount"
                                name="business_plans[{{ $index }}][next_financial_year_amount]"
                                value="{{ old('business_plans.' . $index . '.next_financial_year_amount', $plan['next_financial_year_amount']) }}"
                                min="0" step="0.01" 
-                               placeholder="Amount" required>
+                               placeholder="Amount">
                     </td>
                     <td>
                         @if($index > 0)
@@ -173,25 +190,25 @@
                 </td>
                 <!-- Current FY Columns -->
                 <td>
-                    <input type="number" class="form-control" 
+                    <input type="number" class="form-control current-mt" 
                            name="business_plans[${businessPlanIndex}][current_financial_year_mt]" 
-                           min="0" step="0.01" placeholder="MT" required>
+                           min="0" step="0.01" placeholder="MT">
                 </td>
                 <td>
-                    <input type="number" class="form-control" 
+                    <input type="number" class="form-control current-amount" 
                            name="business_plans[${businessPlanIndex}][current_financial_year_amount]" 
-                           min="0" step="0.01" placeholder="Amount" required>
+                           min="0" step="0.01" placeholder="Amount">
                 </td>
                 <!-- Next FY Columns -->
                 <td>
-                    <input type="number" class="form-control" 
+                    <input type="number" class="form-control next-mt" 
                            name="business_plans[${businessPlanIndex}][next_financial_year_mt]" 
-                           min="0" step="0.01" placeholder="MT" required>
+                           min="0" step="0.01" placeholder="MT">
                 </td>
                 <td>
-                    <input type="number" class="form-control" 
+                    <input type="number" class="form-control next-amount" 
                            name="business_plans[${businessPlanIndex}][next_financial_year_amount]" 
-                           min="0" step="0.01" placeholder="Amount" required>
+                           min="0" step="0.01" placeholder="Amount">
                 </td>
                 <td>
                     <button type="button" class="btn btn-sm btn-danger remove-business-plan">
@@ -210,6 +227,66 @@
                 $(this).closest('.business-plan-row').remove();
             } else {
                 alert('At least one business plan is required.');
+            }
+        });
+
+        // Client-side validation for either MT or Amount
+        $(document).on('blur', '.current-mt, .current-amount, .next-mt, .next-amount', function() {
+            const row = $(this).closest('.business-plan-row');
+            validateBusinessPlanRow(row);
+        });
+
+        function validateBusinessPlanRow(row) {
+            const currentMt = row.find('.current-mt').val();
+            const currentAmount = row.find('.current-amount').val();
+            const nextMt = row.find('.next-mt').val();
+            const nextAmount = row.find('.next-amount').val();
+
+            // Remove existing validation classes
+            row.find('.current-mt, .current-amount, .next-mt, .next-amount').removeClass('is-invalid');
+
+            // Validate current financial year
+            if ((!currentMt || currentMt == 0) && (!currentAmount || currentAmount == 0)) {
+                row.find('.current-mt, .current-amount').addClass('is-invalid');
+            }
+
+            // Validate next financial year
+            if ((!nextMt || nextMt == 0) && (!nextAmount || nextAmount == 0)) {
+                row.find('.next-mt, .next-amount').addClass('is-invalid');
+            }
+        }
+
+        // Form submission validation
+        $('form').on('submit', function(e) {
+            let isValid = true;
+            
+            $('.business-plan-row').each(function() {
+                const row = $(this);
+                const currentMt = row.find('.current-mt').val();
+                const currentAmount = row.find('.current-amount').val();
+                const nextMt = row.find('.next-mt').val();
+                const nextAmount = row.find('.next-amount').val();
+
+                // Remove existing validation classes
+                row.find('.current-mt, .current-amount, .next-mt, .next-amount').removeClass('is-invalid');
+
+                // Check current financial year
+                if ((!currentMt || currentMt == 0) && (!currentAmount || currentAmount == 0)) {
+                    row.find('.current-mt, .current-amount').addClass('is-invalid');
+                    isValid = false;
+                }
+
+                // Check next financial year
+                if ((!nextMt || nextMt == 0) && (!nextAmount || nextAmount == 0)) {
+                    row.find('.next-mt, .next-amount').addClass('is-invalid');
+                    isValid = false;
+                }
+            });
+
+            if (!isValid) {
+                e.preventDefault();
+                alert('Please fill either MT or Amount for each financial year in all business plans.');
+                return false;
             }
         });
     });

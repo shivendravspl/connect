@@ -226,23 +226,6 @@
 
     <div class="card mb-3">
         <div class="card-header">
-            <h5>Existing Distributorships</h5>
-        </div>
-        <div class="card-body">
-            @if($application->existingDistributorships->count() > 0)
-                <ul>
-                    @foreach($application->existingDistributorships as $distributorship)
-                        <li><strong>Company Name:</strong> {{ $distributorship->company_name ?? 'N/A' }}</li>
-                    @endforeach
-                </ul>
-            @else
-                <p>No existing distributorships provided.</p>
-            @endif
-        </div>
-    </div>
-
-    <div class="card mb-3">
-        <div class="card-header">
             <h5>Bank Details</h5>
         </div>
         <div class="card-body">
@@ -283,8 +266,7 @@
                         'has_question_j' => 'Has this Distributor been referred by someone known to VNR Seeds management/employees?',
                         'has_question_k' => 'Are you engaged in marketing your own brand of seeds?',
                         'has_question_l' => 'Have you or any of your partners/directors/committee members/trustees/authorized persons ever been employed in the Agro-Input Industry?',
-                        'declaration_truthful' => 'I/We hereby declare that the information provided in this application is true and correct to the best of my/our knowledge and belief.',
-                        'declaration_update' => 'I/We undertake to inform VNR Seeds of any changes in the above information immediately.'
+                        'declaration_truthful' => 'I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief.',
                     ];
                 @endphp
 

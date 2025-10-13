@@ -42,7 +42,6 @@
         'has_question_k' => ['has_issue' => '0', 'question_k_details' => ''],
         'has_question_l' => ['has_issue' => '0', 'question_l_details' => ''],
         'declaration_truthful' => ['has_issue' => '0'],
-        'declaration_update' => ['has_issue' => '0'],
     ];
 
     // Merge defaults with existing data or old input, ensuring all keys are present
@@ -52,7 +51,7 @@
             isset($declarationsData[$key]) ? $declarationsData[$key] : []
         );
         // Override has_issue only if details contain non-empty values
-        if (!in_array($key, ['declaration_truthful', 'declaration_update'])) {
+        if ($key !== 'declaration_truthful') {
             $details = array_diff_key($declarationsData[$key], ['has_issue' => '']);
             $hasNonEmptyDetails = false;
             foreach ($details as $value) {
@@ -65,6 +64,7 @@
                 $declarationsData[$key]['has_issue'] = '1';
             }
         }
+
     }
 
     // Define questions for rendering
@@ -151,13 +151,7 @@
             <div class="form-group mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="declaration_truthful" name="declaration_truthful" value="1" required {{ old('declaration_truthful', $declarationsData['declaration_truthful']['has_issue']) == '1' ? 'checked' : '' }}>
                 <label class="form-check-label" for="declaration_truthful">
-                    a. I/We hereby solemnly affirm the truthfulness and completeness of the foregoing information and agree to be bound by all terms and conditions of the appointment/agreement with the Company.
-                </label>
-            </div>
-            <div class="form-group mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="declaration_update" name="declaration_update" value="1" required {{ old('declaration_update', $declarationsData['declaration_update']['has_issue']) == '1' ? 'checked' : '' }}>
-                <label class="form-check-label" for="declaration_update">
-                    b. I/We undertake to inform the company of any changes to the information provided herein within a period of 7 days, accompanied by relevant documentation.
+                    I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief.
                 </label>
             </div>
         </div>

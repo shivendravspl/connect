@@ -261,7 +261,6 @@ class OnboardingController extends Controller
                 'distributionDetail',
                 'businessPlans',
                 'financialInfo',
-                'existingDistributorships',
                 'bankDetail',
                 'declarations'
             ])->findOrFail($application_id) : new Onboarding();
@@ -640,7 +639,6 @@ class OnboardingController extends Controller
             'bankDetail',
             'businessPlans',
             'financialInfo',
-            'existingDistributorships',
             'declarations',
             'approvalLogs.user',
         ]);
@@ -704,7 +702,6 @@ class OnboardingController extends Controller
             'distributionDetail',
             'businessPlans',
             'financialInfo',
-            'existingDistributorships',
             'bankDetail',
             'declarations',
             'partnershipPartners'
@@ -2188,146 +2185,188 @@ class OnboardingController extends Controller
 
     // Step 4: Business Plans
     private function saveStep4(Request $request, $user, $application_id)
-    {
-        if (!$application_id) {
-            return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
-        }
-
-        // Validation
-        $validator = Validator::make($request->all(), [
-            'business_plans' => 'required|array|min:1',
-            'business_plans.*.crop' => 'required|string|max:255',
-            'business_plans.*.current_financial_year_mt' => 'required|numeric|min:0',
-            'business_plans.*.current_financial_year_amount' => 'required|numeric|min:0',
-            'business_plans.*.next_financial_year_mt' => 'required|numeric|min:0',
-            'business_plans.*.next_financial_year_amount' => 'required|numeric|min:0',
-        ], [
-            'business_plans.required' => 'At least one business plan is required.',
-            'business_plans.min' => 'At least one business plan is required.',
-            'business_plans.*.crop.required' => 'The crop field is required for all plans.',
-            'business_plans.*.current_financial_year_mt.required' => 'The current financial year MT field is required for all plans.',
-            'business_plans.*.current_financial_year_amount.required' => 'The current financial year amount field is required for all plans.',
-            'business_plans.*.next_financial_year_mt.required' => 'The next financial year MT field is required for all plans.',
-            'business_plans.*.next_financial_year_amount.required' => 'The next financial year amount field is required for all plans.',
-        ]);
-
-        if ($validator->fails()) {
-            return ['success' => false, 'error' => $validator->errors()->toArray(), 'status' => 422];
-        }
-
-        DB::beginTransaction();
-
-        try {
-            $validatedData = $validator->validated();
-            $plansToInsert = [];
-
-            // Get current and next financial years
-            $currentDate = now();
-            $currentYear = $currentDate->year;
-            $currentMonth = $currentDate->month;
-
-            if ($currentMonth >= 4) {
-                // April to December: current FY is currentYear-nextYear
-                $currentFinancialYearPeriod = $currentYear . '-' . substr($currentYear + 1, -2);
-                $nextFinancialYearPeriod = ($currentYear + 1) . '-' . substr($currentYear + 2, -2);
-            } else {
-                // January to March: current FY is previousYear-currentYear
-                $currentFinancialYearPeriod = ($currentYear - 1) . '-' . substr($currentYear, -2);
-                $nextFinancialYearPeriod = $currentYear . '-' . substr($currentYear + 1, -2);
-            }
-
-            \Log::info("Calculated financial years - Current: {$currentFinancialYearPeriod}, Next: {$nextFinancialYearPeriod}");
-
-            $currentFinancialYear = Year::where('period', $currentFinancialYearPeriod)->first();
-            $nextFinancialYear = Year::where('period', $nextFinancialYearPeriod)->first();
-
-            // Fallback - get any active years if specific ones not found
-            if (!$currentFinancialYear) {
-                $currentFinancialYear = Year::where('status', 'active')
-                    ->orderBy('start_year', 'desc')
-                    ->first();
-            }
-
-            if (!$nextFinancialYear) {
-                $nextFinancialYear = Year::where('status', 'active')
-                    ->where('id', '!=', $currentFinancialYear->id ?? 0)
-                    ->orderBy('start_year', 'desc')
-                    ->first();
-            }
-
-            // Final fallback - if still no years found, use hardcoded ones
-            if (!$currentFinancialYear || !$nextFinancialYear) {
-                $currentFinancialYear = Year::where('period', '2025-26')->first();
-                $nextFinancialYear = Year::where('period', '2026-27')->first();
-            }
-
-            // Validate that we have both years
-            if (!$currentFinancialYear || !$nextFinancialYear) {
-                throw new \Exception("Could not determine financial years for business plan saving");
-            }
-
-            \Log::info("Final years - Current: {$currentFinancialYear->period}, Next: {$nextFinancialYear->period}");
-
-            // Loop through each submitted plan and use SEPARATE COLUMNS
-            foreach ($validatedData['business_plans'] as $planData) {
-                if (!empty($planData['crop'])) {
-                    $plansToInsert[] = [
-                        'application_id' => $application_id,
-                        'crop' => $planData['crop'],
-                        'current_financial_year' => $currentFinancialYear->period,
-                        'current_financial_year_mt' => $planData['current_financial_year_mt'],
-                        'current_financial_year_amount' => $planData['current_financial_year_amount'],
-                        'next_financial_year' => $nextFinancialYear->period,
-                        'next_financial_year_mt' => $planData['next_financial_year_mt'],
-                        'next_financial_year_amount' => $planData['next_financial_year_amount'],
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-            }
-
-            // Delete existing and insert new
-            DB::table('business_plans')->where('application_id', $application_id)->delete();
-
-            if (!empty($plansToInsert)) {
-                DB::table('business_plans')->insert($plansToInsert);
-                \Log::info("Inserted " . count($plansToInsert) . " business plans for application: " . $application_id);
-            } else {
-                \Log::warning("No business plans to insert for application: " . $application_id);
-            }
-
-            // Update progress
-            $application = Onboarding::find($application_id);
-            if ($application) {
-                if ($application->current_progress_step < 5) {
-                    $application->update(['current_progress_step' => 5]);
-                    \Log::info("Updated application progress to step 5 for application: " . $application_id);
-                }
-            } else {
-                \Log::error("Application not found: " . $application_id);
-                throw new \Exception("Application not found");
-            }
-
-            DB::commit();
-
-            return [
-                'success' => true,
-                'message' => 'Business plans saved successfully!',
-                'application_id' => $application_id,
-                'current_step' => 5
-            ];
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Error saving business plans for application ' . $application_id . ': ' . $e->getMessage());
-            \Log::error('Stack trace: ' . $e->getTraceAsString());
-
-            return [
-                'success' => false,
-                'error' => 'An unexpected error occurred while saving business plans: ' . $e->getMessage(),
-                'status' => 500
-            ];
-        }
+{
+    if (!$application_id) {
+        return ['success' => false, 'error' => 'Application ID is missing.', 'status' => 400];
     }
+
+    // Custom validation for either MT or Amount
+    $validator = Validator::make($request->all(), [
+        'business_plans' => 'required|array|min:1',
+        'business_plans.*.crop' => 'required|string|max:255',
+        'business_plans.*.current_financial_year_mt' => 'nullable|numeric|min:0',
+        'business_plans.*.current_financial_year_amount' => 'nullable|numeric|min:0',
+        'business_plans.*.next_financial_year_mt' => 'nullable|numeric|min:0',
+        'business_plans.*.next_financial_year_amount' => 'nullable|numeric|min:0',
+    ], [
+        'business_plans.required' => 'At least one business plan is required.',
+        'business_plans.min' => 'At least one business plan is required.',
+        'business_plans.*.crop.required' => 'The crop field is required for all plans.',
+    ]);
+
+    // Add custom validation for either MT or Amount
+    $validator->after(function ($validator) use ($request) {
+        $businessPlans = $request->input('business_plans', []);
+        
+        foreach ($businessPlans as $index => $plan) {
+            $currentMt = $plan['current_financial_year_mt'] ?? null;
+            $currentAmount = $plan['current_financial_year_amount'] ?? null;
+            $nextMt = $plan['next_financial_year_mt'] ?? null;
+            $nextAmount = $plan['next_financial_year_amount'] ?? null;
+
+            // Convert empty strings to null
+            $currentMt = $currentMt === '' ? null : $currentMt;
+            $currentAmount = $currentAmount === '' ? null : $currentAmount;
+            $nextMt = $nextMt === '' ? null : $nextMt;
+            $nextAmount = $nextAmount === '' ? null : $nextAmount;
+
+            // Check current financial year - at least one should have value
+            $currentMtHasValue = !is_null($currentMt) && $currentMt > 0;
+            $currentAmountHasValue = !is_null($currentAmount) && $currentAmount > 0;
+            
+            if (!$currentMtHasValue && !$currentAmountHasValue) {
+                $validator->errors()->add(
+                    "business_plans.{$index}.current_financial_year_mt",
+                    "Either MT or Amount is required for current financial year."
+                );
+            }
+
+            // Check next financial year - at least one should have value
+            $nextMtHasValue = !is_null($nextMt) && $nextMt > 0;
+            $nextAmountHasValue = !is_null($nextAmount) && $nextAmount > 0;
+            
+            if (!$nextMtHasValue && !$nextAmountHasValue) {
+                $validator->errors()->add(
+                    "business_plans.{$index}.next_financial_year_mt",
+                    "Either MT or Amount is required for next financial year."
+                );
+            }
+        }
+    });
+
+    if ($validator->fails()) {
+        return ['success' => false, 'error' => $validator->errors()->toArray(), 'status' => 422];
+    }
+
+    DB::beginTransaction();
+
+    try {
+        $validatedData = $validator->validated();
+        $plansToInsert = [];
+
+        // Get current and next financial years
+        $currentDate = now();
+        $currentYear = $currentDate->year;
+        $currentMonth = $currentDate->month;
+
+        if ($currentMonth >= 4) {
+            // April to December: current FY is currentYear-nextYear
+            $currentFinancialYearPeriod = $currentYear . '-' . substr($currentYear + 1, -2);
+            $nextFinancialYearPeriod = ($currentYear + 1) . '-' . substr($currentYear + 2, -2);
+        } else {
+            // January to March: current FY is previousYear-currentYear
+            $currentFinancialYearPeriod = ($currentYear - 1) . '-' . substr($currentYear, -2);
+            $nextFinancialYearPeriod = $currentYear . '-' . substr($currentYear + 1, -2);
+        }
+
+        \Log::info("Calculated financial years - Current: {$currentFinancialYearPeriod}, Next: {$nextFinancialYearPeriod}");
+
+        $currentFinancialYear = Year::where('period', $currentFinancialYearPeriod)->first();
+        $nextFinancialYear = Year::where('period', $nextFinancialYearPeriod)->first();
+
+        // Fallback - get any active years if specific ones not found
+        if (!$currentFinancialYear) {
+            $currentFinancialYear = Year::where('status', 'active')
+                ->orderBy('start_year', 'desc')
+                ->first();
+        }
+
+        if (!$nextFinancialYear) {
+            $nextFinancialYear = Year::where('status', 'active')
+                ->where('id', '!=', $currentFinancialYear->id ?? 0)
+                ->orderBy('start_year', 'desc')
+                ->first();
+        }
+
+        // Final fallback - if still no years found, use hardcoded ones
+        if (!$currentFinancialYear || !$nextFinancialYear) {
+            $currentFinancialYear = Year::where('period', '2025-26')->first();
+            $nextFinancialYear = Year::where('period', '2026-27')->first();
+        }
+
+        // Validate that we have both years
+        if (!$currentFinancialYear || !$nextFinancialYear) {
+            throw new \Exception("Could not determine financial years for business plan saving");
+        }
+
+        \Log::info("Final years - Current: {$currentFinancialYear->period}, Next: {$nextFinancialYear->period}");
+
+        // Loop through each submitted plan
+        foreach ($validatedData['business_plans'] as $planData) {
+            if (!empty($planData['crop'])) {
+                // Convert empty strings to null for database
+                $currentMt = $planData['current_financial_year_mt'] === '' ? null : $planData['current_financial_year_mt'];
+                $currentAmount = $planData['current_financial_year_amount'] === '' ? null : $planData['current_financial_year_amount'];
+                $nextMt = $planData['next_financial_year_mt'] === '' ? null : $planData['next_financial_year_mt'];
+                $nextAmount = $planData['next_financial_year_amount'] === '' ? null : $planData['next_financial_year_amount'];
+                
+                $plansToInsert[] = [
+                    'application_id' => $application_id,
+                    'crop' => $planData['crop'],
+                    'current_financial_year' => $currentFinancialYear->period,
+                    'current_financial_year_mt' => $currentMt,
+                    'current_financial_year_amount' => $currentAmount,
+                    'next_financial_year' => $nextFinancialYear->period,
+                    'next_financial_year_mt' => $nextMt,
+                    'next_financial_year_amount' => $nextAmount,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        // Delete existing and insert new
+        DB::table('business_plans')->where('application_id', $application_id)->delete();
+
+        if (!empty($plansToInsert)) {
+            DB::table('business_plans')->insert($plansToInsert);
+            \Log::info("Inserted " . count($plansToInsert) . " business plans for application: " . $application_id);
+        } else {
+            \Log::warning("No business plans to insert for application: " . $application_id);
+        }
+
+        // Update progress
+        $application = Onboarding::find($application_id);
+        if ($application) {
+            if ($application->current_progress_step < 5) {
+                $application->update(['current_progress_step' => 5]);
+                \Log::info("Updated application progress to step 5 for application: " . $application_id);
+            }
+        } else {
+            \Log::error("Application not found: " . $application_id);
+            throw new \Exception("Application not found");
+        }
+
+        DB::commit();
+
+        return [
+            'success' => true,
+            'message' => 'Business plans saved successfully!',
+            'application_id' => $application_id,
+            'current_step' => 5
+        ];
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Error saving business plans for application ' . $application_id . ': ' . $e->getMessage());
+        \Log::error('Stack trace: ' . $e->getTraceAsString());
+
+        return [
+            'success' => false,
+            'error' => 'An unexpected error occurred while saving business plans: ' . $e->getMessage(),
+            'status' => 500
+        ];
+    }
+}
     // Step 5: Financial Info
     private function saveStep5(Request $request, $user, $application_id)
     {
@@ -2358,9 +2397,6 @@ class OnboardingController extends Controller
                 'godown_area' => 'required|numeric|min:0',
                 'godown_ownership' => 'required|string|in:owned,rented',
                 'years_in_business' => 'required|integer|min:0',
-
-                'existing_distributorships' => 'sometimes|array',
-                'existing_distributorships.*.company_name' => 'nullable|string|max:255',
             ];
 
             $messages = [
@@ -2443,30 +2479,7 @@ class OnboardingController extends Controller
             FinancialInfo::updateOrCreate(
                 ['application_id' => $application_id],
                 $data
-            );
-
-            // Process existing distributorships if present
-            if ($request->has('existing_distributorships')) {
-                $submittedCompanies = $request->input('existing_distributorships', []);
-                $validCompanies = array_filter($submittedCompanies, function ($company) {
-                    return isset($company['id']) || !empty(trim($company['company_name'] ?? ''));
-                });
-
-                $existingIds = collect($validCompanies)->pluck('id')->filter()->toArray();
-
-                // Delete records not present in the submitted data
-                ExistingDistributorship::where('application_id', $application_id)
-                    ->whereNotIn('id', $existingIds)
-                    ->delete();
-
-                // Create/update entries
-                foreach ($validCompanies as $companyData) {
-                    ExistingDistributorship::updateOrCreate(
-                        ['id' => $companyData['id'] ?? null, 'application_id' => $application_id],
-                        ['company_name' => isset($companyData['company_name']) ? trim($companyData['company_name']) : null]
-                    );
-                }
-            }
+            );          
 
             $application = Onboarding::find($application_id);
             if ($application) {
@@ -2557,10 +2570,6 @@ class OnboardingController extends Controller
         try {
             // Define all questions and their validation rules
             $questions = [
-                'is_other_distributor' => [
-                    'details_field' => 'other_distributor_details',
-                    'label' => 'Other Distributor Details'
-                ],
                 'has_sister_concern' => [
                     'details_field' => 'sister_concern_details',
                     'label' => 'Sister Concern Details'
@@ -2619,9 +2628,6 @@ class OnboardingController extends Controller
                 'declaration_truthful' => [
                     'label' => 'Declaration Truthful'
                 ],
-                'declaration_update' => [
-                    'label' => 'Declaration Update'
-                ],
             ];
 
             // Build validation rules
@@ -2652,8 +2658,6 @@ class OnboardingController extends Controller
             $validator = Validator::make($request->all(), $rules, [
                 'declaration_truthful.required' => 'You must affirm the truthfulness of the information.',
                 'declaration_truthful.in' => 'You must affirm the truthfulness of the information.',
-                'declaration_update.required' => 'You must agree to inform the company of any changes.',
-                'declaration_update.in' => 'You must agree to inform the company of any changes.',
                 'has_question_j.required' => 'Please answer whether the Distributor has been referred.'
             ]);
 
@@ -2702,7 +2706,6 @@ class OnboardingController extends Controller
                     'updated_at' => now()
                 ];
             }
-
             // Delete existing declarations for this application
             DB::table('declarations')->where('application_id', $application_id)->delete();
 
@@ -2715,7 +2718,31 @@ class OnboardingController extends Controller
                     'updated_at' => now()
                 ]);
 
+                
+
             $application = Onboarding::find($application_id);
+            
+               $requiredSteps = [
+            'territory' => !$application->territory,
+            'entityDetails' => !$application->entityDetails,
+            'distributionDetail' => !$application->distributionDetail,
+            'businessPlans' => $application->businessPlans->isEmpty(),
+            'financialInfo' => !$application->financialInfo,
+            'bankDetail' => !$application->bankDetail,
+            'declarations' => $application->declarations->isEmpty()
+        ];
+
+        $missingSteps = array_keys(array_filter($requiredSteps));
+
+        if (!empty($missingSteps)) {
+            return [
+                'success' => false,
+                'error' => 'Please complete all required steps before submitting.',
+                'missing_steps' => $missingSteps,
+                'status' => 422
+            ];
+        }
+
             if ($application) {
                 if ($application->current_progress_step < 8) {
                     $application->update(['current_progress_step' => 8]);
@@ -2747,7 +2774,6 @@ class OnboardingController extends Controller
             'distributionDetail',
             'businessPlans',
             'financialInfo',
-            'existingDistributorships',
             'bankDetail',
             'declarations'
         ])->findOrFail($application_id);
@@ -2923,7 +2949,6 @@ class OnboardingController extends Controller
             'distributionDetail',
             'businessPlans',
             'financialInfo',
-            'existingDistributorships',
             'bankDetail',
             'declarations',
         ]);
@@ -3090,9 +3115,6 @@ class OnboardingController extends Controller
                 },
                 'businessPlans' => function ($query) {
                     $query->select('id', 'application_id', 'crop', 'current_financial_year_amount')->limit(5);
-                },
-                'existingDistributorships' => function ($query) {
-                    $query->select('id', 'application_id', 'company_name');
                 },
                 'declarations' => function ($query) {
                     $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');
@@ -3267,9 +3289,6 @@ class OnboardingController extends Controller
                 },
                 'businessPlans' => function ($query) {
                     $query->select('id', 'application_id', 'crop', 'current_financial_year_amount')->limit(5);
-                },
-                'existingDistributorships' => function ($query) {
-                    $query->select('id', 'application_id', 'company_name');
                 },
                 'declarations' => function ($query) {
                     $query->select('id', 'application_id', 'question_key', 'has_issue', 'details');

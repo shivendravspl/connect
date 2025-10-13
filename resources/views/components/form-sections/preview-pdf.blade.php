@@ -112,17 +112,17 @@
 </head>
 <body>
     <htmlpageheader name="header">
-        <div class="header-container">
-            <div style="text-align: left;">Version 1.0</div>
-            <div style="text-align: center;">Distributor Appointment Form</div>
-            <div style="text-align: right;">VNR Seeds Pvt. Ltd.</div>
+        <div class="header-container" style="width:100%; display:flex; justify-content: space-between; font-size: 10pt; font-weight:bold;">
+            <div>Version 1.0</div>
+            <div>Distributor Appointment Form</div>
+            <div>VNR Seeds Pvt. Ltd.</div>
         </div>
         <hr>
     </htmlpageheader>
 
     <htmlpagefooter name="footer">
         <div class="footer-container">
-            <div style="text-align: left;">Date of Release: 09 July 2025</div>
+            {{--<div style="text-align: left;">Date of Release: 09 July 2025</div>--}}
             <div style="text-align: center;">Released by VNR Seeds</div>
         </div>
     </htmlpagefooter>

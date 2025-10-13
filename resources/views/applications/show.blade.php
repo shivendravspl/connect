@@ -1112,34 +1112,7 @@
             </div>
         </div>
     </div>
-    @endif
-
-    <!-- Step 6: Existing Distributorships -->
-    @if(isset($application->existingDistributorships) && !$application->existingDistributorships->isEmpty())
-    <div id="existing-distributorships" class="card mb-3">
-        <div class="card-header">
-            <h6 class="mb-1">Existing Distributorships (Agro Inputs)</h6>
-        </div>
-        <div class="card-body p-2">
-            <div class="table-responsive">
-                <table class="table table-bordered table-sm">
-                    <thead>
-                        <tr>
-                            <th>Company Name</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($application->existingDistributorships as $distributorship)
-                        <tr>
-                            <td>{{ $distributorship->company_name ?? 'N/A' }}</td>
-                        </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-    @endif
+    @endif  
 
     <!-- Step 7: Bank Details -->
     @if(isset($application->bankDetail))
@@ -1307,7 +1280,6 @@
                         <tbody>
                             @php
                             $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
-                            $update = $application->declarations->where('question_key', 'declaration_update')->first();
                             @endphp
                             <tr>
                                 <th>a. Truthfulness and Completeness</th>

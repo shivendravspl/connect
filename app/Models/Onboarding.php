@@ -93,10 +93,6 @@ class Onboarding extends Model
                 $application->financialInfo()->delete();
                 $deletedRecords[] = 'financial_info';
             }
-            if ($application->existingDistributorships()->exists()) {
-                $application->existingDistributorships()->delete();
-                $deletedRecords[] = 'existing_distributorships';
-            }
             if ($application->bankDetail) {
                 $application->bankDetail()->delete();
                 $deletedRecords[] = 'bank_details';
@@ -135,11 +131,6 @@ class Onboarding extends Model
     public function financialInfo()
     {
         return $this->hasOne(FinancialInfo::class, 'application_id');
-    }
-
-    public function existingDistributorships()
-    {
-        return $this->hasMany(ExistingDistributorship::class, 'application_id');
     }
 
     public function declarations()

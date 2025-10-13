@@ -715,33 +715,6 @@
                         </div>
                     @endif
 
-                    <!-- Existing Distributorships -->
-                    @if(isset($application->existingDistributorships))
-                        <div id="existing-distributorships" class="form-section">
-                            <h5 class="mb-2">Existing Distributorships (Agro Inputs)</h5>
-                            @if($application->existingDistributorships->isEmpty())
-                                <p class="text-muted">No existing distributorships provided.</p>
-                            @else
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-sm">
-                                        <thead>
-                                            <tr>
-                                                <th>Company Name</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($application->existingDistributorships as $distributorship)
-                                                <tr>
-                                                    <td>{{ $distributorship->company_name ?? 'N/A' }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @endif
-                        </div>
-                    @endif
-
                     <!-- Bank Details -->
                     @if(isset($application->bankDetail))
                         <div id="bank-details" class="form-section">
@@ -912,15 +885,10 @@
                                             <tbody>
                                                 @php
                                                     $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
-                                                    $update = $application->declarations->where('question_key', 'declaration_update')->first();
                                                 @endphp
                                                 <tr>
-                                                    <th>a. I/We hereby solemnly affirm the truthfulness and completeness of the foregoing information and agree to be bound by all terms and conditions of the appointment/agreement with the Company.</th>
+                                                    <th>I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief.</th>
                                                     <td>{{ $truthful && $truthful->has_issue ? 'Affirmed' : 'Not Affirmed' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>b. I/We undertake to inform the company of any changes to the information provided herein within a period of 7 days, accompanied by relevant documentation.</th>
-                                                    <td>{{ $update && $update->has_issue ? 'Agreed' : 'Not Agreed' }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>

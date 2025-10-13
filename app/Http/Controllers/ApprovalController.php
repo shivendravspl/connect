@@ -75,7 +75,6 @@ class ApprovalController extends Controller
             'distributionDetail',
             'businessPlans',
             'financialInfo',
-            'existingDistributorships',
             'bankDetail',
             'declarations',
             'approvalLogs.user',

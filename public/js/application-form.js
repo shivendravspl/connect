@@ -1,6 +1,18 @@
 $(document).ready(function() {
     // --- Notification Functions (Unchanged) ---
     function showSidebarNotification(message, type = 'success') {
+        console.log('showSidebarNotification called with:', { message, type });
+        
+        // Use globals - ensure they're defined
+        const container = window.notificationContainer || $('#notification-container');
+        const sidebar = window.notificationSidebar || $('#notification-sidebar');
+        
+        if (container.length === 0 || sidebar.length === 0) {
+            console.error('Notification elements not found! Check HTML and selectors.');
+            alert('Notification system error: Sidebar not initialized.'); // Fallback alert
+            return;
+        }
+        
         const id = `notification-${Date.now()}`;
         const html = `
             <div id="${id}" class="notification ${type}">
@@ -8,17 +20,37 @@ $(document).ready(function() {
                 <span class="close-btn">&times;</span>
             </div>
         `;
-        notificationContainer.append(html);
-        notificationSidebar.addClass('active');
-        setTimeout(() => removeNotification(id), 5000);
+        
+        console.log('Appending HTML to container:', container);
+        container.append(html);
+        
+        console.log('Notification count after append:', container.children().length);
+        
+        sidebar.addClass('active');
+        sidebar.css({
+            'display': 'block !important',
+            'right': '0 !important',
+            'z-index': '99999 !important'
+        });
+        console.log('Forced CSS overrides applied');        
+        setTimeout(() => removeNotification(id), 2000);
         $(`#${id} .close-btn`).on('click', () => removeNotification(id));
+        
+        console.log('Notification should now be visible!');
     }
 
     function removeNotification(id) {
-        $(`#${id}`).fadeOut(300, function() {
+        const $notif = $(`#${id}`);
+        if ($notif.length === 0) {
+            console.warn('Notification not found for removal:', id);
+            return;
+        }
+        $notif.fadeOut(300, function() {
             $(this).remove();
-            if (notificationContainer.children().length === 0) {
-                notificationSidebar.removeClass('active');
+            const container = window.notificationContainer || $('#notification-container');
+            if (container.children().length === 0) {
+                const sidebar = window.notificationSidebar || $('#notification-sidebar');
+                sidebar.removeClass('active');
             }
         });
     }
@@ -45,12 +77,17 @@ $(document).ready(function() {
         }
     }
     console.log('Initial completedSteps:', completedSteps);
-
+    // Define globals early for notifications
+    window.notificationContainer = $('#notification-container');
+    window.notificationSidebar = $('#notification-sidebar');
+    
+    // Verify (remove after testing)
+    console.log('Initialized container:', window.notificationContainer.length > 0 ? 'Found!' : 'Missing!');
+    console.log('Initialized sidebar:', window.notificationSidebar.length > 0 ? 'Found!' : 'Missing!');
     const prevBtn = $('.previous');
     const nextBtn = $('.next');
     const submitBtn = $('.submit');
-    const notificationContainer = $('#notification-container');
-    const notificationSidebar = $('#notification-sidebar');
+   
     let removedDocuments = {};
     let applicationId = $('#application_id').val() || '';
 
@@ -421,7 +458,7 @@ $(document).ready(function() {
             }
         }
 
-        if (step === 7 && (!$('#declaration_truthful').is(':checked') || !$('#declaration_update').is(':checked'))) {
+        if (step === 7 && (!$('#declaration_truthful').is(':checked'))) {
             console.log('Step 7 validation failed: declarations not checked');
             showSidebarNotification('Please accept all declarations to proceed', 'error');
             isValid = false;
@@ -499,7 +536,33 @@ $(document).ready(function() {
                         formData.append(`removed_${key}`, value ? '1' : '0');
                     }
                 }
-            } else {
+            } else if (step === 4) {
+            // Special handling for Step 4 - Business Plans
+            const businessPlanRows = $('.business-plan-row');
+            
+            businessPlanRows.each(function(index) {
+                const $row = $(this);
+                
+                // Get all the values from the row
+                const crop = $row.find('select[name^="business_plans"][name$="[crop]"]').val() || '';
+                const currentMt = $row.find('input[name^="business_plans"][name$="[current_financial_year_mt]"]').val() || '';
+                const currentAmount = $row.find('input[name^="business_plans"][name$="[current_financial_year_amount]"]').val() || '';
+                const nextMt = $row.find('input[name^="business_plans"][name$="[next_financial_year_mt]"]').val() || '';
+                const nextAmount = $row.find('input[name^="business_plans"][name$="[next_financial_year_amount]"]').val() || '';
+                
+                // Append each field with proper array indexing
+                formData.append(`business_plans[${index}][crop]`, crop);
+                formData.append(`business_plans[${index}][current_financial_year_mt]`, currentMt);
+                formData.append(`business_plans[${index}][current_financial_year_amount]`, currentAmount);
+                formData.append(`business_plans[${index}][next_financial_year_mt]`, nextMt);
+                formData.append(`business_plans[${index}][next_financial_year_amount]`, nextAmount);
+            });
+            
+            console.log('Step 4 - Business Plans data prepared:', {
+                rowCount: businessPlanRows.length,
+                data: Array.from(formData.entries()).filter(([key]) => key.includes('business_plans'))
+            });
+        } else {
                 currentFields.each(function() {
                     const field = $(this);
                     const name = field.attr('name');
@@ -654,42 +717,64 @@ $(document).ready(function() {
                             $('.form-control, .form-select, .input-group').removeClass('is-invalid');
                             for (const key in response.error) {
                                 let selector = `[name="${key}"]`;
-                                if (key.includes('.')) {
+                                   if (key.includes('.')) {
                                     const parts = key.split('.');
-                                    selector = `[name="${parts[0]}[${parts[1]}]"]`;
+                                    if (parts[0] === 'business_plans' && parts.length === 3) {
+                                        const index = parts[1];
+                                        const field = parts[2];
+                                        selector = `[name="business_plans[${index}][${field}]"]`;
+                                        const pairedFields = {
+                                            'current_financial_year_mt': 'current_financial_year_amount',
+                                            'current_financial_year_amount': 'current_financial_year_mt',
+                                            'next_financial_year_mt': 'next_financial_year_amount',
+                                            'next_financial_year_amount': 'next_financial_year_mt'
+                                        };
+                                        const pairedField = pairedFields[field];
+                                        if (pairedField) {
+                                            const pairedSelector = `[name="business_plans[${index}][${pairedField}]"]`;
+                                            $(pairedSelector).addClass('is-invalid'); // Highlight both for "either/or"
+                                        }
+                                    } else if (parts.length === 2) {
+                                        // Simple array: e.g., "array.0" -> array[0]
+                                        selector = `[name="${parts[0]}[${parts[1]}]"]`;
+                                    } else {
+                                        // Deeper nesting: join all but last with [ ], last as is
+                                        const nestedName = parts.slice(0, -1).reduce((acc, part, i) => acc + (i === 0 ? part : `[${part}]`), '') + `[${parts[parts.length - 1]}]`;
+                                        selector = `[name="${nestedName}"]`;
+                                    }
                                 }
                                 const input = $(selector);
-                                 if (input.length) {
-        // Add is-invalid to input and visible parent (e.g., input-group or button)
-        input.addClass('is-invalid');
-        input.closest('.input-group').addClass('is-invalid');  // Highlights the whole upload group
-        
-        // Safer container for feedback: col-md-*, form-group, or fallback to mb-3 section
-        let container = input.closest('.form-group, .file-upload-wrapper, .col-md-*, .col-*, .mb-3');
-        if (container.length === 0) {
-            container = input.parent().parent();  // Fallback to col-md-4
-        }
-        if (container.length) {
-            container.append(
-                `<div class="invalid-feedback text-danger d-block">${response.error[key][0]}</div>`  // d-block forces show
-            );
-        }
-    }
+                                if (input.length) {
+                                // Add is-invalid to input and visible parent (e.g., input-group or button)
+                                input.addClass('is-invalid');
+                                input.closest('.input-group').addClass('is-invalid');  // Highlights the whole upload group
+                                
+                                // Safer container for feedback: col-md-*, form-group, or fallback to mb-3 section
+                                let container = input.closest('.form-group, .file-upload-wrapper, .col-md-*, .col-*, .mb-3');
+                                if (container.length === 0) {
+                                    container = input.parent().parent();  // Fallback to col-md-4
+                                }
+                                if (container.length) {
+                                    container.append(
+                                        `<div class="invalid-feedback text-danger d-block">${response.error[key][0]}</div>`  // d-block forces show
+                                    );
+                                }
                             }
                         }
-                    } else if (response.error) {
-                        errorMessage = response.error;
-                    } else {
-                        errorMessage = xhr.statusText || 'An unexpected error occurred.';
                     }
-                    console.log('AJAX error for step', step, response);
-                    showSidebarNotification(errorMessage, 'error');
-                    if (response.missing_steps) {
-                        console.log('Missing steps:', response.missing_steps);
-                        showSidebarNotification('Missing data in steps: ' + response.missing_steps.join(', '), 'error');
-                    }
-                    reject(response);
-                },
+                } else if (response.error) {
+                    errorMessage = response.error;
+                } else {
+                    errorMessage = xhr.statusText || 'An unexpected error occurred.';
+                }
+                console.log('AJAX error for step', step, response);
+                showSidebarNotification(errorMessage, 'error');
+                if (response.missing_steps) {
+                    console.log('Missing steps:', response.missing_steps);
+                    showSidebarNotification('Missing data in steps: ' + response.missing_steps.join(', '), 'error');
+                }
+                reject(response);
+            },
                 complete() {
                     button.prop('disabled', false).html(
                         isFinalSubmission ?

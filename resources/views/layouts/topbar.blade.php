@@ -173,3 +173,6 @@
            </div>
        </div>
    </header>
+    <div id="notification-sidebar">
+        <div id="notification-container"></div>
+    </div>

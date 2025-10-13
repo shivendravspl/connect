@@ -859,15 +859,10 @@
                         <tbody>
                             @php
                                 $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
-                                $update = $application->declarations->where('question_key', 'declaration_update')->first();
                             @endphp
                             <tr>
                                 <th>a. Truthfulness and Completeness</th>
                                 <td>{{ $truthful && $truthful->has_issue ? 'Affirmed' : 'Not Affirmed' }}</td>
-                            </tr>
-                            <tr>
-                                <th>b. Update Commitment</th>
-                                <td>{{ $update && $update->has_issue ? 'Agreed' : 'Not Agreed' }}</td>
                             </tr>
                         </tbody>
                     </table>

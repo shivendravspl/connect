@@ -20596,3 +20596,32 @@ span.flatpickr-weekday {
 .step.completed .step-label {
     color: #0ab39c; /* Velzon's teal/success color */
 }
+
+/* Notification Sidebar - Compact Fixed Panel */
+#notification-sidebar {
+    position: fixed !important;
+    top: 60px !important; /* Leave space for topbar */
+    right: -350px !important; /* Hidden off-screen */
+    width: 100px !important; /* Default hidden width */
+    height: 30vh !important; /* Less than full height */
+    background: #fff !important;
+    border-left: 1px solid #e9ecef !important;
+    border-radius: 8px 0 0 8px !important; /* Rounded corner */
+    box-shadow: -5px 0 20px rgba(0, 0, 0, 0.2) !important;
+    z-index: 100000 !important; /* Above theme modals/topbar */
+    transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
+    overflow-y: auto !important;
+    display: none !important; /* Hidden default */
+}
+
+/* Active state */
+#notification-sidebar.active {
+    right: 0 !important;  /* Slide in */
+    display: flex !important;
+    flex-direction: column;
+    width: 280px !important; /* Slightly smaller for active state */
+    max-height: 70vh !important; 
+    visibility: visible !important;
+    opacity: 1 !important;
+    overflow-y: auto !important;
+}

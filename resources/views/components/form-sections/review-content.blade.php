@@ -835,31 +835,6 @@
 </div>
 
 <div class="form-section">
-    <h3>Existing Distributorships (Agro Inputs)</h3>
-    @if($application->existingDistributorships->isNotEmpty())
-        <table class="table">
-            <tr>
-                <th>Sr. No.</th>
-                <th>Company Name</th>
-            </tr>
-            @foreach($application->existingDistributorships as $index => $distributorship)
-                <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $distributorship->company_name ?? 'N/A' }}</td>
-                </tr>
-            @endforeach
-        </table>
-    @else
-        <table class="table">
-            <tr>
-                <td class="label">Existing Distributorships:</td>
-                <td class="value">No existing distributorships reported.</td>
-            </tr>
-        </table>
-    @endif
-</div>
-
-<div class="form-section">
     <h3>Declarations</h3>
     @if($application->declarations->isNotEmpty())
         @php
@@ -876,8 +851,7 @@
                 'has_question_j' => 'Whether the Distributor has been referred by any Distributors or other parties associated with the Company?',
                 'has_question_k' => 'Whether the Distributor is currently marketing or selling products under its own brand name?',
                 'has_question_l' => 'Whether the Distributor has been employed in the agro-input industry at any point during the past 5 years?',
-                'declaration_truthful' => 'I/We hereby solemnly affirm the truthfulness and completeness of the foregoing information and agree to be bound by all terms and conditions of the appointment/agreement with the Company.',
-                'declaration_update' => 'I/We undertake to inform the company of any changes to the information provided herein within a period of 7 days, accompanied by relevant documentation.'
+                'declaration_truthful' => 'I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief.'
             ];
         @endphp
         
@@ -938,8 +912,8 @@
 <div class="form-section">
     <h3>Final Declaration</h3>
     <div class="declaration-text">
-        <p><em><strong>I/We hereby solemnly affirm the truthfulness and completeness of the foregoing information and agree to be bound by all terms and conditions of the appointment/agreement with the Company.</strong></em></p>
-        <p><em><strong>I/We undertake to inform the company of any changes to the information provided herein within a period of 7 days, accompanied by relevant documentation.</strong></em></p>
+        <p><em><strong>I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief.
+</strong></em></p>
     </div>
     
     <table class="table">

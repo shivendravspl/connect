@@ -398,8 +398,10 @@
                     </h4>
 
                     <div class="flex-shrink-0">
-                        <a href="" class="btn btn-sm  bg-primary text-white">Appoint Distributor Form</a>
-                        <a class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
+                            <a href="{{ url('applications/create') }}" class="btn btn-sm bg-primary text-white">
+                                Appoint Distributor Form
+                            </a>
+                                                    <a class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
                         <a class="ms-3 me-2" href="">List of Required Documents <i class="ri-attachment-line"></i></a>
                         <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
                             <i class="ri-filter-2-line"></i> Filters

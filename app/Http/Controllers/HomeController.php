@@ -408,7 +408,7 @@ class HomeController extends Controller
             'mis_rejected' => (clone $allMISApplicationsQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
             'in_process' => (clone $allMISApplicationsQuery)->whereIn('onboardings.status', $misStatuses)->count(),
         ];
-
+        $counts = array_merge($this->getDefaultCounts(), $counts);
         // Trends (using last month, same logic with dynamic)
         $lastMonthFilters = $filters;
         $lastMonthFilters['date_from'] = Carbon::now()->subMonth()->startOfMonth()->toDateString();
@@ -435,7 +435,7 @@ class HomeController extends Controller
             'mis_rejected' => $this->calculatePercentageChange($lastMonthCounts['mis_rejected'], $counts['mis_rejected']),
             'in_process' => $this->calculatePercentageChange($lastMonthCounts['in_process'], $counts['in_process']),
         ];
-
+        $kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
         $tatData = $this->calculateMisTAT($misApplicationsQuery, $statusGroups);
 
         // Add statuses to the data
@@ -526,7 +526,7 @@ class HomeController extends Controller
             'completed' => (clone $myApplicationsQuery)->whereIn('onboardings.status', $completionSlugs)->count(),
             'rejected' => (clone $myApplicationsQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
         ];
-
+$sales_counts = array_merge($this->getDefaultCounts(), $sales_counts);
         // Last month trends
         $lastMonthFilters = $filters;
         $lastMonthFilters['date_from'] = Carbon::now()->subMonth()->startOfMonth()->toDateString();
@@ -549,7 +549,7 @@ class HomeController extends Controller
             'completed' => $this->calculatePercentageChange($lastMonthSalesCounts['completed'], $sales_counts['completed']),
             'rejected' => $this->calculatePercentageChange($lastMonthSalesCounts['rejected'], $sales_counts['rejected']),
         ];
-
+$sales_kpi_trends = array_merge($this->getDefaultSalesKpiTrends(), $sales_kpi_trends);
         return compact('bu_list', 'zone_list', 'region_list', 'territory_list', 'sales_counts', 'sales_kpi_trends', 'myApplications', 'territories', 'statuses');
     }
 
@@ -627,6 +627,7 @@ class HomeController extends Controller
                 ->where($logDateFilter)
                 ->count(),
         ];
+        $counts = array_merge($this->getDefaultCounts(), $counts);
         //dd($counts);
         // Trends (last month) - Similar log-based with date filter
         $lastMonthFrom = Carbon::now()->subMonth()->startOfMonth()->toDateString();
@@ -665,7 +666,7 @@ class HomeController extends Controller
             'rejected_by_you' => $this->calculatePercentageChange($lastMonthCounts['rejected_by_you'], $counts['rejected_by_you']),
             'reverted_by_you' => $this->calculatePercentageChange($lastMonthCounts['reverted_by_you'], $counts['reverted_by_you']),
         ];
-
+$kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
         $statuses = Status::where('is_active', 1)->orderBy('sort_order')->get();
         return compact(
             'approverPendingApplications',

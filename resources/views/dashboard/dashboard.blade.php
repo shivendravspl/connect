@@ -2,7 +2,20 @@
 
 @push('styles')
 <style>
-   
+    /* General site-wide responsive adjustments */
+    body {
+        font-size: 0.85rem;
+    }
+
+    /* Card padding and margin for compactness */
+    .card {
+        margin-bottom: 0.5rem;
+        border-radius: 0.2rem;
+    }
+
+    .card-body {
+        padding: 0.5rem;
+    }
 
     /* Filter section adjustments */
     .form-label {
@@ -25,15 +38,14 @@
 
     /* KPI Cards - Made clickable with hover effects */
     .kpi-card {
-        border-left: 3px solid #408076;
+        border-left: 2px solid #007bff;
         transition: transform 0.2s;
         background-color: #ffffff;
         box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.05);
+        height: 100%;
         display: flex;
         flex-direction: column;
         cursor: pointer; /* Default cursor for non-clickable */
-            border-bottom: 1px solid #8cbfb7;
-    border-top: 1px solid #ddd
     }
 
     .kpi-card.clickable {
@@ -48,7 +60,7 @@
 
     .kpi-card .card-body {
         padding: 0.4rem;
-        /*display: flex;*/
+        display: flex;
         flex-direction: column;
         justify-content: space-between;
         flex-grow: 1;
@@ -62,14 +74,13 @@
     }
 
     .kpi-value {
-        font-size: 20px;
+        font-size: 1rem;
         font-weight: 700;
-        /*line-height: 1.1;
+        line-height: 1.1;
         margin-bottom: 0.1rem;
         flex-grow: 1;
-        display: flex;*/
+        display: flex;
         align-items: center;
-        margin-top: 15px;
     }
 
     .kpi-trend-up,
@@ -242,8 +253,8 @@
     /* Ensure filters fit in one line on large screens */
     @media (min-width: 992px) {
         .filter-col {
-            flex: 0 0 13%;
-            max-width: 13%;
+            flex: 0 0 10%;
+            max-width: 10%;
         }
     }
 
@@ -379,18 +390,86 @@
 @if($showAdminDashboard || $showMisDashboard || $showApproverDashboard || $showSalesDashboard)
     {{-- Unified Filters Section --}}
     <div class="row mb-1">
-        <div class="col-12 mb-2">
-                <div class="card-header align-items-center d-flex" style="background-color:transparent;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header align-items-center d-flex">
                     <h4 class="card-title mb-0 flex-grow-1 header-title">
-                        @if($showMisDashboard) MIS @elseif($showAdminDashboard) Approval @elseif($showApproverDashboard) Approver’s @elseif($showSalesDashboard) My @endif Dashboard
+                        @if($showMisDashboard) MIS @elseif($showAdminDashboard) Approval @elseif($showApproverDashboard) Approver’s @elseif($showSalesDashboard) My @endif Dashboard Management
                     </h4>
 
                     <div class="flex-shrink-0">
                         <a href="" class="btn btn-sm  bg-primary text-white">Appoint Distributor Form</a>
-                        <a style="color: #408076;font-weight: 600;" class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
-                        <a style="color: #408076;font-weight: 600;" target="_blank" class="ms-3 me-2" href="">List of Required Documents <i class="ri-attachment-line"></i></a>
+                        <a class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
+                        <a class="ms-3 me-2" href="">List of Required Documents <i class="ri-attachment-line"></i></a>
+                        <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                            <i class="ri-filter-2-line"></i> Filters
+                        </button>
                     </div>
                 </div>
+                <div class="card-body p-1">
+                    <form id="{{ $showMisDashboard ? 'mis-filter-form' : ($showApproverDashboard ? 'approver-filter-form' : ($showSalesDashboard ? 'sales-filter-form' : 'filter-form')) }}" method="GET">
+                        <div class="collapse show" id="filterCollapse">
+                            <div class="row g-1">
+                                {{-- Common filters: BU, Zone, Region, Territory - Always show --}}
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="bu" class="form-label">BU</label>
+                                    <select name="bu" id="bu" class="form-select form-select-sm">
+                                        <option value="All">All BU</option>
+                                        @foreach ($bu_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['bu'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="zone" class="form-label">Zone</label>
+                                    <select name="zone" id="zone" class="form-select form-select-sm">
+                                        <option value="All">All Zone</option>
+                                        @foreach ($zone_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['zone'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="region" class="form-label">Region</label>
+                                    <select name="region" id="region" class="form-select form-select-sm">
+                                        <option value="All">All Region</option>
+                                        @foreach ($region_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['region'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="territory" class="form-label">Territory</label>
+                                    <select name="territory" id="territory" class="form-select form-select-sm">
+                                        <option value="All">All Territory</option>
+                                        @foreach ($territory_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['territory'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Date Range - Common --}}
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label class="form-label">From</label>
+                                    <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ $filters['date_from'] }}">
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label class="form-label">To</label>
+                                    <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] }}">
+                                </div>
+
+                                @if($showAdminDashboard)
+                                    <input type="hidden" name="view_mode" id="view_mode" value="{{ $viewMode }}">
+                                @endif
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col mt-1 d-flex gap-1 mt-lg-4">
+                                    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -401,9 +480,11 @@
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="crm-widget">
-                       
+                        <div class="card-header align-items-center d-flex">
+                            <h4 class="card-title mb-0 flex-grow-1 header-title">Key Indicators</h4>
+                        </div>
                         <div class="card-body p-0">
-                            <div class="row g-4" id="kpi-container">
+                            <div class="row g-1" id="kpi-container">
                                 @if (isset($data['counts']['total']) && $data['counts']['total'] == 0 && !$showSalesDashboard)
                                     <div class="col-12 no-data-message">No applications found based on current filters.</div>
                                 @else
@@ -413,15 +494,13 @@
                                     @endphp
                                     @if($showAdminDashboard)
                                         {{-- Admin KPIs --}}
-                                        
-
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
                                                 <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
-                                                    <div class="card-body text-center">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Total Forms</h6>
                                                         <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
-                                                        <h6 class="text-success"><b>Total Forms</b></h6>
-                                                        <span id="kpi-trend-total-submitted" class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2"><i class="ri-arrow-up-line"></i>  {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -429,10 +508,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="appointments">
                                                 <div class="card kpi-card clickable" data-kpi="appointments" data-count="{{ $data['counts']['distributorship_created'] }}">
-                                                    <div class="card-body text-center">
-                                                        <div class="kpi-value" id="kpi-appointments-completed">{{ $data['counts']['distributorship_created'] }}</div>
-                                                        <h6 class="text-success"><b>Appointments</b></h6>
-                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-appointments-completed"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['appointments_completed'] ?? 0 }}%</span>
+                                                    <div class="card-body">
+                                                        <h6 class="small">Appointments</h6>
+                                                        <div class="kpi-value" id="kpi-appointments-completed">{{ $data['counts']['distributorship_created'] ?? 0 }}%</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-appointments-completed">🔼 {{ $data['kpi_trends']['appointments_completed'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -440,10 +519,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process_admin">
                                                 <div class="card kpi-card clickable" data-kpi="in_process_admin" data-count="{{ $data['counts']['in_process'] }}">
-                                                    <div class="card-body text-center">
-                                                        <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] }}</div>
-                                                        <h6 class="text-warning"><b>In Process</b></h6>
-                                                        <span class="kpi-trend-neutral badge bg-warning-subtle text-warning float-end mt-2" id="kpi-trend-in-process">—</span>
+                                                    <div class="card-body">
+                                                        <h6 class="small">In Process</h6>
+                                                        <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -451,11 +530,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="reverted">
                                                 <div class="card kpi-card clickable" data-kpi="reverted" data-count="{{ $data['counts']['reverted'] }}">
-                                                    <div class="card-body text-center">
-                                                        
-                                                        <div class="kpi-value" id="kpi-reverted">{{ $data['counts']['reverted'] }}</div>
-                                                        <h6 class="text-danger"><b>Reverted</b></h6>
-                                                        <span class="kpi-trend-up badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['reverted'] ?? 0 }}</span>
+                                                    <div class="card-body">
+                                                        <h6 class="small">Reverted</h6>
+                                                        <div class="kpi-value" id="kpi-reverted">{{ $data['counts']['reverted'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-reverted">🔼 {{ $data['kpi_trends']['reverted'] ?? 0 }}</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -463,10 +541,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected_admin">
                                                 <div class="card kpi-card clickable" data-kpi="rejected_admin" data-count="{{ $data['counts']['rejected'] }}">
-                                                    <div class="card-body text-center">
-                                                        <div class="kpi-value" id="kpi-rejected">{{ $data['counts']['rejected'] }}</div>
-                                                        <h6 class="text-danger"><b>Rejected</b></h6>
-                                                        <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['rejected'] ?? 0 }}</span>
+                                                    <div class="card-body">
+                                                        <h6 class="small">Rejected</h6>
+                                                        <div class="kpi-value" id="kpi-rejected">{{ $data['counts']['rejected'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 {{ $data['kpi_trends']['rejected'] ?? 0 }}</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -474,10 +552,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis_admin">
                                                 <div class="card kpi-card clickable" data-kpi="to_mis_admin" data-count="{{ $data['counts']['forwarded_to_mis'] }}">
-                                                    <div class="card-body text-center">
-                                                        <div class="kpi-value" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] }}</div>
-                                                        <h6 class="text-success"><b>To MIS</b></h6>
-                                                        <span class="kpi-trend-up badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-forwarded-to-mis"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['forwarded_to_mis'] ?? 0 }}%</span>
+                                                    <div class="card-body">
+                                                        <h6 class="small">To MIS</h6>
+                                                        <div class="kpi-value" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-forwarded-to-mis">🔼 {{ $data['kpi_trends']['forwarded_to_mis'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -487,10 +565,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="total_created">
                                                 <div class="card kpi-card clickable" data-kpi="total_created" data-count="{{ $data['sales_counts']['total_created'] ?? 0 }}">
-                                                    <div class="card-body text-center">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Total Created</h6>
                                                         <div class="kpi-value" id="kpi-total-created">{{ $data['sales_counts']['total_created'] ?? 0 }}</div>
-                                                        <h6 class="text-success"><b>Total Created</b></h6>
-                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-total-created"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['total_created'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-up" id="kpi-trend-total-created">🔼 {{ $data['sales_kpi_trends']['total_created'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -498,10 +576,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="in_approval">
                                                 <div class="card kpi-card clickable" data-kpi="in_approval" data-count="{{ $data['sales_counts']['in_approval'] ?? 0 }}">
-                                                    <div class="card-body text-center">
+                                                    <div class="card-body">
+                                                        <h6 class="small">In Approval</h6>
                                                         <div class="kpi-value" id="kpi-in-approval">{{ $data['sales_counts']['in_approval'] ?? 0 }}</div>
-                                                        <h6 class="text-success"><b>In Approval</b></h6>
-                                                        <span class="kpi-trend-neutral badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-in-approval">—</span>
+                                                        <span class="kpi-trend-neutral" id="kpi-trend-in-approval">—</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -509,11 +587,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis">
                                                 <div class="card kpi-card clickable" data-kpi="to_mis" data-count="{{ $data['sales_counts']['to_mis'] ?? 0 }}">
-                                                    <div class="card-body text-center">
-                                                        
+                                                    <div class="card-body">
+                                                        <h6 class="small">In MIS</h6>
                                                         <div class="kpi-value" id="kpi-to-mis">{{ $data['sales_counts']['to_mis'] ?? 0 }}</div>
-                                                        <h6 class="text-success"><b>In MIS</b></h6>
-                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-to-mis"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['to_mis'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-up" id="kpi-trend-to-mis">🔼 {{ $data['sales_kpi_trends']['to_mis'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -521,11 +598,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="completed">
                                                 <div class="card kpi-card clickable" data-kpi="completed" data-count="{{ $data['sales_counts']['completed'] ?? 0 }}">
-                                                    <div class="card-body text-center">
-                                                        
+                                                    <div class="card-body">
+                                                        <h6 class="small">Completed</h6>
                                                         <div class="kpi-value" id="kpi-completed">{{ $data['sales_counts']['completed'] ?? 0 }}</div>
-                                                        <h6 class="text-success"><b>Completed</b></h6>
-                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-completed"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['completed'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-up" id="kpi-trend-completed">🔼 {{ $data['sales_kpi_trends']['completed'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -533,25 +609,23 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected">
                                                 <div class="card kpi-card clickable" data-kpi="rejected" data-count="{{ $data['sales_counts']['rejected'] ?? 0 }}">
-                                                    <div class="card-body text-center">
-                                                        
+                                                    <div class="card-body">
+                                                        <h6 class="small">Rejected</h6>
                                                         <div class="kpi-value" id="kpi-rejected">{{ $data['sales_counts']['rejected'] ?? 0 }}</div>
-                                                        <h6 class="text-danger"><b>Rejected</b></h6>
-                                                        <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> {{ $data['sales_kpi_trends']['rejected'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 {{ $data['sales_kpi_trends']['rejected'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
                                         </div>
                                     @else
                                         {{-- MIS KPIs --}}
-                                                                                
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
                                                 <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
-                                                    <div class="card-body text-center">
-                                                       <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
-                                                        <h6 class="text-success "><b>Total Forms</b></h6>
-                                                        <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success float-end mt-2"><i class="ri-arrow-up-line"></i>  {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
+                                                    <div class="card-body">
+                                                        <h6 class="small">Total Forms</h6>
+                                                        <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -570,11 +644,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="agreement_created">
                                                 <div class="card kpi-card clickable" data-kpi="agreement_created" data-count="{{ $data['counts']['agreement_created'] ?? 0 }}">
-                                                    <div class="card-body text-center">
-                                                        
+                                                    <div class="card-body">
+                                                        <h6 class="small">Agreements</h6>
                                                         <div class="kpi-value" id="kpi-agreement-created">{{ $data['counts']['agreement_created'] ?? 0 }}</div>
-                                                        <h6 class="text-success"><b>Agreements</b></h6>
-                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-agreement-created"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['agreement_created'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-up" id="kpi-trend-agreement-created">🔼 {{ $data['kpi_trends']['agreement_created'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -582,10 +655,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="physical_docs_verified">
                                                 <div class="card kpi-card clickable" data-kpi="physical_docs_verified" data-count="{{ $data['counts']['physical_docs_verified'] ?? 0 }}">
-                                                    <div class="card-body text-center">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Physical Docs</h6>
                                                         <div class="kpi-value" id="kpi-physical-docs-verified">{{ $data['counts']['physical_docs_verified'] ?? 0 }}</div>
-                                                        <h6 class="text-success"><b>Physical Docs</b></h6>
-                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-physical-docs-verified"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['physical_docs_verified'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-up" id="kpi-trend-physical-docs-verified">🔼 {{ $data['kpi_trends']['physical_docs_verified'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -593,11 +666,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="distributorship_created">
                                                 <div class="card kpi-card clickable" data-kpi="distributorship_created" data-count="{{ $data['counts']['distributorship_created'] ?? 0 }}">
-                                                    <div class="card-body text-center">
-                                                        
+                                                    <div class="card-body">
+                                                        <h6 class="small">Completed</h6>
                                                         <div class="kpi-value" id="kpi-distributors-created">{{ $data['counts']['distributorship_created'] ?? 0 }}</div>
-                                                        <h6 class="text-success"><b>Completed</b></h6>
-                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-distributors-created"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['distributorship_created'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-up" id="kpi-trend-distributors-created">🔼 {{ $data['kpi_trends']['distributorship_created'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -605,11 +677,10 @@
                                         <div class="col-6 col-md-3 col-lg-2">
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="mis_rejected">
                                                 <div class="card kpi-card clickable" data-kpi="mis_rejected" data-count="{{ $data['counts']['mis_rejected'] ?? 0 }}">
-                                                    <div class="card-body text-center">
-                                                        
+                                                    <div class="card-body">
+                                                        <h6 class="small">Rejected</h6>
                                                         <div class="kpi-value" id="kpi-mis-rejected">{{ $data['counts']['mis_rejected'] ?? 0 }}</div>
-                                                        <h6 class="text-danger"><b>Rejected</b></h6>
-                                                        <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-mis-rejected"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['mis_rejected'] ?? 0 }}%</span>
+                                                        <span class="kpi-trend-down" id="kpi-trend-mis-rejected">🔽 {{ $data['kpi_trends']['mis_rejected'] ?? 0 }}%</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -618,9 +689,9 @@
                                             <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process">
                                                 <div class="card kpi-card clickable" data-kpi="in_process" data-count="{{ $data['counts']['in_process'] ?? 0 }}">
                                                     <div class="card-body">
+                                                        <h6 class="small">In Process</h6>
                                                         <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] ?? 0 }}</div>
-                                                        <h6 class="text-warning"><b>In Process</b></h6>
-                                                        <span class="kpi-trend-neutral badge bg-warning-subtle text-warning float-end mt-2" id="kpi-trend-in-process">—</span>
+                                                        <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
                                                     </div>
                                                 </div>
                                             </a>
@@ -633,647 +704,7 @@
                 </div>
             </div>
         @endif
-          <style>
-    .chart-card {
-      border: 1px solid #dce3f0;
-      border-radius: 10px;
-      padding: 15px;
-      background: #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      width: 100%;
-      max-width: 500px;
-      margin: 30px auto;
-    }
-    .chart-title {
-      font-weight: 600;
-      font-size: 16px;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-  </style>
-        <div class="row">
-           
-      
-            <div class="col-md-4">
-                <div class="card">
-                     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-                      <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
-                     <div class="chart-card">
-                        <div class="chart-title">Total Forms Submitted: 150</div>
-                        <canvas id="formsChart" height="230"></canvas>
-                    </div>
-                     <script>
-    const ctx = document.getElementById('formsChart');
 
-    new Chart(ctx, {
-      type: 'bar',
-      data: {
-        labels: [
-          'Pending at RHM',
-          'Pending at ZBM',
-          'Pending at GM – Sales',
-          'Approved & Forwarded to MIS',
-          'Rejected',
-          'Reverted to Initiators'
-        ],
-        datasets: [{
-          data: [12, 7, 5, 102, 6, 18],
-          backgroundColor: 'rgba(100, 150, 150, 0.6)',
-          borderRadius: 5,
-          barThickness: 35
-        }]
-      },
-      options: {
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: true },
-          datalabels: {
-            anchor: 'end',
-            align: 'start',
-            color: '#000',
-            font: {
-              weight: 'bold',
-              size: 12
-            },
-            formatter: Math.round
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: { display: false },
-            border: { display: true },
-            ticks: { display: true }
-          },
-          x: {
-            grid: { display: false },
-            border: { display: true },
-            ticks: {
-              font: { size: 11 },
-              maxRotation: 45,
-              minRotation: 45
-            }
-          }
-        },
-        animation: { duration: 800 }
-      },
-      plugins: [ChartDataLabels]
-    });
-  </script>
-                </div>
-            </div>
-
-            <div class="col-md-5">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title float-start">Forms Submitted</h5>
-                        <a class="float-end link" href="">View All</a>
-                    </div>
-                    <div class="card-body" style="height:440px;overflow:auto;">
-                        <div class="attendance-request-box">
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                        </div>
-                    </div>
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                        </div>
-                    </div>
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                        </div>
-                    </div>
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                        </div>
-                    </div>
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3"><b><small>Submit Date: 04 Sep 2025</small></b></span>
-                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                        </div>
-                    </div>
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3"><b><small>Submit Date: 04 Sep 2025</small></b></span>
-                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">
-                        <h5>Check List of Required Doc.</h5>
-                    </div>
-                    <div class="card-body" style="min-height:300px;">
-                        <ul>
-                            <li>SOLE PROPRIETORSHIP</li>
-                            <li>PARTNERSHIP</li>
-                            <li>LLP</li>
-                            <li>COMPANY</li>
-                            <li>COOPERATIVE SOCIETY</li>
-                            <li>TRUST</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card">
-                  
-                    <div class="card-body" style="min-height:300px;">
-                        <div class="chart-card">
-                            <div class="chart-title">Forms Received from Sales: 46</div>
-                            <canvas id="formsChart1" height="250"></canvas>
-                        </div>
-<style>
-    #formsChart1 {
-  height: 320px !important; /* or 200px */
-}
-    </style>
-                         <script>
-    const ctx2 = document.getElementById('formsChart1');
-
-    new Chart(ctx2, {
-      type: 'bar',
-      data: {
-        labels: ['Document Verification', 'Agreements Created', 'Physical Docs'],
-        datasets: [
-          {
-            label: 'Approval',
-            data: [12, 28, 6],
-            backgroundColor: 'rgba(100, 150, 150, 0.6)',
-            borderRadius: 5,
-            barThickness: 30
-          },
-          {
-            label: 'Pending',
-            data: [18, 10, 10],
-            backgroundColor: 'rgba(230, 200, 80, 0.8)',
-            borderRadius: 5,
-            barThickness: 30
-          }
-        ]
-      },
-      options: {
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-            labels: { usePointStyle: true, pointStyle: 'circle' }
-          },
-          tooltip: { enabled: true },
-          datalabels: {
-            anchor: 'end',
-            align: 'start',
-            color: '#000',
-            font: { weight: 'bold', size: 12 },
-            formatter: (value) => value.toString().padStart(2, '0')
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: { display: false },
-            border: { display: true },
-            ticks: { display: true }
-          },
-          x: {
-            grid: { display: false },
-            border: { display: true },
-            ticks: { font: { size: 11 } }
-          }
-        },
-        animation: { duration: 800 },
-        responsive: true,
-        maintainAspectRatio: false
-      },
-      plugins: [ChartDataLabels]
-    });
-  </script>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="chart-card">
-                        <div class="chart-title">Approval Status Form</div>
-                        <canvas id="formsChart3" height="230"></canvas>
-                    </div>
-                     <script>
-    const ctx3 = document.getElementById('formsChart3');
-
-    new Chart(ctx3, {
-      type: 'bar',
-      data: {
-        labels: [
-          'Request',
-          'Pending',
-          'MIS',
-          'Final'
-        ],
-        datasets: [{
-          data: [110, 70, 50, 18],
-          backgroundColor: 'rgba(100, 150, 150, 0.6)',
-          borderRadius: 5,
-          barThickness: 35
-        }]
-      },
-      options: {
-        plugins: {
-          legend: { display: false },
-          tooltip: { enabled: true },
-          datalabels: {
-            anchor: 'end',
-            align: 'start',
-            color: '#000',
-            font: {
-              weight: 'bold',
-              size: 12
-            },
-            formatter: Math.round
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: { display: false },
-            border: { display: true },
-            ticks: { display: true }
-          },
-          x: {
-            grid: { display: false },
-            border: { display: true },
-            ticks: {
-              font: { size: 11 },
-              maxRotation: 45,
-              minRotation: 45
-            }
-          }
-        },
-        animation: { duration: 800 }
-      },
-      plugins: [ChartDataLabels]
-    });
-  </script>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card">
-                  
-                    <div class="card-body" style="min-height:300px;">
-                        <div class="chart-card">
-                            <div class="chart-title">Initiator Status</div>
-                            <canvas id="formsChart4" height="250"></canvas>
-                        </div>
-<style>
-    #formsChart4 {
-  height: 320px !important; /* or 200px */
-}
-    </style>
-                         <script>
-    const ctx4 = document.getElementById('formsChart4');
-
-    new Chart(ctx4, {
-      type: 'bar',
-      data: {
-        labels: ['Anjani', 'Sushil', 'Rajat', 'Kiran', 'Komal', 'Mahesh'],
-        datasets: [
-          {
-            label: 'Approval',
-            data: [12, 28, 6,25, 63, 19],
-            backgroundColor: 'rgba(100, 150, 150, 0.6)',
-            borderRadius: 5,
-            barThickness: 30
-          },
-          {
-            label: 'Pending',
-            data: [18, 10, 10,25 ,23, 14],
-            backgroundColor: 'rgba(230, 200, 80, 0.8)',
-            borderRadius: 5,
-            barThickness: 30
-          }
-        ]
-      },
-      options: {
-        plugins: {
-          legend: {
-            display: true,
-            position: 'bottom',
-            labels: { usePointStyle: true, pointStyle: 'circle' }
-          },
-          tooltip: { enabled: true },
-          datalabels: {
-            anchor: 'end',
-            align: 'start',
-            color: '#000',
-            font: { weight: 'bold', size: 12 },
-            formatter: (value) => value.toString().padStart(2, '0')
-          }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            grid: { display: false },
-            border: { display: true },
-            ticks: { display: true }
-          },
-          x: {
-            grid: { display: false },
-            border: { display: true },
-            ticks: { font: { size: 11 } }
-          }
-        },
-        animation: { duration: 800 },
-        responsive: true,
-        maintainAspectRatio: false
-      },
-      plugins: [ChartDataLabels]
-    });
-  </script>
-                    </div>
-                </div>
-            </div>
-
-        <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title float-start">All Forms Status</h5>
-                        <a class="float-end link" href="">View All</a>
-                    </div>
-                    <div class="card-body" style="height:440px;overflow:auto;">
-                        <div class="attendance-request-box">
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span class="text-success float-end" title="Pending">
-                               Days Pending: 5
-                            </span>
-                        </div>
-                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
-                            <span class="me-3" ><b>Initiated By: TM</b></span>
-                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
-                        </div>
-                    </div>
-
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span class="text-success float-end" title="Pending">
-                               Days Pending: 5
-                            </span>
-                        </div>
-                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
-                            <span class="me-3" ><b>Initiated By: TM</b></span>
-                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
-                        </div>
-                    </div>
-
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span class="text-success float-end" title="Pending">
-                               Days Pending: 5
-                            </span>
-                        </div>
-                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
-                            <span class="me-3" ><b>Initiated By: TM</b></span>
-                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
-                        </div>
-                    </div>
-
-
-
-                    <div class="form-sub-section mb-3">
-                         <div style="width:100%;">
-                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
-                        </div>
-                        <div style="width:100%;">
-                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
-                            <span class="text-success float-end" title="Pending">
-                               Days Pending: 5
-                            </span>
-                        </div>
-                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
-                            <span class="me-3" ><b>Initiated By: TM</b></span>
-                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
-                               Pending
-                            </span>
-                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
-                        </div>
-                    </div>
-                    
-
-                </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title float-start">All Zone</h5>
-                        <a class="float-end link" href="">View All</a>
-                    </div>
-                    <div class="card-body">
-                        <ul class="zone-list">
-                            <li>
-                                <div class="float-start">
-                                    <img class="zone-img" src="">
-                                </div>
-                                <div class="float-start">
-                                    <b>130</b><br>
-                                    <span>Verify: 20</span>
-                                </div>
-                                <div class="float-end">
-                                    <b class="text-success">East Zone</b><br>
-                                    <span>Pending: 26</span>
-                                </div>
-                            </li>
-
-                            <li>
-                                <div class="float-start">
-                                    <img class="zone-img" src="">
-                                </div>
-                                <div class="float-start">
-                                    <b>150</b><br>
-                                    <span>Verify: 20</span>
-                                </div>
-                                <div class="float-end">
-                                    <b class="text-success">West Zone</b><br>
-                                    <span>Pending: 26</span>
-                                </div>
-                            </li>
-
-
-                            <li>
-                                <div class="float-start">
-                                    <img class="zone-img" src="">
-                                </div>
-                                <div class="float-start">
-                                    <b>190</b><br>
-                                    <span>Verify: 20</span>
-                                </div>
-                                <div class="float-end">
-                                    <b class="text-success">North Zone</b><br>
-                                    <span>Pending: 26</span>
-                                </div>
-                            </li>
-
-                            <li>
-                                <div class="float-start">
-                                    <img class="zone-img" src="">
-                                </div>
-                                <div class="float-start">
-                                    <b>145</b><br>
-                                    <span>Verify: 20</span>
-                                </div>
-                                <div class="float-end">
-                                    <b class="text-success">South Zone</b><br>
-                                    <span>Pending: 26</span>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-            
-
-        </div>
-
-
-        <div class="card mb-0">
-            <div class="card-body">
-        <form style="position:relative;" id="{{ $showMisDashboard ? 'mis-filter-form' : ($showApproverDashboard ? 'approver-filter-form' : ($showSalesDashboard ? 'sales-filter-form' : 'filter-form')) }}" method="GET">
-            <button style="position: absolute;right:0px;top:0px;z-index:1;" type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
-                <i class="ri-filter-2-line"></i> Filters
-            </button>           
-            <div class="collapse show" id="filterCollapse">
-                            <div class="row g-2">
-                                {{-- Common filters: BU, Zone, Region, Territory - Always show --}}
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col" style="width:15%;">
-                                    <label for="bu" class="form-label"><b>BU</b></label>
-                                    <select name="bu" id="bu" class="form-select form-select-sm">
-                                        <option value="All">All BU</option>
-                                        @foreach ($bu_list as $key => $value)
-                                            <option value="{{ $key }}" {{ $filters['bu'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label for="zone" class="form-label"><b>Zone</b></label>
-                                    <select name="zone" id="zone" class="form-select form-select-sm">
-                                        <option value="All">All Zone</option>
-                                        @foreach ($zone_list as $key => $value)
-                                            <option value="{{ $key }}" {{ $filters['zone'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label for="region" class="form-label"><b>Region</b></label>
-                                    <select name="region" id="region" class="form-select form-select-sm">
-                                        <option value="All">All Region</option>
-                                        @foreach ($region_list as $key => $value)
-                                            <option value="{{ $key }}" {{ $filters['region'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label for="territory" class="form-label"><b>Territory</b></label>
-                                    <select name="territory" id="territory" class="form-select form-select-sm">
-                                        <option value="All">All Territory</option>
-                                        @foreach ($territory_list as $key => $value)
-                                            <option value="{{ $key }}" {{ $filters['territory'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                {{-- Date Range - Common --}}
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label class="form-label"><b>From</b></label>
-                                    <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ $filters['date_from'] }}">
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label class="form-label"><b>To</b></label>
-                                    <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] }}">
-                                </div>
-
-                                @if($showAdminDashboard)
-                                    <input type="hidden" name="view_mode" id="view_mode" value="{{ $viewMode }}">
-                                @endif
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col mt-1 d-flex gap-1 mt-lg-4">
-                                    <button type="submit" class="btn btn-sm btn-primary mt-1">Apply</button>
-                                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-dark mt-1"><i class="ri-refresh-line"></i></a>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                </div>
         @if($showApproverDashboard)
             {{-- Approver KPI Cards --}}
             <div class="row mb-3">
@@ -1293,7 +724,7 @@
                                         <div class="card kpi-card clickable" data-kpi="pending_your_approval" data-count="{{ $data['counts']['pending_your_approval'] }}">
                                             <div class="card-body">
                                                 <h6 class="small">🔍 Forms Pending Your Approval</h6>
-                                                <div class="kpi-value">{{ $data['counts']['pending_your_approval'] }}</div>
+                                                <div class="kpi-value">{{ $data['counts']['pending_your_approval'] ?? 0 }}</div>
                                                 <span class="kpi-trend-neutral">—</span>
                                             </div>
                                         </div>
@@ -1304,7 +735,7 @@
                                         <div class="card kpi-card clickable" data-kpi="on_hold_by_you" data-count="{{ $data['counts']['on_hold_by_you'] }}">
                                             <div class="card-body">
                                                 <h6 class="small">🕓 On Hold by You</h6>
-                                                <div class="kpi-value">{{ $data['counts']['on_hold_by_you'] }}</div>
+                                                <div class="kpi-value">{{ $data['counts']['on_hold_by_you'] ?? 0  }}</div>
                                                 <span class="kpi-trend-neutral">—</span>
                                             </div>
                                         </div>
@@ -1315,7 +746,7 @@
                                         <div class="card kpi-card clickable" data-kpi="approved_by_you" data-count="{{ $data['counts']['approved_by_you'] }}">
                                             <div class="card-body">
                                                 <h6 class="small">✅ Approved by You</h6>
-                                                <div class="kpi-value">{{ $data['counts']['approved_by_you'] }}</div>
+                                                <div class="kpi-value">{{ $data['counts']['approved_by_you'] ?? 0 }}</div>
                                                 <span class="kpi-trend-up">🔼 {{ $data['kpi_trends']['approved_by_you'] ?? 0 }}%</span>
                                             </div>
                                         </div>
@@ -1326,7 +757,7 @@
                                         <div class="card kpi-card clickable" data-kpi="rejected_by_you" data-count="{{ $data['counts']['rejected_by_you'] }}">
                                             <div class="card-body">
                                                 <h6 class="small">❌ Rejected by You</h6>
-                                                <div class="kpi-value">{{ $data['counts']['rejected_by_you'] }}</div>
+                                                <div class="kpi-value">{{ $data['counts']['rejected_by_you'] ?? 0 }}</div>
                                                 <span class="kpi-trend-down">🔽 {{ $data['kpi_trends']['rejected_by_you'] ?? 0 }}%</span>
                                             </div>
                                         </div>
@@ -1337,7 +768,7 @@
                                         <div class="card kpi-card clickable" data-kpi="reverted_by_you" data-count="{{ $data['counts']['reverted_by_you'] }}">
                                             <div class="card-body">
                                                 <h6 class="small">🔁 Reverted by You</h6>
-                                                <div class="kpi-value">{{ $data['counts']['reverted_by_you'] }}</div>
+                                                <div class="kpi-value">{{ $data['counts']['reverted_by_you'] ?? 0 }}</div>
                                                 <span class="kpi-trend-up">🔼 {{ $data['kpi_trends']['reverted_by_you'] ?? 0 }}%</span>
                                             </div>
                                         </div>
@@ -1355,11 +786,10 @@
     <div class="row mb-1">
         <div class="col-12">
             <div class="card">
-                
-                <div >
+                <div class="card-body">
                     @if($showAdminDashboard)
                         {{-- Admin Table --}}
-                        <div class="card-header d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="header-title mb-0" id="table-title">
                                 @if($viewMode == 'all')
                                     All Applications (<span id="table-count">{{ $data['counts']['total'] ?? 0 }}</span>)
@@ -1368,7 +798,7 @@
                                 @endif
                             </h5>
                         </div>
-                        <div class="card-body" id="main-container">
+                        <div id="main-container">
                             @if($viewMode == 'all')
                                 @if (isset($masterReportApplications) && $masterReportApplications->isEmpty())
                                     <div class="no-data-message">No applications found.</div>
@@ -1576,35 +1006,7 @@
                         </div>
                     @elseif($showMisDashboard)
                         {{-- MIS Table --}}
-                        <div class="card-header">
-                            <h5 class="card-title mb-0 float-start">All Application List</h5>
-                             <div class="d-flex justify-content-end align-items-center" style="gap:10px;">
-                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
-                                    <option value="">Select Status</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                </select>
-                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
-                                    <option value="">Select Initiator Role</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                </select>
-                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
-                                    <option value="">Select Approval Stage</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                </select>
-                                <a href="attendance-hr-report.html" class="btn btn-sm btn-light">
-                                        View All
-                                    </a>
-                        </div>
-                        <div class="card-body" id="mis-table-container">
+                        <div id="mis-table-container">
                             @if (isset($misApplications) && $misApplications->isEmpty())
                                 <div class="no-data-message">No applications found.</div>
                             @else
@@ -1613,36 +1015,7 @@
                         </div>
                     @elseif($showSalesDashboard)
                         {{-- Sales Table --}}
-                        <div class="card-header">
-                             <h5 class="card-title mb-0 float-start">All Application List</h5>
-                             <div class="d-flex justify-content-end align-items-center" style="gap:10px;">
-                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
-                                    <option value="">Select Status</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                </select>
-                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
-                                    <option value="">Select Initiator Role</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                </select>
-                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
-                                    <option value="">Select Approval Stage</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                    <option value="">w</option>
-                                </select>
-                                <a href="attendance-hr-report.html" class="btn btn-sm btn-light">
-                                        View All
-                                    </a>
-                            </div>
-                        </div>
-                        <div class="card-body" id="sales-table-container">
+                        <div id="sales-table-container">
                             @if (isset($myApplications) && $myApplications->isEmpty())
                                 <div class="no-data-message">No applications created by you.</div>
                             @else
@@ -1998,11 +1371,10 @@
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="total" data-count="${counts.total || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">Total Forms</h6>
                             <div class="kpi-value" id="kpi-total-submitted">${counts.total || 0}</div>
-                            <h6 class="text-success"><b>Total Forms</b></h6>
-                            <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up "><i class="ri-arrow-up-line"></i> ${trends.total_submitted || 0}%</span>
-                            
+                            <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 ${trends.total_submitted || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -2010,11 +1382,10 @@
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="appointments" data-count="${counts.distributorship_created || 0}">
-                        <div class="card-body text-center">
-                            
+                        <div class="card-body">
+                            <h6 class="small">Appointments</h6>
                             <div class="kpi-value" id="kpi-appointments-completed">${counts.distributorship_created || 0}</div>
-                            <h6 class="text-success"><b>Appointments</b></h6>
-                            <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-appointments-completed"><i class="ri-arrow-up-line"></i> ${trends.appointments_completed || 0}%</span>
+                            <span class="kpi-trend-up" id="kpi-trend-appointments-completed">🔼 ${trends.appointments_completed || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -2022,10 +1393,10 @@
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="in_process" data-count="${counts.in_process || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">In Process</h6>
                             <div class="kpi-value" id="kpi-in-process">${counts.in_process || 0}</div>
-                            <h6 class="text-warning"><b>In Process</b></h6>
-                            <span class="kpi-trend-neutral badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-in-process">—</span>
+                            <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
                         </div>
                     </div>
                 </a>
@@ -2033,11 +1404,10 @@
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="reverted" data-count="${counts.reverted || 0}">
-                        <div class="card-body text-center">
-                            
+                        <div class="card-body">
+                            <h6 class="small">Reverted</h6>
                             <div class="kpi-value" id="kpi-reverted">${counts.reverted || 0}</div>
-                            <h6 class="text-danger"><b>Reverted</b></h6>
-                            <span class="kpi-trend-up badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> ${trends.reverted || 0}</span>
+                            <span class="kpi-trend-up" id="kpi-trend-reverted">🔼 ${trends.reverted || 0}</span>
                         </div>
                     </div>
                 </a>
@@ -2045,11 +1415,10 @@
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="rejected" data-count="${counts.rejected || 0}">
-                        <div class="card-body text-center">
-                            
+                        <div class="card-body">
+                            <h6 class="small">Rejected</h6>
                             <div class="kpi-value" id="kpi-rejected">${counts.rejected || 0}</div>
-                            <h6 class="text-danger"><b>Rejected</b></h6>
-                            <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected || 0}</span>
+                            <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 ${trends.rejected || 0}</span>
                         </div>
                     </div>
                 </a>
@@ -2057,11 +1426,10 @@
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="to_mis" data-count="${counts.forwarded_to_mis || 0}">
-                        <div class="card-body text-center">
-                            
+                        <div class="card-body">
+                            <h6 class="small">To MIS</h6>
                             <div class="kpi-value" id="kpi-forwarded-to-mis">${counts.forwarded_to_mis || 0}</div>
-                            <h6 class="text-success"><b>To MIS</b></h6>
-                            <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-forwarded-to-mis"><i class="ri-arrow-up-line"></i> ${trends.forwarded_to_mis || 0}%</span>
+                            <span class="kpi-trend-up" id="kpi-trend-forwarded-to-mis">🔼 ${trends.forwarded_to_mis || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -2074,11 +1442,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="total_created" data-count="${counts.total_created || 0}">
-                            <div class="card-body text-center">
-                                
+                            <div class="card-body">
+                                <h6 class="small">Total Created</h6>
                                 <div class="kpi-value" id="kpi-total-created">${counts.total_created || 0}</div>
-                                <h6 class="text-success"><b>Total Created</b></h6>
-                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-total-created"><i class="ri-arrow-up-line"></i> ${trends.total_created || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-total-created">🔼 ${trends.total_created || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2086,10 +1453,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="in_approval" data-count="${counts.in_approval || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">In Approval</h6>
                                 <div class="kpi-value" id="kpi-in-approval">${counts.in_approval || 0}</div>
-                                <h6 class="text-success"><b>In Approval</b></h6>
-                                <span class="kpi-trend-neutral badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-in-approval">—</span>
+                                <span class="kpi-trend-neutral" id="kpi-trend-in-approval">—</span>
                             </div>
                         </div>
                     </a>
@@ -2097,10 +1464,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="to_mis" data-count="${counts.to_mis || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">In MIS</h6>
                                 <div class="kpi-value" id="kpi-to-mis">${counts.to_mis || 0}</div>
-                                <h6 class="text-success"><b>In MIS</b></h6>
-                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-to-mis"><i class="ri-arrow-up-line"></i> ${trends.to_mis || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-to-mis">🔼 ${trends.to_mis || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2108,11 +1475,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="completed" data-count="${counts.completed || 0}">
-                            <div class="card-body text-center">
-                                
+                            <div class="card-body">
+                                <h6 class="small">Completed</h6>
                                 <div class="kpi-value" id="kpi-completed">${counts.completed || 0}</div>
-                                <h6 class="text-success"><b>Completed</b></h6>
-                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-completed"><i class="ri-arrow-up-line"></i> ${trends.completed || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-completed">🔼 ${trends.completed || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2120,11 +1486,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="rejected" data-count="${counts.rejected || 0}">
-                            <div class="card-body text-center">
-                                
+                            <div class="card-body">
+                                <h6 class="small">Rejected</h6>
                                 <div class="kpi-value" id="kpi-rejected">${counts.rejected || 0}</div>
-                                <h6 class="text-danger"><b>Rejected</b></h6>
-                                <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected || 0}%</span>
+                                <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 ${trends.rejected || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2136,11 +1501,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="total" data-count="${counts.total || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Total Forms</h6>
                                 <div class="kpi-value" id="kpi-total-submitted">${counts.total || 0}</div>
-                                <h6 class="text-success"><b>Total Forms</b></h6>
-                                <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success mt-2 float-end"><i class="ri-arrow-up-line"></i> ${trends.total_submitted || 0}%</span>
-                                
+                                <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 ${trends.total_submitted || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2148,10 +1512,10 @@
                 <!--<div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="document_verified" data-count="${counts.document_verified || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Docs Verified</h6>
                                 <div class="kpi-value" id="kpi-document-verified">${counts.document_verified || 0}</div>
-                                <h6 class="text-success">Docs Verified</h6>
-                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-document-verified"><i class="ri-arrow-up-line"></i> ${trends.document_verified || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-document-verified">🔼 ${trends.document_verified || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2159,10 +1523,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="agreement_created" data-count="${counts.agreement_created || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Agreements</h6>
                                 <div class="kpi-value" id="kpi-agreement-created">${counts.agreement_created || 0}</div>
-                                <h6 class="text-success"><b>Agreements</b></h6>
-                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-agreement-created"><i class="ri-arrow-up-line"></i> ${trends.agreement_created || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-agreement-created">🔼 ${trends.agreement_created || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2170,10 +1534,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="physical_docs_verified" data-count="${counts.physical_docs_verified || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Physical Docs</h6>
                                 <div class="kpi-value" id="kpi-physical-docs-verified">${counts.physical_docs_verified || 0}</div>
-                                <h6 class="text-success"><b>Physical Docs</b></h6>
-                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-physical-docs-verified"><i class="ri-arrow-up-line"></i> ${trends.physical_docs_verified || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-physical-docs-verified">🔼 ${trends.physical_docs_verified || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2181,10 +1545,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="distributorship_created" data-count="${counts.distributorship_created || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Completed</h6>
                                 <div class="kpi-value" id="kpi-distributors-created">${counts.distributorship_created || 0}</div>
-                                <h6 class="text-success"><b>Completed</b></h6>
-                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-distributors-created"><i class="ri-arrow-up-line"></i> ${trends.distributorship_created || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-distributors-created">🔼 ${trends.distributorship_created || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2192,10 +1556,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="mis_rejected" data-count="${counts.mis_rejected || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Rejected</h6>
                                 <div class="kpi-value" id="kpi-mis-rejected">${counts.mis_rejected || 0}</div>
-                                <h6 class="text-danger"><b>Rejected</b></h6>
-                                <span class="badge bg-danger-subtle text-danger mt-2 float-end kpi-trend-up" id="kpi-trend-mis-rejected"><i class="ri-arrow-down-line"></i> ${trends.mis_rejected || 0}%</span>
+                                <span class="kpi-trend-down" id="kpi-trend-mis-rejected">🔽 ${trends.mis_rejected || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2203,10 +1567,10 @@
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="in_process" data-count="${counts.in_process || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">In Process</h6>
                                 <div class="kpi-value" id="kpi-in-process">${counts.in_process || 0}</div>
-                                <h6 class="text-warning"><b>In Process</b></h6>
-                                <span class="badge bg-warning-subtle text-warning mt-2 float-end kpi-trend-neutral" id="kpi-trend-in-process">—</span>
+                                <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
                             </div>
                         </div>
                     </a>

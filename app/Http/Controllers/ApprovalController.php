@@ -962,12 +962,12 @@ class ApprovalController extends Controller
                 'document_verifications.main.*' => 'in:verified,not_verified',
                 'document_verifications.authorized.*' => 'in:verified,not_verified',
                 'document_verifications.additional.*' => 'in:verified,not_verified',
-                  'verification_notes.main.*' => 'required_if:document_verifications.main.*,not_verified|nullable|string|max:255',
-            'verification_notes.authorized.*' => 'required_if:document_verifications.authorized.*,not_verified|nullable|string|max:255',
-            'verification_notes.additional.*' => 'required_if:document_verifications.additional.*,not_verified|nullable|string|max:255',
-            'additional_documents.*.name' => 'required_without:additional_documents.*.id|string|max:100',
-            'additional_documents.*.remark' => 'nullable|string|max:255',
-            'additional_documents.*.id' => 'nullable|exists:application_additional_documents,id',
+                'verification_notes.main.*' => 'required_if:document_verifications.main.*,not_verified|nullable|string|max:255',
+                'verification_notes.authorized.*' => 'required_if:document_verifications.authorized.*,not_verified|nullable|string|max:255',
+                'verification_notes.additional.*' => 'required_if:document_verifications.additional.*,not_verified|nullable|string|max:255',
+                'additional_documents.*.name' => 'required_without:additional_documents.*.id|string|max:100',
+                'additional_documents.*.remark' => 'nullable|string|max:255',
+                'additional_documents.*.id' => 'nullable|exists:application_additional_documents,id',
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -1445,311 +1445,310 @@ class ApprovalController extends Controller
 
     // In ApprovalController.php
     public function showPhysicalDocuments(Onboarding $application)
-{
-    if (!Auth::user()->employee->isMisTeam() && !in_array(Auth::user()->role, ['TM', 'GM'])) {
-        abort(403, 'Unauthorized');
-    }
-
-    // Fetch all physical document checks for the application, including original_filename if column exists
-    $physicalDocumentChecks = PhysicalDocumentCheck::where('application_id', $application->id)
-        ->with(['securityChequeDetails', 'securityDepositDetail'])
-        ->select(['*']) // Assuming original_filename is added to the table
-        ->get();
-
-    // Fetch physical dispatch record
-    $physicalDispatch = PhysicalDispatch::where('application_id', $application->id)->first() ?? new PhysicalDispatch();
-
-    // Eager load checkpoints to display in "List of Documents"
-    $application->load('checkpoints');
-
-    // Load entityDetails with supporting document paths
-    $application->load('entityDetails');
-
-    // Dynamically collect supporting documents if paths exist
-    $supportingDocuments = collect();
-    $entityDetails = $application->entityDetails;
-
-    // Check for ownership_info_path
-    if ($entityDetails->ownership_info_path) {
-        $supportingDocuments->push([
-            'type' => 'ownership_info',
-            'label' => 'Ownership Information',
-            'path' => $entityDetails->ownership_info_path,
-            'existing_file' => basename($entityDetails->ownership_info_path)
-        ]);
-    }
-
-    // Check for itr_acknowledgement_path
-    if ($entityDetails->itr_acknowledgement_path) {
-        $supportingDocuments->push([
-            'type' => 'itr_acknowledgement',
-            'label' => 'ITR Acknowledgement',
-            'path' => $entityDetails->itr_acknowledgement_path,
-            'existing_file' => basename($entityDetails->itr_acknowledgement_path)
-        ]);
-    }
-
-    // Check for balance_sheet_path
-    if ($entityDetails->balance_sheet_path) {
-        $supportingDocuments->push([
-            'type' => 'balance_sheet',
-            'label' => 'Balance Sheet',
-            'path' => $entityDetails->balance_sheet_path,
-            'existing_file' => basename($entityDetails->balance_sheet_path)
-        ]);
-    }
-
-    return view('approvals.physical-documents', compact('application', 'physicalDocumentChecks', 'physicalDispatch', 'supportingDocuments'));
-}
-
-public function updatePhysicalDocuments(Request $request, Onboarding $application)
-{
-    // dd($request->all()); // Comment out after debug
-
-    // Check if any document is marked as received
-    $anyReceived = false;
-    $documents = $request->input('documents', []);
-    foreach ($documents as $data) {
-        if (is_array($data) && isset($data['received']) && ($data['received'] ?? false) == true) {
-            $anyReceived = true;
-            break;
+    {
+        if (!Auth::user()->employee->isMisTeam() && !in_array(Auth::user()->role, ['TM', 'GM'])) {
+            abort(403, 'Unauthorized');
         }
-    }
 
-    // Define validation rules with custom messages
-    $rules = [
-        'receive_date' => ['required_if:any_received,true', 'nullable', 'date', 'before_or_equal:today'],
-        'verified_date' => 'required|date|before_or_equal:today',
-        'documents' => 'required|array|min:1',
-        'documents.*.received' => 'nullable|boolean',
-        'documents.*.status' => 'required|in:verified,not_verified',
-        'documents.*.reason' => 'required_if:documents.*.status,not_verified|string|max:500|nullable',
-        // Standard docs
-        'existing_agreement_copy_file' => 'nullable|string',
-        'existing_agreement_copy_file_original' => 'nullable|string',
-        'existing_security_cheques_file' => 'nullable|array',
-        'existing_security_cheques_file.*' => 'string',
-        'existing_security_cheques_file_original' => 'nullable|array',
-        'existing_security_cheques_file_original.*' => 'string',
-        'existing_security_deposit_file' => 'nullable|string',
-        'existing_security_deposit_file_original' => 'nullable|string',
-        // Security Cheques details - required if verified and files present
-        'security_cheques_details' => 'required_if:documents.security_cheques.status,verified|nullable|array',
-        'security_cheques_details.*.date_obtained' => 'required_if:documents.security_cheques.status,verified|nullable|date|before_or_equal:today',
-        'security_cheques_details.*.cheque_no' => 'required_if:documents.security_cheques.status,verified|nullable|string|max:50',
-        'security_cheques_details.*.date_use' => 'nullable|date|before_or_equal:today',
-        'security_cheques_details.*.purpose' => 'nullable|string|max:200',
-        'security_cheques_details.*.date_return' => 'nullable|date|before_or_equal:today',
-        'security_cheques_details.*.remark_return' => 'nullable|string|max:500',
-        // Supporting docs
-        'existing_ownership_info_file' => 'nullable|string',
-        'existing_itr_acknowledgement_file' => 'nullable|string',
-        'existing_balance_sheet_file' => 'nullable|string',
-        // Security Deposit details - required if verified
-        'deposit_date' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'date', 'before_or_equal:today'],
-        'deposit_mode' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'string', 'in:Cash,Cheque,NEFT/Online'],
-        'deposit_reference' => ['required_if:deposit_mode,NEFT/Online', 'nullable', 'string', 'max:100'],
-        'security_deposit_amount' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'numeric', 'min:0'],
-    ];
+        // Fetch all physical document checks for the application, including original_filename if column exists
+        $physicalDocumentChecks = PhysicalDocumentCheck::where('application_id', $application->id)
+            ->with(['securityChequeDetails', 'securityDepositDetail'])
+            ->select(['*']) // Assuming original_filename is added to the table
+            ->get();
 
-    $messages = [
-        // ... (keep existing messages, remove all ack-related)
-        'receive_date.required_if' => 'The date of receiving documents is required when any document is marked as received.',
-        'receive_date.date' => 'The date of receiving documents must be a valid date.',
-        'receive_date.before_or_equal' => 'The date of receiving documents cannot be in the future.',
-        'verified_date.required' => 'The verified date is required.',
-        'verified_date.date' => 'The verified date must be a valid date.',
-        'verified_date.before_or_equal' => 'The verified date cannot be in the future.',
-        'documents.required' => 'Document data is required.',
-        'documents.min' => 'At least one document must be processed.',
-        'documents.*.status.required' => 'Please select a verification status for :attribute.',
-        'documents.*.status.in' => 'Verification status must be either Verified or Not Verified.',
-        'documents.*.reason.required_if' => 'Remarks are required when the document is not verified.',
-        'documents.*.reason.max' => 'Remarks cannot exceed 500 characters.',
-        // Security Cheques details messages
-        'security_cheques_details.required_if' => 'Security Cheque details are required when verified.',
-        'security_cheques_details.*.date_obtained.required_if' => 'Date of obtained is required when verified.',
-        'security_cheques_details.*.date_obtained.date' => 'Date of obtained must be a valid date.',
-        'security_cheques_details.*.date_obtained.before_or_equal' => 'Date of obtained cannot be in the future.',
-        'security_cheques_details.*.cheque_no.required_if' => 'Cheque No is required when verified.',
-        'security_cheques_details.*.cheque_no.max' => 'Cheque No cannot exceed 50 characters.',
-        'security_cheques_details.*.date_use.date' => 'Date of Use must be a valid date.',
-        'security_cheques_details.*.date_use.before_or_equal' => 'Date of Use cannot be in the future.',
-        'security_cheques_details.*.purpose.max' => 'Purpose of use cannot exceed 200 characters.',
-        'security_cheques_details.*.date_return.date' => 'Date of Return must be a valid date.',
-        'security_cheques_details.*.date_return.before_or_equal' => 'Date of Return cannot be in the future.',
-        'security_cheques_details.*.remark_return.max' => 'Remark/reason of return cannot exceed 500 characters.',
-        // Security Deposit details messages
-        'deposit_date.required_if' => 'Deposit Date is required when Security Deposit is verified.',
-        'deposit_date.date' => 'Deposit Date must be a valid date.',
-        'deposit_date.before_or_equal' => 'Deposit Date cannot be in the future.',
-        'deposit_mode.required_if' => 'Mode of payment is required when Security Deposit is verified.',
-        'deposit_mode.in' => 'Mode of payment must be Cash, Cheque, or NEFT/Online.',
-        'deposit_reference.required_if' => 'Reference No. is required when mode is NEFT/Online.',
-        'deposit_reference.max' => 'Reference No. cannot exceed 100 characters.',
-        'security_deposit_amount.required_if' => 'Security Deposit Amount is required when Security Deposit is verified.',
-        'security_deposit_amount.numeric' => 'Security Deposit Amount must be a valid number.',
-        'security_deposit_amount.min' => 'Security Deposit Amount cannot be negative.',
-        // File rules (keep, remove ack)
-        'existing_agreement_copy_file.string' => 'Agreement Copy file is invalid.',
-        'existing_agreement_copy_file_original.string' => 'Agreement Copy original name is invalid.',
-        'existing_security_cheques_file.array' => 'Security Cheques files must be an array.',
-        'existing_security_cheques_file.*.string' => 'Each Security Cheques file is invalid.',
-        'existing_security_cheques_file_original.array' => 'Security Cheques original names must be an array.',
-        'existing_security_cheques_file_original.*.string' => 'Each Security Cheques original name is invalid.',
-        'existing_security_deposit_file.string' => 'Security Deposit file is invalid.',
-        'existing_security_deposit_file_original.string' => 'Security Deposit original name is invalid.',
-        'existing_ownership_info_file.string' => 'Ownership Information file is invalid.',
-        'existing_itr_acknowledgement_file.string' => 'ITR Acknowledgement file is invalid.',
-        'existing_balance_sheet_file.string' => 'Balance Sheet file is invalid.',
-    ];
+        // Fetch physical dispatch record
+        $physicalDispatch = PhysicalDispatch::where('application_id', $application->id)->first() ?? new PhysicalDispatch();
 
-    $validator = Validator::make(array_merge($request->all(), ['any_received' => $anyReceived ? 'true' : 'false']), $rules, $messages);
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validation failed. Please check the form for errors.',
-            'errors' => $validator->errors()->toArray(),
-        ], 422);
-    }
+        // Eager load checkpoints to display in "List of Documents"
+        $application->load('checkpoints');
 
-    DB::beginTransaction();
+        // Load entityDetails with supporting document paths
+        $application->load('entityDetails');
 
-    try {
-        // Delete existing physical document checks and related details
-        $application->physicalDocumentChecks()->each(function ($check) {
-            SecurityChequeDetail::where('physical_document_check_id', $check->id)->delete();
-            SecurityDepositDetail::where('physical_document_check_id', $check->id)->delete();
-        });
-        $application->physicalDocumentChecks()->delete();
+        // Dynamically collect supporting documents if paths exist
+        $supportingDocuments = collect();
+        $entityDetails = $application->entityDetails;
 
-        // Update or create physical_dispatch record
-        PhysicalDispatch::updateOrCreate(
-            ['application_id' => $application->id],
-            [
-                'receive_date' => $anyReceived ? $request->input('receive_date') : null,
-                'updated_by' => Auth::id(),
-            ]
-        );
-
-        $savedCount = 0;
-        foreach ($documents as $type => $data) {
-            $received = ($data['received'] ?? false) == true;
-            $status = $data['status'] ?? 'pending';
-            $reason = $data['reason'] ?? null;
-            $amount = null; // Default for non-security_deposit types
-
-            if ($type === 'security_deposit') {
-                $amount = $request->input('security_deposit_amount');
-                $deposit_date = $request->input('deposit_date');
-                $mode = $request->input('deposit_mode');
-                $reference = $request->input('deposit_reference');
-                // If verified and amount provided, use amount; otherwise, use reason for non-verified cases
-                if ($status === 'verified' && $amount) {
-                    // Amount is stored in 'amount' column; reason can be null or additional notes
-                    $reason = null; // Store details in separate table
-                } else if ($status === 'not_verified') {
-                    // Reason is required for not verified
-                    $amount = null;
-                }
-            }
-
-            if ($type === 'security_cheques') {
-    $files = $request->input("existing_security_cheques_file", []);
-    $originalNames = $request->input("existing_security_cheques_file_original", []);
-    $details = $request->input("security_cheques_details", []);
-
-    // ONLY create records for files that actually exist
-    foreach ($files as $index => $fileName) {
-        if (!empty($fileName)) {
-            $originalName = $originalNames[$index] ?? $fileName;
-            $detailData = $details[$index] ?? [];
-            
-            $check = PhysicalDocumentCheck::create([
-                'application_id' => $application->id,
-                'document_type' => $type,
-                'received' => $received,
-                'status' => $status,
-                'reason' => $reason,
-                'amount' => $amount,
-                'file_path' => $fileName,
-                'original_filename' => $originalName,
-                'submitted_by' => Auth::user()->emp_id,
-                'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+        // Check for ownership_info_path
+        if ($entityDetails->ownership_info_path) {
+            $supportingDocuments->push([
+                'type' => 'ownership_info',
+                'label' => 'Ownership Information',
+                'path' => $entityDetails->ownership_info_path,
+                'existing_file' => basename($entityDetails->ownership_info_path)
             ]);
-            
-            // Create details only if we have data
-            if ($status === 'verified' && (!empty($detailData['cheque_no']) || !empty($detailData['date_obtained']))) {
-                $check->securityChequeDetails()->create($detailData);
-            }
-            $savedCount++;
         }
-    }
-    
-} else {
-                // Single file for other types
-                $fileName = null;
-                $originalName = null;
-                if (in_array($type, ['agreement_copy', 'security_deposit'])) {
-                    $fileName = $request->input("existing_{$type}_file");
-                    $originalName = $request->input("existing_{$type}_file_original", $fileName);
-                }
 
-                // Skip if no data
-                if ($received || $status !== 'pending' || $fileName) {
-                    $check = PhysicalDocumentCheck::create([
-                        'application_id' => $application->id,
-                        'document_type' => $type,
-                        'received' => $received,
-                        'status' => $status,
-                        'reason' => $reason,
-                        'amount' => $amount,
-                        'file_path' => $fileName ?: null,
-                        'original_filename' => $originalName ?: null,
-                        'submitted_by' => Auth::user()->emp_id,
-                        'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
-                    ]);
-                    if ($type === 'security_deposit' && $status === 'verified') {
-                        Log::info('Deposit Debug', ['deposit_date' => $request->input('deposit_date'), 'amount' => $amount]); // Debug log
-                        $check->securityDepositDetail()->create([
-                            'deposit_date' => $request->input('deposit_date'),
-                            'amount' => $amount,
-                            'mode_of_payment' => $request->input('deposit_mode'),
-                            'reference_no' => $request->input('deposit_reference'),
-                        ]);
+        // Check for itr_acknowledgement_path
+        if ($entityDetails->itr_acknowledgement_path) {
+            $supportingDocuments->push([
+                'type' => 'itr_acknowledgement',
+                'label' => 'ITR Acknowledgement',
+                'path' => $entityDetails->itr_acknowledgement_path,
+                'existing_file' => basename($entityDetails->itr_acknowledgement_path)
+            ]);
+        }
+
+        // Check for balance_sheet_path
+        if ($entityDetails->balance_sheet_path) {
+            $supportingDocuments->push([
+                'type' => 'balance_sheet',
+                'label' => 'Balance Sheet',
+                'path' => $entityDetails->balance_sheet_path,
+                'existing_file' => basename($entityDetails->balance_sheet_path)
+            ]);
+        }
+
+        return view('approvals.physical-documents', compact('application', 'physicalDocumentChecks', 'physicalDispatch', 'supportingDocuments'));
+    }
+
+    public function updatePhysicalDocuments(Request $request, Onboarding $application)
+    {
+        // dd($request->all()); // Comment out after debug
+
+        // Check if any document is marked as received
+        $anyReceived = false;
+        $documents = $request->input('documents', []);
+        foreach ($documents as $data) {
+            if (is_array($data) && isset($data['received']) && ($data['received'] ?? false) == true) {
+                $anyReceived = true;
+                break;
+            }
+        }
+
+        // Define validation rules with custom messages
+        $rules = [
+            'receive_date' => ['required_if:any_received,true', 'nullable', 'date', 'before_or_equal:today'],
+            'verified_date' => 'required|date|before_or_equal:today',
+            'documents' => 'required|array|min:1',
+            'documents.*.received' => 'nullable|boolean',
+            'documents.*.status' => 'required|in:verified,not_verified',
+            'documents.*.reason' => 'required_if:documents.*.status,not_verified|string|max:500|nullable',
+            // Standard docs
+            'existing_agreement_copy_file' => 'nullable|string',
+            'existing_agreement_copy_file_original' => 'nullable|string',
+            'existing_security_cheques_file' => 'nullable|array',
+            'existing_security_cheques_file.*' => 'string',
+            'existing_security_cheques_file_original' => 'nullable|array',
+            'existing_security_cheques_file_original.*' => 'string',
+            'existing_security_deposit_file' => 'nullable|string',
+            'existing_security_deposit_file_original' => 'nullable|string',
+            // Security Cheques details - required if verified and files present
+            'security_cheques_details' => 'required_if:documents.security_cheques.status,verified|nullable|array',
+            'security_cheques_details.*.date_obtained' => 'required_if:documents.security_cheques.status,verified|nullable|date|before_or_equal:today',
+            'security_cheques_details.*.cheque_no' => 'required_if:documents.security_cheques.status,verified|nullable|string|max:50',
+            'security_cheques_details.*.date_use' => 'nullable|date|before_or_equal:today',
+            'security_cheques_details.*.purpose' => 'nullable|string|max:200',
+            'security_cheques_details.*.date_return' => 'nullable|date|before_or_equal:today',
+            'security_cheques_details.*.remark_return' => 'nullable|string|max:500',
+            // Supporting docs
+            'existing_ownership_info_file' => 'nullable|string',
+            'existing_itr_acknowledgement_file' => 'nullable|string',
+            'existing_balance_sheet_file' => 'nullable|string',
+            // Security Deposit details - required if verified
+            'deposit_date' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'date', 'before_or_equal:today'],
+            'deposit_mode' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'string', 'in:Cash,Cheque,NEFT/Online'],
+            'deposit_reference' => ['required_if:deposit_mode,NEFT/Online', 'nullable', 'string', 'max:100'],
+            'security_deposit_amount' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'numeric', 'min:0'],
+        ];
+
+        $messages = [
+            // ... (keep existing messages, remove all ack-related)
+            'receive_date.required_if' => 'The date of receiving documents is required when any document is marked as received.',
+            'receive_date.date' => 'The date of receiving documents must be a valid date.',
+            'receive_date.before_or_equal' => 'The date of receiving documents cannot be in the future.',
+            'verified_date.required' => 'The verified date is required.',
+            'verified_date.date' => 'The verified date must be a valid date.',
+            'verified_date.before_or_equal' => 'The verified date cannot be in the future.',
+            'documents.required' => 'Document data is required.',
+            'documents.min' => 'At least one document must be processed.',
+            'documents.*.status.required' => 'Please select a verification status for :attribute.',
+            'documents.*.status.in' => 'Verification status must be either Verified or Not Verified.',
+            'documents.*.reason.required_if' => 'Remarks are required when the document is not verified.',
+            'documents.*.reason.max' => 'Remarks cannot exceed 500 characters.',
+            // Security Cheques details messages
+            'security_cheques_details.required_if' => 'Security Cheque details are required when verified.',
+            'security_cheques_details.*.date_obtained.required_if' => 'Date of obtained is required when verified.',
+            'security_cheques_details.*.date_obtained.date' => 'Date of obtained must be a valid date.',
+            'security_cheques_details.*.date_obtained.before_or_equal' => 'Date of obtained cannot be in the future.',
+            'security_cheques_details.*.cheque_no.required_if' => 'Cheque No is required when verified.',
+            'security_cheques_details.*.cheque_no.max' => 'Cheque No cannot exceed 50 characters.',
+            'security_cheques_details.*.date_use.date' => 'Date of Use must be a valid date.',
+            'security_cheques_details.*.date_use.before_or_equal' => 'Date of Use cannot be in the future.',
+            'security_cheques_details.*.purpose.max' => 'Purpose of use cannot exceed 200 characters.',
+            'security_cheques_details.*.date_return.date' => 'Date of Return must be a valid date.',
+            'security_cheques_details.*.date_return.before_or_equal' => 'Date of Return cannot be in the future.',
+            'security_cheques_details.*.remark_return.max' => 'Remark/reason of return cannot exceed 500 characters.',
+            // Security Deposit details messages
+            'deposit_date.required_if' => 'Deposit Date is required when Security Deposit is verified.',
+            'deposit_date.date' => 'Deposit Date must be a valid date.',
+            'deposit_date.before_or_equal' => 'Deposit Date cannot be in the future.',
+            'deposit_mode.required_if' => 'Mode of payment is required when Security Deposit is verified.',
+            'deposit_mode.in' => 'Mode of payment must be Cash, Cheque, or NEFT/Online.',
+            'deposit_reference.required_if' => 'Reference No. is required when mode is NEFT/Online.',
+            'deposit_reference.max' => 'Reference No. cannot exceed 100 characters.',
+            'security_deposit_amount.required_if' => 'Security Deposit Amount is required when Security Deposit is verified.',
+            'security_deposit_amount.numeric' => 'Security Deposit Amount must be a valid number.',
+            'security_deposit_amount.min' => 'Security Deposit Amount cannot be negative.',
+            // File rules (keep, remove ack)
+            'existing_agreement_copy_file.string' => 'Agreement Copy file is invalid.',
+            'existing_agreement_copy_file_original.string' => 'Agreement Copy original name is invalid.',
+            'existing_security_cheques_file.array' => 'Security Cheques files must be an array.',
+            'existing_security_cheques_file.*.string' => 'Each Security Cheques file is invalid.',
+            'existing_security_cheques_file_original.array' => 'Security Cheques original names must be an array.',
+            'existing_security_cheques_file_original.*.string' => 'Each Security Cheques original name is invalid.',
+            'existing_security_deposit_file.string' => 'Security Deposit file is invalid.',
+            'existing_security_deposit_file_original.string' => 'Security Deposit original name is invalid.',
+            'existing_ownership_info_file.string' => 'Ownership Information file is invalid.',
+            'existing_itr_acknowledgement_file.string' => 'ITR Acknowledgement file is invalid.',
+            'existing_balance_sheet_file.string' => 'Balance Sheet file is invalid.',
+        ];
+
+        $validator = Validator::make(array_merge($request->all(), ['any_received' => $anyReceived ? 'true' : 'false']), $rules, $messages);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed. Please check the form for errors.',
+                'errors' => $validator->errors()->toArray(),
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            // Delete existing physical document checks and related details
+            $application->physicalDocumentChecks()->each(function ($check) {
+                SecurityChequeDetail::where('physical_document_check_id', $check->id)->delete();
+                SecurityDepositDetail::where('physical_document_check_id', $check->id)->delete();
+            });
+            $application->physicalDocumentChecks()->delete();
+
+            // Update or create physical_dispatch record
+            PhysicalDispatch::updateOrCreate(
+                ['application_id' => $application->id],
+                [
+                    'receive_date' => $anyReceived ? $request->input('receive_date') : null,
+                    'updated_by' => Auth::id(),
+                ]
+            );
+
+            $savedCount = 0;
+            foreach ($documents as $type => $data) {
+                $received = ($data['received'] ?? false) == true;
+                $status = $data['status'] ?? 'pending';
+                $reason = $data['reason'] ?? null;
+                $amount = null; // Default for non-security_deposit types
+
+                if ($type === 'security_deposit') {
+                    $amount = $request->input('security_deposit_amount');
+                    $deposit_date = $request->input('deposit_date');
+                    $mode = $request->input('deposit_mode');
+                    $reference = $request->input('deposit_reference');
+                    // If verified and amount provided, use amount; otherwise, use reason for non-verified cases
+                    if ($status === 'verified' && $amount) {
+                        // Amount is stored in 'amount' column; reason can be null or additional notes
+                        $reason = null; // Store details in separate table
+                    } else if ($status === 'not_verified') {
+                        // Reason is required for not verified
+                        $amount = null;
                     }
-                    $savedCount++;
+                }
+
+                if ($type === 'security_cheques') {
+                    $files = $request->input("existing_security_cheques_file", []);
+                    $originalNames = $request->input("existing_security_cheques_file_original", []);
+                    $details = $request->input("security_cheques_details", []);
+
+                    // ONLY create records for files that actually exist
+                    foreach ($files as $index => $fileName) {
+                        if (!empty($fileName)) {
+                            $originalName = $originalNames[$index] ?? $fileName;
+                            $detailData = $details[$index] ?? [];
+
+                            $check = PhysicalDocumentCheck::create([
+                                'application_id' => $application->id,
+                                'document_type' => $type,
+                                'received' => $received,
+                                'status' => $status,
+                                'reason' => $reason,
+                                'amount' => $amount,
+                                'file_path' => $fileName,
+                                'original_filename' => $originalName,
+                                'submitted_by' => Auth::user()->emp_id,
+                                'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+                            ]);
+
+                            // Create details only if we have data
+                            if ($status === 'verified' && (!empty($detailData['cheque_no']) || !empty($detailData['date_obtained']))) {
+                                $check->securityChequeDetails()->create($detailData);
+                            }
+                            $savedCount++;
+                        }
+                    }
+                } else {
+                    // Single file for other types
+                    $fileName = null;
+                    $originalName = null;
+                    if (in_array($type, ['agreement_copy', 'security_deposit'])) {
+                        $fileName = $request->input("existing_{$type}_file");
+                        $originalName = $request->input("existing_{$type}_file_original", $fileName);
+                    }
+
+                    // Skip if no data
+                    if ($received || $status !== 'pending' || $fileName) {
+                        $check = PhysicalDocumentCheck::create([
+                            'application_id' => $application->id,
+                            'document_type' => $type,
+                            'received' => $received,
+                            'status' => $status,
+                            'reason' => $reason,
+                            'amount' => $amount,
+                            'file_path' => $fileName ?: null,
+                            'original_filename' => $originalName ?: null,
+                            'submitted_by' => Auth::user()->emp_id,
+                            'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+                        ]);
+                        if ($type === 'security_deposit' && $status === 'verified') {
+                            Log::info('Deposit Debug', ['deposit_date' => $request->input('deposit_date'), 'amount' => $amount]); // Debug log
+                            $check->securityDepositDetail()->create([
+                                'deposit_date' => $request->input('deposit_date'),
+                                'amount' => $amount,
+                                'mode_of_payment' => $request->input('deposit_mode'),
+                                'reference_no' => $request->input('deposit_reference'),
+                            ]);
+                        }
+                        $savedCount++;
+                    }
                 }
             }
+
+            $allPhysicalDocsVerified = PhysicalDocumentCheck::where('application_id', $application->id)
+                ->where('status', '!=', 'verified')
+                ->doesntExist();
+
+            if ($allPhysicalDocsVerified) {
+                $application->physical_docs_status = 'verified';
+                $application->status = 'physical_docs_verified';
+                $application->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Physical document status updated successfully. Saved {$savedCount} records.",
+                'saved_count' => $savedCount,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error saving physical documents', ['error' => $e->getMessage(), 'application_id' => $application->id]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save physical document status: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $allPhysicalDocsVerified = PhysicalDocumentCheck::where('application_id', $application->id)
-            ->where('status', '!=', 'verified')
-            ->doesntExist();
-
-        if ($allPhysicalDocsVerified) {
-            $application->physical_docs_status = 'verified';
-            $application->status = 'physical_docs_verified';
-            $application->save();
-        }
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => "Physical document status updated successfully. Saved {$savedCount} records.",
-            'saved_count' => $savedCount,
-        ]);
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error('Error saving physical documents', ['error' => $e->getMessage(), 'application_id' => $application->id]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to save physical document status: ' . $e->getMessage(),
-        ], 500);
     }
-}
 
 
     public function viewDocVerification(Onboarding $application)
@@ -1761,69 +1760,69 @@ public function updatePhysicalDocuments(Request $request, Onboarding $applicatio
     }
 
     public function viewPhysicalDocVerification(Onboarding $application)
-{
-    if (!Auth::user()->employee->isMisTeam()) {
-        return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-    }
+    {
+        if (!Auth::user()->employee->isMisTeam()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
 
-    // Get physical document checks only
-    $checks = $application->physicalDocumentChecks()->get();
-    $groupedChecks = $checks->groupBy('document_type');
+        // Get physical document checks only
+        $checks = $application->physicalDocumentChecks()->get();
+        $groupedChecks = $checks->groupBy('document_type');
 
-    // Load checkpoints separately
-    $application->load('checkpoints');
+        // Load checkpoints separately
+        $application->load('checkpoints');
 
-    // Define types
-    $coreTypes = collect(['agreement_copy', 'security_cheques', 'security_deposit']);
-    $supportingTypes = collect(['ownership_info', 'itr_acknowledgement', 'balance_sheet']);
+        // Define types
+        $coreTypes = collect(['agreement_copy', 'security_cheques', 'security_deposit']);
+        $supportingTypes = collect(['ownership_info', 'itr_acknowledgement', 'balance_sheet']);
 
-    // Base checkpoint types
-    $baseCheckpointTypes = collect([
-        'entity_details',
-        'main_document_pan',
-        'main_document_gst',
-        'main_document_seed_license', 
-        'main_document_bank',
-        'main_document_ownership',
-        'main_document_bank_statement',
-        'main_document_itr_acknowledgement',
-        'main_document_balance_sheet',
-    ]);
-
-    // Dynamically add authorized person types
-    $authorizedPersons = $application->loadMissing('authorizedPersons')->authorizedPersons ?? collect();
-    $authTypes = collect();
-    foreach ($authorizedPersons as $index => $person) {
-        $personLabel = $person->name ? " ({$person->name})" : " (Person " . ($index + 1) . ")";
-        $letterType = "authorized_letter_{$index}";
-        $aadharType = "authorized_aadhar_{$index}";
-        $authTypes->push([
-            'type' => $letterType,
-            'label' => "Authorized Letter" . $personLabel
+        // Base checkpoint types
+        $baseCheckpointTypes = collect([
+            'entity_details',
+            'main_document_pan',
+            'main_document_gst',
+            'main_document_seed_license',
+            'main_document_bank',
+            'main_document_ownership',
+            'main_document_bank_statement',
+            'main_document_itr_acknowledgement',
+            'main_document_balance_sheet',
         ]);
-        $authTypes->push([
-            'type' => $aadharType, 
-            'label' => "Authorized Aadhar" . $personLabel
-        ]);
+
+        // Dynamically add authorized person types
+        $authorizedPersons = $application->loadMissing('authorizedPersons')->authorizedPersons ?? collect();
+        $authTypes = collect();
+        foreach ($authorizedPersons as $index => $person) {
+            $personLabel = $person->name ? " ({$person->name})" : " (Person " . ($index + 1) . ")";
+            $letterType = "authorized_letter_{$index}";
+            $aadharType = "authorized_aadhar_{$index}";
+            $authTypes->push([
+                'type' => $letterType,
+                'label' => "Authorized Letter" . $personLabel
+            ]);
+            $authTypes->push([
+                'type' => $aadharType,
+                'label' => "Authorized Aadhar" . $personLabel
+            ]);
+        }
+
+        $checkpointTypes = $baseCheckpointTypes->merge($authTypes->pluck('type'));
+        $customLabels = $authTypes->pluck('label', 'type');
+
+        // Add supporting documents collection
+        $supportingDocuments = $application->supportingDocuments ?? collect([]);
+
+        return view('dashboard.partials.physical_doc_verification_content', compact(
+            'application',
+            'checks',
+            'groupedChecks',
+            'coreTypes',
+            'supportingTypes',
+            'checkpointTypes',
+            'supportingDocuments',
+            'customLabels'
+        ));
     }
-
-    $checkpointTypes = $baseCheckpointTypes->merge($authTypes->pluck('type'));
-    $customLabels = $authTypes->pluck('label', 'type');
-
-    // Add supporting documents collection
-    $supportingDocuments = $application->supportingDocuments ?? collect([]);
-
-    return view('dashboard.partials.physical_doc_verification_content', compact(
-        'application', 
-        'checks',
-        'groupedChecks', 
-        'coreTypes', 
-        'supportingTypes', 
-        'checkpointTypes', 
-        'supportingDocuments', 
-        'customLabels'
-    )); 
-}
 
     public function confirmDistributor(Request $request, Onboarding $application)
     {
@@ -1934,133 +1933,146 @@ public function updatePhysicalDocuments(Request $request, Onboarding $applicatio
 
 
 
-   public function applications(Request $request)
-{
-    // Get filters from request
-    $filters = [
-        'status' => $request->get('status', ''),
-        'kpi_filter' => $request->get('kpi_filter', '')
-    ];
-    // Get current user
-    $currentUser = Auth::user();
-    $currentUserId = $currentUser->emp_id;
+    public function applications(Request $request)
+    {
+        // Get filters from request
+        $filters = [
+            'status' => $request->get('status', ''),
+            'kpi_filter' => $request->get('kpi_filter', '')
+        ];
+        // Get current user
+        $currentUser = Auth::user();
+        $currentUserId = $currentUser->emp_id;
 
-    // Query applications based on filters
-    $query = Onboarding::with([
-        'entityDetails',
-        'territoryDetail',
-        'regionDetail',
-        'zoneDetail',
-        'createdBy',
-        'approvalLogs' => function($q) use ($currentUserId) {
-            $q->where('user_id', $currentUserId); // Only load current user's approval logs
-        },
-        'currentApprover'
-    ]);
+        // Query applications based on filters
+        $query = Onboarding::with([
+            'entityDetails',
+            'territoryDetail',
+            'regionDetail',
+            'zoneDetail',
+            'createdBy',
+            'approvalLogs' => function ($q) use ($currentUserId) {
+                $q->where('user_id', $currentUserId); // Only load current user's approval logs
+            },
+            'currentApprover'
+        ]);
 
-    // Get user type
-    $isMisUser = $currentUser->hasAnyRole(['Mis Admin', 'Mis User']);
-    $isAdminUser = $currentUser->hasAnyRole(['Super Admin', 'Admin']) || $currentUser->hasPermissionTo('distributor_approval');
+        // Get user type
+        $isMisUser = $currentUser->hasAnyRole(['Mis Admin', 'Mis User']);
+        $isAdminUser = $currentUser->hasAnyRole(['Super Admin', 'Admin']) || $currentUser->hasPermissionTo('distributor_approval');
 
-    // Fetch all active statuses dynamically
-    $allStatuses = Status::where('is_active', 1)->orderBy('sort_order', 'asc')->get();
+        // Fetch all active statuses dynamically
+        $allStatuses = Status::where('is_active', 1)->orderBy('sort_order', 'asc')->get();
 
-    // Define custom status groups for filters
-    $statusGroups = [
-        '' => [
-            'label' => 'All',
-            'slugs' => ''
-        ],
-        'pending' => [
-            'label' => 'Pending',
-            'slugs' => $allStatuses->whereIn('name', ['under_level1_review', 'under_level2_review', 'under_level3_review', 'reverted', 'on_hold'])->pluck('name')->implode(',')
-        ],
-        'mis' => [
-            'label' => 'MIS Processing',
-            'slugs' => $allStatuses->where('category', 'mis_processing')->pluck('name')->implode(',')
-        ],
-        'completed' => [
-            'label' => 'Completed',
-            'slugs' => $allStatuses->where('category', 'completion')->pluck('name')->implode(',')
-        ],
-        'rejected' => [
-            'label' => 'Rejected',
-            'slugs' => $allStatuses->where('category', 'rejection')->pluck('name')->implode(',')
-        ],
-        'approved_by_you' => [
-            'label' => 'Approved by You',
-            'slugs' => 'approved_by_you' // Special case
-        ]
-    ];
+        // Define custom status groups for filters
+        $statusGroups = [
+            '' => [
+                'label' => 'All',
+                'slugs' => ''
+            ],
+            'pending' => [
+                'label' => 'Pending',
+                'slugs' => $allStatuses->whereIn('name', ['under_level1_review', 'under_level2_review', 'under_level3_review', 'reverted', 'on_hold'])->pluck('name')->implode(',')
+            ],
+            'mis' => [
+                'label' => 'MIS Processing',
+                'slugs' => $allStatuses->where('category', 'mis_processing')->pluck('name')->implode(',')
+            ],
+            'completed' => [
+                'label' => 'Completed',
+                'slugs' => $allStatuses->where('category', 'completion')->pluck('name')->implode(',')
+            ],
+            'rejected' => [
+                'label' => 'Rejected',
+                'slugs' => $allStatuses->where('category', 'rejection')->pluck('name')->implode(',')
+            ],
+            'approved_by_you' => [
+                'label' => 'Approved by You',
+                'slugs' => 'approved_by_you' // Special case
+            ]
+        ];
 
-    // Actionable statuses for modal
-    $actionableStatuses = $allStatuses->whereIn('name', ['approved', 'rejected', 'on_hold']);
+        // Actionable statuses for modal
+        $actionableStatuses = $allStatuses->whereIn('name', ['approved', 'rejected', 'on_hold']);
 
-    // Apply status filter from KPI click
-    if (!empty($filters['status'])) {
-        
-        // SPECIAL CASE: Handle "approved_by_you" filter
-        if ($filters['kpi_filter'] === 'approved_by_you' || $filters['status'] === 'approved_by_you') {
-            $query->whereExists(function ($subQuery) use ($currentUserId) {
-                $subQuery->select(DB::raw(1))
+        // Apply status filter from KPI click
+        if (!empty($filters['status'])) {
+
+            // SPECIAL CASE: Handle "approved_by_you" filter
+            if ($filters['kpi_filter'] === 'approved_by_you' || $filters['status'] === 'approved_by_you') {
+                $query->whereExists(function ($subQuery) use ($currentUserId) {
+                    $subQuery->select(DB::raw(1))
                         ->from('approval_logs')
                         ->whereColumn('approval_logs.application_id', 'onboardings.id')
                         ->where('approval_logs.user_id', $currentUserId)
                         ->where('approval_logs.action', 'approved');
-            });
-        }
-        // Handle regular status filters
-        else {
-            $statuses = explode(',', $filters['status']);
-            $query->whereIn('status', $statuses);
-            
-            // SPECIAL HANDLING FOR PENDING VIEW
-            if ($filters['status'] === $statusGroups['pending']['slugs']) {
-                if (!$isAdminUser && !$isMisUser) {
-                    $query->where('current_approver_id', $currentUserId)
-                          ->whereNotExists(function ($subQuery) use ($currentUserId) {
-                              $subQuery->select(DB::raw(1))
-                                      ->from('approval_logs')
-                                      ->whereColumn('approval_logs.application_id', 'onboardings.id')
-                                      ->where('approval_logs.user_id', $currentUserId)
-                                      ->whereIn('approval_logs.action', ['approved', 'rejected']);
-                          });
+                });
+            }
+            // Handle regular status filters
+            else {
+                $statuses = explode(',', $filters['status']);
+                $query->whereIn('status', $statuses);
+
+                // SPECIAL HANDLING FOR PENDING VIEW
+                if ($filters['status'] === $statusGroups['pending']['slugs']) {
+                    if (!$isAdminUser && !$isMisUser) {
+                        $query->where('current_approver_id', $currentUserId)
+                            ->whereNotExists(function ($subQuery) use ($currentUserId) {
+                                $subQuery->select(DB::raw(1))
+                                    ->from('approval_logs')
+                                    ->whereColumn('approval_logs.application_id', 'onboardings.id')
+                                    ->where('approval_logs.user_id', $currentUserId)
+                                    ->whereIn('approval_logs.action', ['approved', 'rejected']);
+                            });
+                    }
                 }
             }
+        } else {
+            // Default behavior - show applications relevant to current user
+            if (!$isAdminUser && !$isMisUser) {
+                $query->where(function ($q) use ($currentUserId) {
+                    $q->where(function ($subQ) use ($currentUserId) {
+                        $subQ->where('current_approver_id', $currentUserId)
+                            ->whereNotExists(function ($subQuery) use ($currentUserId) {
+                                $subQuery->select(DB::raw(1))
+                                    ->from('approval_logs')
+                                    ->whereColumn('approval_logs.application_id', 'onboardings.id')
+                                    ->where('approval_logs.user_id', $currentUserId)
+                                    ->whereIn('approval_logs.action', ['approved', 'rejected']);
+                            });
+                    })
+                        ->orWhere('created_by', $currentUserId)
+                        ->orWhereExists(function ($subQuery) use ($currentUserId) {
+                            $subQuery->select(DB::raw(1))
+                                ->from('approval_logs')
+                                ->whereColumn('approval_logs.application_id', 'onboardings.id')
+                                ->where('approval_logs.user_id', $currentUserId);
+                        });
+                });
+            }
         }
-    } else {
-        // Default behavior - show applications relevant to current user
-        if (!$isAdminUser && !$isMisUser) {
-            $query->where(function($q) use ($currentUserId) {
-                $q->where(function($subQ) use ($currentUserId) {
-                    $subQ->where('current_approver_id', $currentUserId)
-                         ->whereNotExists(function ($subQuery) use ($currentUserId) {
-                             $subQuery->select(DB::raw(1))
-                                     ->from('approval_logs')
-                                     ->whereColumn('approval_logs.application_id', 'onboardings.id')
-                                     ->where('approval_logs.user_id', $currentUserId)
-                                     ->whereIn('approval_logs.action', ['approved', 'rejected']);
-                         });
-                  })
-                  ->orWhere('created_by', $currentUserId)
-                  ->orWhereExists(function ($subQuery) use ($currentUserId) {
-                      $subQuery->select(DB::raw(1))
-                              ->from('approval_logs')
-                              ->whereColumn('approval_logs.application_id', 'onboardings.id')
-                              ->where('approval_logs.user_id', $currentUserId);
-                  });
-            });
+
+        $applications = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        // Prepare data for view
+        $viewData = compact('applications', 'filters', 'statusGroups', 'actionableStatuses', 'allStatuses');
+        if ($isMisUser) {
+            return view('mis.applications', $viewData);
+        } else {
+            return view('approver.applications', $viewData);
         }
     }
 
-    $applications = $query->orderBy('created_at', 'desc')->paginate(20);
+    // App\Http\Controllers\ApprovalController.php
+    public function showDraftAgreement($id)
+    {
+        $application = Onboarding::with(['entityDetails', 'createdBy'])->findOrFail($id);
 
-    // Prepare data for view
-    $viewData = compact('applications', 'filters', 'statusGroups', 'actionableStatuses', 'allStatuses');
-    if ($isMisUser) {
-        return view('mis.applications', $viewData);
-    } else {
-        return view('approver.applications', $viewData);
+        // Check if application is in correct status
+        if ($application->status != 'documents_verified') {
+            abort(403, 'Draft agreement is only available for verified documents.');
+        }
+
+        return view('approvals.draft-agreement', compact('application'));
     }
-}
 }

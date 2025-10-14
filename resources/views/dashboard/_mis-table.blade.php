@@ -126,6 +126,17 @@ use App\Models\Status;
                                 </li>
                                 @endif
 
+                               {{-- Draft Agreement Button --}}
+                                @if ($application->status == 'documents_verified')
+                                <li>
+                                    <a class="dropdown-item"
+                                    href="{{ route('approvals.draft-agreement', $application->id) }}"
+                                    target="_blank">
+                                        <i class="ri-file-copy-line align-bottom me-2 text-muted"></i> Draft Agreement
+                                    </a>
+                                </li>
+                                @endif
+
                                 {{-- Agreement and Physical Docs Verified Actions --}}
                                 @if (in_array($application->status, ['agreement_created', 'physical_docs_verified']))
                                 <li>

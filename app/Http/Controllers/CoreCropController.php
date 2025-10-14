@@ -64,4 +64,30 @@ class CoreCropController extends Controller
         })
         ->make(true);
 }
+
+public function getCropsByVertical($vertical)
+{
+    try {
+        $cropsQuery = CoreCrop::where('is_active', 1)
+            ->select('id', 'crop_name')
+            ->orderBy('crop_name');
+
+        // If vertical is NOT common (5), filter by vertical_id
+        if ($vertical != 5) {
+            $cropsQuery->where('vertical_id', $vertical);
+        }
+
+        $crops = $cropsQuery->get();
+
+        return response()->json([
+            'success' => true,
+            'crops' => $crops
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to load crops'
+        ], 500);
+    }
+}
 }

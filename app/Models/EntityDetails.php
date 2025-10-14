@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -9,7 +10,7 @@ class EntityDetails extends Model
     public $timestamps = true;
 
     protected $fillable = [
-       'application_id',
+        'application_id',
         'establishment_name',
         'entity_type',
         'business_address',
@@ -43,7 +44,7 @@ class EntityDetails extends Model
 
         // New field
         'entity_proof_path',
-        'ownership_info_path', 
+        'ownership_info_path',
         'bank_statement_path',
         'itr_acknowledgement_path',
         'balance_sheet_path', // New field
@@ -62,7 +63,7 @@ class EntityDetails extends Model
         'updated_at',
     ];
 
-    
+
     protected $casts = [
         'pan_verified' => 'boolean',
         'gst_verified' => 'boolean',
@@ -93,5 +94,42 @@ class EntityDetails extends Model
     public function country()
     {
         return $this->belongsTo(CoreCountry::class, 'country_id');
+    }
+
+    public function getFullAddress()
+    {
+        $parts = [];
+
+        // Optional address components
+        if (!empty($this->house_no)) {
+            $parts[] = $this->house_no;
+        }
+
+        if (!empty($this->landmark)) {
+            $parts[] = $this->landmark;
+        }
+
+        if (!empty($this->business_address)) {
+            $parts[] = $this->business_address;
+        }
+
+        if ($this->district?->district_name) {
+            $parts[] = $this->district->district_name;
+        }
+
+        if ($this->state?->state_name) {
+            $parts[] = $this->state->state_name;
+        }
+
+        if (!empty($this->pincode)) {
+            $parts[] = $this->pincode;
+        }
+
+        if ($this->country?->country_name) {
+            $parts[] = $this->country->country_name;
+        }
+
+        // Join parts with commas, ignoring empty ones
+        return implode(', ', array_filter($parts));
     }
 }

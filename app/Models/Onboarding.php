@@ -177,9 +177,9 @@ class Onboarding extends Model
      */
 
     public function approvalLogs()
-{
-    return $this->hasMany(ApprovalLog::class, 'application_id');
-}
+    {
+        return $this->hasMany(ApprovalLog::class, 'application_id');
+    }
 
     public function territoryDetail()
     {
@@ -300,5 +300,44 @@ class Onboarding extends Model
     public function documentChecklists()
     {
         return $this->hasMany(ApplicationCheckpoint::class, 'application_id');
+    }
+
+    public function getAuthorizedOrEntityName()
+    {
+        // 1️⃣ Authorized person (highest priority)
+        $authorizedPerson = $this->authorizedPersons->first();
+        if ($authorizedPerson) {
+            return $authorizedPerson->name;
+        }
+
+        // 2️⃣ Fallback by entity type
+        $entityType = $this->entityDetails->entity_type ?? null;
+
+        switch ($entityType) {
+            case 'individual_person':
+                return $this->individualDetails?->name;
+
+            case 'sole_proprietorship':
+                return $this->proprietorDetails?->name;
+
+            case 'partnership':
+                return $this->partnershipPartners?->first()?->name;
+
+            case 'llp':
+                return $this->llpPartners?->first()?->name;
+
+            case 'private_company':
+            case 'public_company':
+                return $this->directors?->first()?->name;
+
+            case 'cooperative_society':
+                return $this->committeeMembers?->first()?->name;
+
+            case 'trust':
+                return $this->trustees?->first()?->name;
+
+            default:
+                return null;
+        }
     }
 }

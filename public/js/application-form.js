@@ -97,7 +97,7 @@ $(document).ready(function() {
 
     console.log('Initial application_id:', applicationId);
 
-    function loadBankDetails() {
+function loadBankDetails() {
     if (currentStep === 6 && applicationId) {
         console.log('Loading bank details for application:', applicationId);
         $.ajax({
@@ -128,8 +128,94 @@ $(document).ready(function() {
         // If no applicationId, ensure fields are editable
         $('#bank_name, #account_holder, #account_number, #ifsc_code').prop('readonly', false);
     }
+   
 }
 
+function loadCropsForBusinessPlan() {
+    if (currentStep === 4 && applicationId) {
+        console.log('Loading crops for business plan, application:', applicationId);
+        
+        $.ajax({
+            url: `/applications/${applicationId}/crop-vertical`,
+            method: 'GET',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function(response) {
+                if (response.success && response.data.crop_vertical) {
+                    const cropVertical = response.data.crop_vertical;
+                    console.log('Detected crop vertical:', cropVertical);
+                    
+                    // Load crops for this vertical
+                    loadCropsByVertical(cropVertical);
+                } else {
+                    console.log('No crop vertical found, using default');
+                    // Use the crop vertical from step 1 if available
+                    const step1CropVertical = $('#crop_vertical').val();
+                    if (step1CropVertical) {
+                        loadCropsByVertical(step1CropVertical);
+                    }
+                }
+            },
+            error: function(xhr) {
+                console.log('Failed to load crop vertical, using step 1 value');
+                const step1CropVertical = $('#crop_vertical').val();
+                if (step1CropVertical) {
+                    loadCropsByVertical(step1CropVertical);
+                }
+            }
+        });
+    } else if (currentStep === 4 && !applicationId) {
+        // For new applications, use the value from step 1
+        const cropVertical = $('#crop_vertical').val();
+        if (cropVertical) {
+            loadCropsByVertical(cropVertical);
+        }
+    }
+}
+
+function loadCropsByVertical(cropVertical) {
+    console.log('Loading crops for vertical:', cropVertical);
+    
+    $.ajax({
+        url: `/crops/by-vertical/${cropVertical}`,
+        method: 'GET',
+        headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+        success: function(response) {
+            if (response.success) {
+                updateCropDropdowns(response.crops);
+                console.log('Crops loaded successfully for vertical:', cropVertical);
+            }
+        },
+        error: function(xhr) {
+            console.log('Failed to load crops for vertical:', cropVertical);
+        }
+    });
+}
+
+function updateCropDropdowns(crops) {
+    // Update all existing crop dropdowns
+    $('select[name$="[crop]"]').each(function() {
+        const currentValue = $(this).val();
+        $(this).empty().append('<option value="">Select Crop</option>');
+        
+        crops.forEach(crop => {
+            $(this).append(`<option value="${crop.crop_name}">${crop.crop_name}</option>`);
+        });
+        
+        // Restore previous selection if it exists in new list
+        if (currentValue && crops.some(crop => crop.crop_name === currentValue)) {
+            $(this).val(currentValue);
+        }
+    });
+    
+    console.log('Updated crop dropdowns with:', crops.length, 'crops');
+}
+$(document).on('change', '#crop_vertical', function() {
+    const cropVertical = $(this).val();
+    if (cropVertical) {
+        // Pre-load crops for when user reaches step 4
+        loadCropsByVertical(cropVertical);
+    }
+});
 
  $(document).on('click', '.step.clickable', function() {
     const stepNumber = parseInt($(this).data('step'));
@@ -281,6 +367,9 @@ $(document).ready(function() {
         $(`.step-content[data-step="${step}"]`).show();
          if (step === 6) {
             loadBankDetails();
+        }
+        if (step === 4) {
+            loadCropsForBusinessPlan();
         }
         console.log('Showing step:', step);
     }

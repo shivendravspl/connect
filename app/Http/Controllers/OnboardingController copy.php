@@ -2018,9 +2018,7 @@ class OnboardingController extends Controller
                 'declaration_truthful' => [
                     'label' => 'Declaration Truthful'
                 ],
-                'declaration_update' => [
-                    'label' => 'Declaration Update'
-                ],
+            
             ];
 
             // Build validation rules
@@ -2051,8 +2049,6 @@ class OnboardingController extends Controller
             $validator = Validator::make($request->all(), $rules, [
                 'declaration_truthful.required' => 'You must affirm the truthfulness of the information.',
                 'declaration_truthful.in' => 'You must affirm the truthfulness of the information.',
-                'declaration_update.required' => 'You must agree to inform the company of any changes.',
-                'declaration_update.in' => 'You must agree to inform the company of any changes.',
                 'has_question_j.required' => 'Please answer whether the Distributor has been referred.'
             ]);
 

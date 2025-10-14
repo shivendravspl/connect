@@ -3734,4 +3734,21 @@ class OnboardingController extends Controller
             ], 500);
         }
     }
+
+    public function getCropVertical(Onboarding $application)
+    {
+        try {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'crop_vertical' => $application->crop_vertical
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to load crop vertical'
+            ], 500);
+        }
+    }
 }

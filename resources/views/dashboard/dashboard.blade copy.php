@@ -2,117 +2,83 @@
 
 @push('styles')
 <style>
-    /* General site-wide responsive adjustments */
-    body {
-        font-size: 0.9rem;
-        /* Slightly smaller base font for overall compactness */
-    }
-
-    /* Card padding and margin for general compactness */
-    .card {
-        margin-bottom: 0.75rem;
-        /* Reduce card vertical spacing */
-        border-radius: 0.25rem;
-        /* Keep rounded corners */
-    }
-
-    .card-body {
-        padding: 0.75rem;
-        /* Slightly reduced default padding for card bodies */
-    }
-
     /* Filter section adjustments */
     .form-label {
-        font-size: 0.7rem;
-        /* Smaller labels */
-        margin-bottom: 0.2rem;
-        /* Reduced margin */
+        font-size: 0.65rem;
+        margin-bottom: 0.1rem;
     }
 
     .form-select-sm,
     .form-control-sm,
     .btn-sm {
-        font-size: 0.7rem;
-        /* Smaller form controls and buttons */
-        padding: 0.2rem 0.4rem;
-        /* More compact padding */
-        height: 1.8rem;
-        /* Set a fixed height for consistency */
+        font-size: 0.65rem;
+        padding: 0.15rem 0.3rem;
+        height: 1.6rem;
     }
 
     .btn.btn-sm {
-        /* Ensure generic btn-sm styles don't get overridden too much */
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
+        font-size: 0.65rem;
+        padding: 0.2rem 0.4rem;
     }
 
-    /* --- KPI Cards Specific Styles --- */
+    /* KPI Cards - Made clickable with hover effects */
     .kpi-card {
-        border-left: 3px solid #007bff;
+        border-left: 3px solid #408076;
         transition: transform 0.2s;
         background-color: #ffffff;
-        /* Explicitly set white background */
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        /* Subtle shadow for depth */
-        height: 100%;
-        /* Ensure all cards in a row have equal height */
+        box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.05);
         display: flex;
         flex-direction: column;
-        /* Stack content vertically */
+        cursor: pointer; /* Default cursor for non-clickable */
+            border-bottom: 1px solid #8cbfb7;
+    border-top: 1px solid #ddd
     }
 
-    .kpi-card:hover {
-        transform: translateY(-2px);
+    .kpi-card.clickable {
+        cursor: pointer;
+    }
+
+    .kpi-card.clickable:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.1);
+        background-color: #f8f9fa;
     }
 
     .kpi-card .card-body {
-        padding: 0.6rem;
-        /* Slightly increased for better visual balance */
-        display: flex;
+        padding: 0.4rem;
+        /*display: flex;*/
         flex-direction: column;
         justify-content: space-between;
         flex-grow: 1;
-        /* Allow content to grow and fill space */
     }
 
     .kpi-card h6.small {
-        font-size: 0.75rem;
-        /* Slightly larger title for readability */
-        margin-bottom: 0.2rem;
-        /* Reduced space below title */
+        font-size: 0.7rem;
+        margin-bottom: 0.1rem;
         color: #6c757d;
-        /* Muted color for titles */
-        line-height: 1.2;
+        line-height: 1.1;
     }
 
     .kpi-value {
-        font-size: 1.2rem;
-        /* Larger, more prominent value */
+        font-size: 20px;
         font-weight: 700;
-        line-height: 1.2;
-        margin-bottom: 0.2rem;
-        /* Space below value */
+        /*line-height: 1.1;
+        margin-bottom: 0.1rem;
         flex-grow: 1;
-        /* Allow value to take up more vertical space if needed */
-        display: flex;
-        /* Use flex to center value if it's short */
+        display: flex;*/
         align-items: center;
-        /* Center vertically within its flex area */
+        margin-top: 15px;
     }
 
     .kpi-trend-up,
     .kpi-trend-down,
     .kpi-trend-neutral {
-        font-size: 0.65rem;
-        /* Slightly increased trend font size */
+        font-size: 0.6rem;
         line-height: 1;
         display: block;
         margin-top: auto;
-        /* Pushes to the bottom of the card body */
         text-align: right;
-        /* Align trend to the right */
         font-weight: 600;
-        /* Make trend bold */
     }
 
     .kpi-trend-up {
@@ -127,41 +93,29 @@
         color: #6c757d;
     }
 
-    /* --- Tab Navigation --- */
-    .nav-tabs .nav-link {
-        font-size: 0.75rem;
-        /* Smaller tabs */
-        padding: 0.4rem 0.75rem;
-    }
-
-    /* --- Tables (General and TAT) --- */
+    /* Tables (General and TAT) */
     .tat-table th,
     .tat-table td,
     .compact-table th,
     .compact-table td {
-        font-size: 0.7rem;
-        /* Make table content smaller */
-        padding: 0.4rem;
-        /* Reduce cell padding */
+        font-size: 0.6rem;
+        padding: 0.3rem;
         vertical-align: middle;
-        /* Ensure content is vertically aligned */
     }
 
     .badge {
-        font-size: 0.65rem;
-        /* Slightly larger badges for readability */
-        padding: 0.25rem 0.5rem;
+        font-size: 0.6rem;
+        padding: 0.2rem 0.4rem;
     }
 
     .no-data-message {
-        font-size: 0.75rem;
-        /* Smaller no data message */
+        font-size: 0.7rem;
         color: #6c757d;
         text-align: center;
-        padding: 0.75rem;
+        padding: 0.5rem;
     }
 
-    /* --- Loader Styles --- */
+    /* Loader Styles */
     .loader-overlay {
         position: fixed;
         top: 0;
@@ -183,62 +137,96 @@
     }
 
     .loader-overlay .spinner-border {
-        width: 3rem;
-        height: 3rem;
+        width: 2.5rem;
+        height: 2.5rem;
     }
 
-    /* --- Mobile-Specific Overrides (max-width: 576px) --- */
+    /* Mobile-Specific Overrides */
     @media (max-width: 576px) {
-
-        /* Adjustments for extra small screens (phones in portrait) */
         .container-fluid {
-            padding-left: 0.25rem;
-            /* Reduce overall padding on edges */
-            padding-right: 0.25rem;
+            padding-left: 0.2rem;
+            padding-right: 0.2rem;
         }
 
         .col-6 {
-            /* This is already set, ensuring 2 columns for KPIs */
             flex: 0 0 50%;
             max-width: 50%;
         }
 
         .header-title {
-            font-size: 0.8rem;
-            /* Smaller header titles */
-            margin-bottom: 0.5rem;
+            font-size: 0.75rem;
+            margin-bottom: 0.3rem;
         }
 
         .form-select-sm,
         .form-control-sm,
         .btn-sm {
-            font-size: 0.6rem;
-            /* Even smaller form controls and buttons */
-            padding: 0.15rem 0.3rem;
-            height: 1.5rem;
-            /* Consistent smaller height */
+            font-size: 0.55rem;
+            padding: 0.1rem 0.2rem;
+            height: 1.4rem;
         }
 
         .kpi-card .card-body {
-            padding: 0.3rem;
-            /* Even tighter padding for KPI cards */
+            padding: 0.2rem;
         }
 
         .kpi-card h6.small {
-            font-size: 0.65rem;
-            /* Smallest title size */
+            font-size: 0.6rem;
         }
 
         .kpi-value {
-            font-size: 0.9rem;
-            /* Smallest KPI value size */
+            font-size: 0.8rem;
         }
 
         .kpi-trend-up,
         .kpi-trend-down,
         .kpi-trend-neutral {
+            font-size: 0.5rem;
+        }
+
+        .tat-table th,
+        .tat-table td,
+        .compact-table th,
+        .compact-table td {
             font-size: 0.55rem;
-            /* Smallest trend text */
+            padding: 0.15rem;
+        }
+
+        .badge {
+            font-size: 0.5rem;
+            padding: 0.1rem 0.2rem;
+        }
+
+        .loader-overlay .spinner-border {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+    }
+
+    /* Tablets and horizontal phones */
+    @media (min-width: 577px) and (max-width: 768px) {
+        .col-sm-4 {
+            flex: 0 0 33.333333%;
+            max-width: 33.333333%;
+        }
+
+        .kpi-card .card-body {
+            padding: 0.3rem;
+        }
+
+        .kpi-value {
+            font-size: 0.9rem;
+        }
+
+        .kpi-card h6.small {
+            font-size: 0.65rem;
+        }
+
+        .form-select-sm,
+        .form-control-sm,
+        .btn-sm {
+            font-size: 0.6rem;
+            height: 1.5rem;
         }
 
         .tat-table th,
@@ -246,584 +234,1490 @@
         .compact-table th,
         .compact-table td {
             font-size: 0.6rem;
-            /* Smallest table content */
-            padding: 0.2rem;
-            /* Minimal padding */
-        }
-
-        .badge {
-            font-size: 0.55rem;
-            /* Smallest badges */
-            padding: 0.15rem 0.3rem;
-        }
-
-        .loader-overlay .spinner-border {
-            width: 1.8rem;
-            /* Smaller spinner on mobile */
-            height: 1.8rem;
         }
     }
 
-    /* Larger tablets and horizontal phones */
-    @media (min-width: 577px) and (max-width: 768px) {
-        .col-sm-4 {
-            /* Ensure 3 columns for KPIs on small tablets */
-            flex: 0 0 33.333333%;
-            max-width: 33.333333%;
+    /* Ensure filters fit in one line on large screens */
+    @media (min-width: 992px) {
+        .filter-col {
+            flex: 0 0 13%;
+            max-width: 13%;
         }
+    }
 
-        .kpi-card .card-body {
-            padding: 0.4rem;
-        }
+    /* Enhanced toggle button styles */
+    .toggle-timeline {
+        cursor: pointer;
+        background: none;
+        border: none;
+        color: #6c757d;
+        font-size: 1.1rem;
+        padding: 4px;
+        transition: all 0.2s ease;
+    }
 
-        .kpi-value {
-            font-size: 1.1rem;
-        }
+    .toggle-timeline:hover {
+        color: #007bff;
+        transform: scale(1.2);
+    }
 
-        .kpi-card h6.small {
-            font-size: 0.7rem;
-        }
+    .toggle-timeline.active {
+        color: #007bff;
+    }
 
-        .form-select-sm,
-        .form-control-sm,
-        .btn-sm {
-            font-size: 0.7rem;
-            height: 1.7rem;
-        }
+    /* Ensure timeline rows are properly styled */
+    .timeline-row {
+        display: none;
+        background-color: #f8f9fa;
+        border-top: none;
+    }
 
-        .tat-table th,
-        .tat-table td,
-        .compact-table th,
-        .compact-table td {
+    .timeline-row td {
+        padding: 0.5rem;
+    }
+
+    /* Compact table styles for pending */
+    .compact-table th, .compact-table td {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.75rem;
+        vertical-align: middle;
+    }
+
+    .compact-table .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+        line-height: 1.2;
+    }
+
+    .compact-table .badge {
+        font-size: 0.65rem;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Modal styles */
+    .modal-content {
+        border-radius: 0.5rem;
+        box-shadow: var(--card-shadow);
+    }
+
+    .modal-body .card {
+        background-color: var(--bg-light);
+        border: none;
+    }
+
+    .modal-body .card-header {
+        padding: 0.5rem;
+        font-size: 0.85rem;
+    }
+
+    .modal-body .card-body {
+        padding: 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .form-label {
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .form-control, .form-select {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.5rem;
+    }
+
+    .modal-footer .btn {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.75rem;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 576px) {
+        .compact-table th, .compact-table td {
+            padding: 0.3rem 0.4rem;
             font-size: 0.65rem;
         }
+
+        .compact-table .btn-sm {
+            padding: 0.15rem 0.3rem;
+            font-size: 0.65rem;
+        }
+
+        .modal-body .card-body {
+            padding: 0.5rem;
+        }
+
+        .modal-body .card-header {
+            font-size: 0.75rem;
+        }
     }
+    
+    .chart-card {
+      border: 1px solid #dce3f0;
+      border-radius: 10px;
+      padding: 15px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      width: 100%;
+      max-width: 500px;
+      margin: 30px auto;
+    }
+    .chart-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+       #formsChart1 {
+  height: 320px !important; /* or 200px */
+}
+ #formsChart4 {
+  height: 320px !important; /* or 200px */
+}
 </style>
 @endpush
 
 @section('content')
 <div id="elmLoader" class="loader-overlay d-none">
-    <div class="spinner-border text-primary" role="status"> {{-- Removed avatar-sm as we're defining size in CSS --}}
+    <div class="spinner-border text-primary" role="status">
         <span class="visually-hidden">Loading...</span>
     </div>
 </div>
-@if(Auth::check() && (Auth::user()->hasAnyRole(['Super Admin', 'Admin', 'Mis User']) || Auth::user()->hasPermissionTo('distributor_approval')))
 
+@php
+    $isAdminUser = Auth::check() && (Auth::user()->hasAnyRole(['Super Admin', 'Admin']) || Auth::user()->hasPermissionTo('distributor_approval'));
+    $isMisUser = Auth::check() && Auth::user()->hasAnyRole(['Mis Admin', 'Mis User']);
+    $approverDesignations = ['Area Coordinator', 'Regional Business Manager', 'Zonal Business Manager', 'General Manager']; // Adjust as needed
+    $employee = Auth::user()->employee;
+    $isApprover = !$isAdminUser && !$isMisUser && $employee && in_array($employee->emp_designation ?? '', $approverDesignations);
+    $showAdminDashboard = $isAdminUser;
+    $showMisDashboard = $isMisUser;
+    $showApproverDashboard = $isApprover;
+    $showSalesDashboard = Auth::check() && !$showAdminDashboard && !$showMisDashboard && !$showApproverDashboard;
+    $showKpiCards = $showAdminDashboard || $showMisDashboard || $showSalesDashboard || $showApproverDashboard;
+    $viewMode = $filters['view_mode'] ?? 'pending';
+@endphp
 
-            <div class="row mb-2">
+@if($showAdminDashboard || $showMisDashboard || $showApproverDashboard || $showSalesDashboard)
+    {{-- Unified Filters Section --}}
+    <div class="row mb-1">
+        <div class="col-12 mb-2">
+                <div class="card-header align-items-center d-flex" style="background-color:transparent;">
+                    <h4 class="card-title mb-0 flex-grow-1 header-title">
+                        @if($showMisDashboard) MIS @elseif($showAdminDashboard) Approval @elseif($showApproverDashboard) Approver’s @elseif($showSalesDashboard) My @endif Dashboard
+                    </h4>
+
+                    <div class="flex-shrink-0">
+                        <a href="" class="btn btn-sm  bg-primary text-white">Appoint Distributor Form</a>
+                        <a style="color: #408076;font-weight: 600;" class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
+                        <a style="color: #408076;font-weight: 600;" target="_blank" class="ms-3 me-2" href="">List of Required Documents <i class="ri-attachment-line"></i></a>
+                    </div>
+                </div>
+        </div>
+    </div>
+
+    {{-- KPI Cards Section --}}
+    @if($showKpiCards)
+        @if($showAdminDashboard || $showMisDashboard || $showSalesDashboard)
+            {{-- Existing KPI Cards for Admin/MIS/Sales --}}
+            <div class="row mb-3">
                 <div class="col-12">
-                    <div class="card">
-                        <div class="card-header align-items-center d-flex">
-                            <h4 class="card-title mb-0 flex-grow-1">Search for using filter</h4>
-                            <div class="flex-shrink-0">
-                                <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
-                                    <i class="ri-filter-2-line"></i> Filters
-                                </button>
+                    <div class="crm-widget">
+                       
+                        <div class="card-body p-0">
+                            <div class="row g-4" id="kpi-container">
+                                @if (isset($data['counts']['total']) && $data['counts']['total'] == 0 && !$showSalesDashboard)
+                                    <div class="col-12 no-data-message">No applications found based on current filters.</div>
+                                @else
+                                    @php
+                                        $queryString = http_build_query($filters);
+                                        $applicationsUrl = route('applications.index') . ($queryString ? '?' . $queryString : '');
+                                    @endphp
+                                    @if($showAdminDashboard)
+                                        {{-- Admin KPIs --}}
+                                        
+
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
+                                                <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
+                                                        <h6 class="text-success"><b>Total Forms</b></h6>
+                                                        <span id="kpi-trend-total-submitted" class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2"><i class="ri-arrow-up-line"></i>  {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="appointments">
+                                                <div class="card kpi-card clickable" data-kpi="appointments" data-count="{{ $data['counts']['distributorship_created'] }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-appointments-completed">{{ $data['counts']['distributorship_created'] }}</div>
+                                                        <h6 class="text-success"><b>Appointments</b></h6>
+                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-appointments-completed"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['appointments_completed'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process_admin">
+                                                <div class="card kpi-card clickable" data-kpi="in_process_admin" data-count="{{ $data['counts']['in_process'] }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] }}</div>
+                                                        <h6 class="text-warning"><b>In Process</b></h6>
+                                                        <span class="kpi-trend-neutral badge bg-warning-subtle text-warning float-end mt-2" id="kpi-trend-in-process">—</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="reverted">
+                                                <div class="card kpi-card clickable" data-kpi="reverted" data-count="{{ $data['counts']['reverted'] }}">
+                                                    <div class="card-body text-center">
+                                                        
+                                                        <div class="kpi-value" id="kpi-reverted">{{ $data['counts']['reverted'] }}</div>
+                                                        <h6 class="text-danger"><b>Reverted</b></h6>
+                                                        <span class="kpi-trend-up badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['reverted'] ?? 0 }}</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected_admin">
+                                                <div class="card kpi-card clickable" data-kpi="rejected_admin" data-count="{{ $data['counts']['rejected'] }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-rejected">{{ $data['counts']['rejected'] }}</div>
+                                                        <h6 class="text-danger"><b>Rejected</b></h6>
+                                                        <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['rejected'] ?? 0 }}</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis_admin">
+                                                <div class="card kpi-card clickable" data-kpi="to_mis_admin" data-count="{{ $data['counts']['forwarded_to_mis'] }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] }}</div>
+                                                        <h6 class="text-success"><b>To MIS</b></h6>
+                                                        <span class="kpi-trend-up badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-forwarded-to-mis"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['forwarded_to_mis'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @elseif($showSalesDashboard)
+                                        {{-- Sales KPIs --}}
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="total_created">
+                                                <div class="card kpi-card clickable" data-kpi="total_created" data-count="{{ $data['sales_counts']['total_created'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-total-created">{{ $data['sales_counts']['total_created'] ?? 0 }}</div>
+                                                        <h6 class="text-success"><b>Total Created</b></h6>
+                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-total-created"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['total_created'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="in_approval">
+                                                <div class="card kpi-card clickable" data-kpi="in_approval" data-count="{{ $data['sales_counts']['in_approval'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-in-approval">{{ $data['sales_counts']['in_approval'] ?? 0 }}</div>
+                                                        <h6 class="text-success"><b>In Approval</b></h6>
+                                                        <span class="kpi-trend-neutral badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-in-approval">—</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis">
+                                                <div class="card kpi-card clickable" data-kpi="to_mis" data-count="{{ $data['sales_counts']['to_mis'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        
+                                                        <div class="kpi-value" id="kpi-to-mis">{{ $data['sales_counts']['to_mis'] ?? 0 }}</div>
+                                                        <h6 class="text-success"><b>In MIS</b></h6>
+                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-to-mis"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['to_mis'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="completed">
+                                                <div class="card kpi-card clickable" data-kpi="completed" data-count="{{ $data['sales_counts']['completed'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        
+                                                        <div class="kpi-value" id="kpi-completed">{{ $data['sales_counts']['completed'] ?? 0 }}</div>
+                                                        <h6 class="text-success"><b>Completed</b></h6>
+                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-completed"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['completed'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected">
+                                                <div class="card kpi-card clickable" data-kpi="rejected" data-count="{{ $data['sales_counts']['rejected'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        
+                                                        <div class="kpi-value" id="kpi-rejected">{{ $data['sales_counts']['rejected'] ?? 0 }}</div>
+                                                        <h6 class="text-danger"><b>Rejected</b></h6>
+                                                        <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> {{ $data['sales_kpi_trends']['rejected'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @else
+                                        {{-- MIS KPIs --}}
+                                                                                
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
+                                                <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
+                                                    <div class="card-body text-center">
+                                                       <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
+                                                        <h6 class="text-success "><b>Total Forms</b></h6>
+                                                        <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success float-end mt-2"><i class="ri-arrow-up-line"></i>  {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        {{--<div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="document_verified">
+                                                <div class="card kpi-card clickable" data-kpi="document_verified" data-count="{{ $data['counts']['document_verified'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Docs Verified</h6>
+                                                        <div class="kpi-value" id="kpi-document-verified">{{ $data['counts']['document_verified'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-document-verified">🔼 {{ $data['kpi_trends']['document_verified'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>--}}
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="agreement_created">
+                                                <div class="card kpi-card clickable" data-kpi="agreement_created" data-count="{{ $data['counts']['agreement_created'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        
+                                                        <div class="kpi-value" id="kpi-agreement-created">{{ $data['counts']['agreement_created'] ?? 0 }}</div>
+                                                        <h6 class="text-success"><b>Agreements</b></h6>
+                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-agreement-created"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['agreement_created'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="physical_docs_verified">
+                                                <div class="card kpi-card clickable" data-kpi="physical_docs_verified" data-count="{{ $data['counts']['physical_docs_verified'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        <div class="kpi-value" id="kpi-physical-docs-verified">{{ $data['counts']['physical_docs_verified'] ?? 0 }}</div>
+                                                        <h6 class="text-success"><b>Physical Docs</b></h6>
+                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-physical-docs-verified"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['physical_docs_verified'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="distributorship_created">
+                                                <div class="card kpi-card clickable" data-kpi="distributorship_created" data-count="{{ $data['counts']['distributorship_created'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        
+                                                        <div class="kpi-value" id="kpi-distributors-created">{{ $data['counts']['distributorship_created'] ?? 0 }}</div>
+                                                        <h6 class="text-success"><b>Completed</b></h6>
+                                                        <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-distributors-created"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['distributorship_created'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="mis_rejected">
+                                                <div class="card kpi-card clickable" data-kpi="mis_rejected" data-count="{{ $data['counts']['mis_rejected'] ?? 0 }}">
+                                                    <div class="card-body text-center">
+                                                        
+                                                        <div class="kpi-value" id="kpi-mis-rejected">{{ $data['counts']['mis_rejected'] ?? 0 }}</div>
+                                                        <h6 class="text-danger"><b>Rejected</b></h6>
+                                                        <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-mis-rejected"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['mis_rejected'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process">
+                                                <div class="card kpi-card clickable" data-kpi="in_process" data-count="{{ $data['counts']['in_process'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] ?? 0 }}</div>
+                                                        <h6 class="text-warning"><b>In Process</b></h6>
+                                                        <span class="kpi-trend-neutral badge bg-warning-subtle text-warning float-end mt-2" id="kpi-trend-in-process">—</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @endif
+                                @endif {{-- end of data check --}}
                             </div>
                         </div>
-                        <div class="card-body p-2">
-                          
-                            <form id="filter-form" method="GET">
-                                <div class="collapse show" id="filterCollapse">
-                                    <div class="row g-1">
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label for="date_range_type" class="form-label">Date Type</label>
-                                            <select name="date_range_type" id="date_range_type" class="form-select form-select-sm">
-                                                <option value="submission" {{ $filters['date_range_type'] == 'submission' ? 'selected' : '' }}>Submission</option>
-                                                <option value="approval" {{ $filters['date_range_type'] == 'approval' ? 'selected' : '' }}>Approval</option>
-                                                <option value="appointment" {{ $filters['date_range_type'] == 'appointment' ? 'selected' : '' }}>Appointment</option>
-                                            </select>
-                                        </div>
-                                        @if ($access_level == 'bu' || $access_level == 'all')
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label for="bu" class="form-label">Business Unit</label>
-                                            <select name="bu" id="bu" class="form-select form-select-sm">
-                                                <option value="All">All BU</option>
-                                                @foreach ($bu_list as $key => $value)
-                                                <option value="{{ $key }}" {{ $filters['bu'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        @endif
-                                        @if ($access_level == 'bu' || $access_level == 'zone' || $access_level == 'all')
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label for="zone" class="form-label">Zone</label>
-                                            <select name="zone" id="zone" class="form-select form-select-sm">
-                                                <option value="All">All Zone</option>
-                                                @foreach ($zone_list as $key => $value)
-                                                <option value="{{ $key }}" {{ $filters['zone'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        @endif
-                                        @if ($access_level == 'bu' || $access_level == 'zone' || $access_level == 'region' || $access_level == 'all')
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label for="region" class="form-label">Region</label>
-                                            <select name="region" id="region" class="form-select form-select-sm">
-                                                <option value="All">All Region</option>
-                                                @foreach ($region_list as $key => $value)
-                                                <option value="{{ $key }}" {{ $filters['region'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        @endif
-                                        @if ($access_level == 'bu' || $access_level == 'zone' || $access_level == 'region' || $access_level == 'territory' || $access_level == 'all')
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label for="territory" class="form-label">Territory</label>
-                                            <select name="territory" id="territory" class="form-select form-select-sm">
-                                                <option value="All">All Territory</option>
-                                                @foreach ($territory_list as $key => $value)
-                                                <option value="{{ $key }}" {{ $filters['territory'] == $key ? 'selected' : '' }}>{{ $value }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        @endif
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label class="form-label">Initiator</label>
-                                            <select name="initiator_role" id="initiator_role" class="form-select form-select-sm">
-                                                <option value="">All</option>
-                                                <option value="TM" {{ $filters['initiator_role'] == 'TM' ? 'selected' : '' }}>TM</option>
-                                                <option value="Area Coordinator" {{ $filters['initiator_role'] == 'Area Coordinator' ? 'selected' : '' }}>Area Coordinator</option>
-                                                <option value="Regional Business Manager" {{ $filters['initiator_role'] == 'Regional Business Manager' ? 'selected' : '' }}>Regional Business Manager</option>
-                                                <option value="Zonal Business Manager" {{ $filters['initiator_role'] == 'Zonal Business Manager' ? 'selected' : '' }}>Zonal Business Manager</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label class="form-label">Stage</label>
-                                            <select name="approval_stage" id="approval_stage" class="form-select form-select-sm">
-                                                <option value="">All</option>
-                                                <option value="initiated" {{ $filters['approval_stage'] == 'initiated' ? 'selected' : '' }}>Initiated</option>
-                                                <option value="Regional Business Manager" {{ $filters['approval_stage'] == 'Regional Business Manager' ? 'selected' : '' }}>Regional Business Manager</option>
-                                                <option value="Zonal Business Manager" {{ $filters['approval_stage'] == 'Zonal Business Manager' ? 'selected' : '' }}>Zonal Business Manager</option>
-                                                <option value="General Manager" {{ $filters['approval_stage'] == 'General Manager' ? 'selected' : '' }}>General Manager</option>
-                                                <option value="mis" {{ $filters['approval_stage'] == 'mis' ? 'selected' : '' }}>MIS</option>
-                                                <option value="completed" {{ $filters['approval_stage'] == 'completed' ? 'selected' : '' }}>Final</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label class="form-label">Status</label>
-                                            <select name="status" id="status1" class="form-select form-select-sm">
-                                                <option value="">All</option>
-                                                <option value="initiated" {{ $filters['status'] == 'initiated' ? 'selected' : '' }}>Initiated</option>
-                                                <option value="under_review" {{ $filters['status'] == 'under_review' ? 'selected' : '' }}>Review</option>
-                                                <option value="on_hold" {{ $filters['status'] == 'on_hold' ? 'selected' : '' }}>On Hold</option>
-                                                <option value="approved" {{ $filters['status'] == 'approved' ? 'selected' : '' }}>Approved</option>
-                                                <option value="rejected" {{ $filters['status'] == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                                                <option value="reverted" {{ $filters['status'] == 'reverted' ? 'selected' : '' }}>Reverted</option>
-                                                <option value="distributorship_created" {{ $filters['status'] == 'distributorship_created' ? 'selected' : '' }}>Completed</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label class="form-label">From</label>
-                                            <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ $filters['date_from'] }}">
-                                        </div>
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                            <label class="form-label">To</label>
-                                            <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] }}">
-                                        </div>
-                                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 mt-1 d-flex gap-1 mt-4">
-                                            <button type="submit" class="btn btn-sm btn-primary">Apply</button>
-                                            <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </form>
+                    </div>
+                </div>
+            </div>
+        @endif
+         
+        <div class="row">
+           
+      
+            <div class="col-md-4">
+                <div class="card">
+                     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                      <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+                     <div class="chart-card">
+                            <div class="chart-title">Total Forms Submitted: {{ $chartData['total_forms_submitted'] ?? 0 }}</div>
+                            <canvas id="formsChart" height="230"></canvas>
+                     </div>                   
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title float-start">Forms Submitted</h5>
+                        <a class="float-end link" href="">View All</a>
+                    </div>
+                    <div class="card-body" style="height:440px;overflow:auto;">
+                        <div class="attendance-request-box">
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3"><b><small>Submit Date: 04 Sep 2025</small></b></span>
+                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3"><b><small>Submit Date: 04 Sep 2025</small></b></span>
+                            <span class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                        </div>
+                    </div>
+
+                </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Check List of Required Doc.</h5>
+                    </div>
+                    <div class="card-body" style="min-height:300px;">
+                        <ul>
+                            <li>SOLE PROPRIETORSHIP</li>
+                            <li>PARTNERSHIP</li>
+                            <li>LLP</li>
+                            <li>COMPANY</li>
+                            <li>COOPERATIVE SOCIETY</li>
+                            <li>TRUST</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                  
+                    <div class="card-body" style="min-height:300px;">
+                        <div class="chart-card">
+                              <div class="chart-title">Forms Received from Sales: {{ $chartData['forms_received_from_sales'] ?? 0 }}</div>
+                              <canvas id="formsChart1" height="250"></canvas>
+                        </div>                        
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                        <div class="card-body">
+                            <div class="chart-card">
+                            <div class="chart-title">Approval Status Form</div>
+                            <canvas id="formsChart3" height="230"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="row mb-2">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body" style="min-height:300px;">
+                        <div class="chart-card">
+                            <div class="chart-title">Initiator Status</div>
+                            <canvas id="formsChart4" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title float-start">All Forms Status</h5>
+                        <a class="float-end link" href="">View All</a>
+                    </div>
+                    <div class="card-body" style="height:440px;overflow:auto;">
+                        <div class="attendance-request-box">
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span class="text-success float-end" title="Pending">
+                               Days Pending: 5
+                            </span>
+                        </div>
+                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
+                            <span class="me-3" ><b>Initiated By: TM</b></span>
+                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
+                        </div>
+                    </div>
+
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span class="text-success float-end" title="Pending">
+                               Days Pending: 5
+                            </span>
+                        </div>
+                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
+                            <span class="me-3" ><b>Initiated By: TM</b></span>
+                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
+                        </div>
+                    </div>
+
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span class="text-success float-end" title="Pending">
+                               Days Pending: 5
+                            </span>
+                        </div>
+                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
+                            <span class="me-3" ><b>Initiated By: TM</b></span>
+                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
+                        </div>
+                    </div>
+
+
+
+                    <div class="form-sub-section mb-3">
+                         <div style="width:100%;">
+                            <span class="me-3"><b><small>Distributor Name: Anjani Traders</small></b></span>
+                        </div>
+                        <div style="width:100%;">
+                            <span class="me-3" style="color:#8d8787;"><small>Submit Date: 04 Sep 2025</small></span>
+                            <span class="text-success float-end" title="Pending">
+                               Days Pending: 5
+                            </span>
+                        </div>
+                        <div class="border-top mt-2 pb-1 pt-1" style="width:100%;">
+                            <span class="me-3" ><b>Initiated By: TM</b></span>
+                            <span  class="badge bg-warning-subtle text-warning mt-2 float-end" title="Pending">
+                               Pending
+                            </span>
+                            <span class="float-end mt-2 ms-2 me-2 "><a class="text-success" href=""><i class="ri-eye-fill"></i></a></span>
+                        </div>
+                    </div>
+                    
+
+                </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title float-start">All Zone</h5>
+                        <a class="float-end link" href="">View All</a>
+                    </div>
+                    <div class="card-body">
+                        <ul class="zone-list">
+                            @foreach($chartData['zone_data'] ?? [] as $zoneName => $zoneInfo)
+                            <li>
+                                <div class="float-start">
+                                    <img class="zone-img" src="">
+                                </div>
+                                <div class="float-start">
+                                    <b>{{ $zoneInfo['total'] ?? 0 }}</b><br>
+                                    <span>Verify: {{ $zoneInfo['verify'] ?? 0 }}</span>
+                                </div>
+                                <div class="float-end">
+                                    <b class="text-success">{{ $zoneName }}</b><br>
+                                    <span>Pending: {{ $zoneInfo['pending'] ?? 0 }}</span>
+                                </div>
+                            </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+
+        </div>
+
+
+        <div class="card mb-0">
+            <div class="card-body">
+        <form style="position:relative;" id="{{ $showMisDashboard ? 'mis-filter-form' : ($showApproverDashboard ? 'approver-filter-form' : ($showSalesDashboard ? 'sales-filter-form' : 'filter-form')) }}" method="GET">
+            <button style="position: absolute;right:0px;top:0px;z-index:1;" type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <i class="ri-filter-2-line"></i> Filters
+            </button>           
+            <div class="collapse show" id="filterCollapse">
+                            <div class="row g-2">
+                                {{-- Common filters: BU, Zone, Region, Territory - Always show --}}
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col" style="width:15%;">
+                                    <label for="bu" class="form-label"><b>BU</b></label>
+                                    <select name="bu" id="bu" class="form-select form-select-sm">
+                                        <option value="All">All BU</option>
+                                        @foreach ($bu_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['bu'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="zone" class="form-label"><b>Zone</b></label>
+                                    <select name="zone" id="zone" class="form-select form-select-sm">
+                                        <option value="All">All Zone</option>
+                                        @foreach ($zone_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['zone'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="region" class="form-label"><b>Region</b></label>
+                                    <select name="region" id="region" class="form-select form-select-sm">
+                                        <option value="All">All Region</option>
+                                        @foreach ($region_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['region'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="territory" class="form-label"><b>Territory</b></label>
+                                    <select name="territory" id="territory" class="form-select form-select-sm">
+                                        <option value="All">All Territory</option>
+                                        @foreach ($territory_list as $key => $value)
+                                            <option value="{{ $key }}" {{ $filters['territory'] == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                {{-- Date Range - Common --}}
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label class="form-label"><b>From</b></label>
+                                    <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ $filters['date_from'] }}">
+                                </div>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label class="form-label"><b>To</b></label>
+                                    <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] }}">
+                                </div>
+
+                                @if($showAdminDashboard)
+                                    <input type="hidden" name="view_mode" id="view_mode" value="{{ $viewMode }}">
+                                @endif
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col mt-1 d-flex gap-1 mt-lg-4">
+                                    <button type="submit" class="btn btn-sm btn-primary mt-1">Apply</button>
+                                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-dark mt-1"><i class="ri-refresh-line"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                </div>
+        @if($showApproverDashboard)
+            {{-- Approver KPI Cards --}}
+            <div class="row mb-3">
                 <div class="col-12">
                     <div class="crm-widget">
                         <div class="card-header align-items-center d-flex">
-                                    <h4 class="card-title mb-0 flex-grow-1">Key Indicators</h4>
-                                    <div class="flex-shrink-0">
-                                        <div class="dropdown card-header-dropdown">
-                                            <a class="text-reset dropdown-btn" href="#" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                <span class="text-muted fs-16"><i class="mdi mdi-dots-vertical align-middle"></i></span>
-                                            </a>
-                                            <div class="dropdown-menu dropdown-menu-end">
-                                                <a class="dropdown-item" href="#">Today</a>
-                                                <a class="dropdown-item" href="#">Last Week</a>
-                                                <a class="dropdown-item" href="#">Last Month</a>
-                                                <a class="dropdown-item" href="#">Current Year</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="row " id="kpi-container">
-                                        @if ($data['counts']['total'] == 0)
-                                            <div class="col-12 no-data-message text-center">No applications found based on current filters.</div>
-                                        @else
-                                        <div class="col-xl-3 col-md-6">    
-                                        <div class="card card-animate mb-3">
-                                            <div class="py-4 px-3">
-                                                <h5 class="text-muted text-uppercase fs-13">Total Forms <i class="ri-file-text-line text-success fs-18 float-end align-middle"> <span id="kpi-trend-total-submitted"> {{ $data['kpi_trends']['total_submitted'] }}%</span></i></h5>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <i style="font-size:28px;" class="ri-space-ship-line display-6 text-muted cfs-22"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['counts']['total'] }}" id="kpi-total-submitted">{{ $data['counts']['total'] }}</span></h2>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </div><!-- end col -->
-                                        <div class="col-xl-3 col-md-6">    
-                                        <div class="card card-animate mb-3">
-                                            <div class="mt-3 mt-md-0 py-4 px-3">
-                                                <h5 class="text-muted text-uppercase fs-13">Avg. TAT <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"> <span id="kpi-trend-avg-tat">{{ $data['kpi_trends']['avg_tat'] }} Days</span></i></h5>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <i style="font-size:28px;" class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $tatData['total']['avg_tat'] }}"  id="kpi-avg-tat">{{ $tatData['total']['avg_tat'] }} Days</span></h2>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </div><!-- end col -->
-                                        <div class="col-xl-3 col-md-6">    
-                                        <div class="card card-animate mb-3">
-                                            <div class="mt-3 mt-md-0 py-4 px-3">
-                                                <h5 class="text-muted text-uppercase fs-13">Appointments <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-appointments-completed"> {{ $data['kpi_trends']['appointments_completed'] }}%</span></i></h5>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <i style="font-size:28px;" class="ri-file-user-line display-6 text-muted cfs-22"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="32.89" id="kpi-appointments-completed">{{ $data['counts']['distributors_created'] }}</h2>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </div><!-- end col -->
-                                        <div class="col-xl-3 col-md-6">    
-                                        <div class="card card-animate mb-3">
-                                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                                <h5 class="text-muted text-uppercase fs-13">In Process <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"><span id="kpi-trend-in-process">—</span></i></h5>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <i style="font-size:28px;" class="ri-loader-4-line display-6 text-muted cfs-22"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['counts']['in_process'] }}" id="kpi-in-process">{{ $data['counts']['in_process'] }}</span></h2>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </div><!-- end col -->
-                                        <div class="col-xl-3 col-md-6">    
-                                        <div class="card card-animate mb-3">
-                                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                                <h5 class="text-muted text-uppercase fs-13">Reverted <i class="ri-device-recover-line text-danger fs-18 float-end align-middle"> <span id="kpi-reverted">{{ $data['counts']['reverted'] }}</span></i></h5>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <i style="font-size:28px;" class="ri-device-recover-line display-6 text-muted cfs-22"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['kpi_trends']['reverted'] }}" id="kpi-trend-reverted"> {{ $data['kpi_trends']['reverted'] }}</span></h2>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </div><!-- end col -->
-                                        <div class="col-xl-3 col-md-6">    
-                                        <div class="card card-animate mb-3">
-                                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                                <h5 class="text-muted text-uppercase fs-13">Rejected <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-rejected">{{ $data['counts']['rejected'] }}</span></i></h5>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <i style="font-size:28px;" class="ri-close-circle-line display-6 text-muted cfs-22"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['kpi_trends']['rejected'] }}" id="kpi-trend-rejected"> {{ $data['kpi_trends']['rejected'] }}</span></h2>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </div><!-- end col -->
-                                        <div class="col-xl-3 col-md-6">    
-                                        <div class="card card-animate mb-3">
-                                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                                <h5 class="text-muted text-uppercase fs-13">To MIS <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-forwarded-to-mis"> {{ $data['kpi_trends']['forwarded_to_mis'] }}%</span></i></h5>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="flex-shrink-0">
-                                                        <i style="font-size:28px;" class="ri-service-line display-6 text-muted cfs-22"></i>
-                                                    </div>
-                                                    <div class="flex-grow-1 ms-3">
-                                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['kpi_trends']['forwarded_to_mis'] }}" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] }} </span></h2>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        </div><!-- end col -->
-                                        @endif
-                                    </div><!-- end row -->
-                                </div>
-
-
-
-                       <!-- <div class="card-body">
-                            <div class="row g-2 12345" id="kpi-container">
-                                @if ($data['counts']['total'] == 0)
-                                <div class="col-12 no-data-message">No applications found based on current filters.</div>
-                                @else
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card kpi-card">
-                                        <div class="card-body">
-                                            <h6 class="small">Total Forms</h6>
-                                            <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
-                                            <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 {{ $data['kpi_trends']['total_submitted'] }}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card kpi-card">
-                                        <div class="card-body">
-                                            <h6 class="small">Avg. TAT</h6>
-                                            <div class="kpi-value" id="kpi-avg-tat">{{ $tatData['total']['avg_tat'] }} Days</div>
-                                            <span class="kpi-trend-down" id="kpi-trend-avg-tat">⏬ {{ $data['kpi_trends']['avg_tat'] }} Days</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card kpi-card">
-                                        <div class="card-body">
-                                            <h6 class="small">Appointments</h6>
-                                            <div class="kpi-value" id="kpi-appointments-completed">{{ $data['counts']['distributorship_created'] }}</div>
-                                            <span class="kpi-trend-up" id="kpi-trend-appointments-completed">🔼 {{ $data['kpi_trends']['appointments_completed'] }}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card kpi-card">
-                                        <div class="card-body">
-                                            <h6 class="small">In Process</h6>
-                                            <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] }}</div>
-                                            <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card kpi-card">
-                                        <div class="card-body">
-                                            <h6 class="small">Reverted</h6>
-                                            <div class="kpi-value" id="kpi-reverted">{{ $data['counts']['reverted'] }}</div>
-                                            <span class="kpi-trend-up" id="kpi-trend-reverted">🔼 {{ $data['kpi_trends']['reverted'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card kpi-card">
-                                        <div class="card-body">
-                                            <h6 class="small">Rejected</h6>
-                                            <div class="kpi-value" id="kpi-rejected">{{ $data['counts']['rejected'] }}</div>
-                                            <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 {{ $data['kpi_trends']['rejected'] }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                                    <div class="card kpi-card">
-                                        <div class="card-body">
-                                            <h6 class="small">To MIS</h6>
-                                            <div class="kpi-value" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] }}</div>
-                                            <span class="kpi-trend-up" id="kpi-trend-forwarded-to-mis">🔼 {{ $data['kpi_trends']['forwarded_to_mis'] }}%</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endif
-                            </div>
-                        </div>-->
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mb-2">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <ul class="nav nav-tabs nav-tabs-custom mb-2">
-                                <li class="nav-item">
-                                    <a class="nav-link active" data-bs-toggle="tab" href="#pending-tab">
-                                        Submitted (<span id="tab-pending-count">{{ $data['counts']['pending'] }}</span>)
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" data-bs-toggle="tab" href="#my-tab">
-                                        My Apps (<span id="tab-my-count">{{ $data['counts']['my'] }}</span>)
-                                    </a>
-                                </li>
-                                @if(Auth::check() && Auth::user()->employee && Auth::user()->employee->isMisTeam())
-                                <li class="nav-item">
-                                    <a class="nav-link" data-bs-toggle="tab" href="#mis-tab">
-                                        MIS (<span id="tab-mis-count">{{ $data['counts']['mis'] }}</span>)
-                                    </a>
-                                </li>
-                                @endif
-                                <li class="nav-item">
-                                    <a class="nav-link" data-bs-toggle="tab" href="#master-tab">
-                                        Master (<span id="tab-master-count">{{ $data['counts']['total'] }}</span>)
-                                    </a>
-                                </li>
-                            </ul>
-                            <div class="tab-content">
-                                <div class="tab-pane fade show active" id="pending-tab">
-                                    @if ($pendingApplications->isEmpty())
-                                    <div class="no-data-message">No applications pending your approval.</div>
-                                    @else
-                                    @include('dashboard._approver-table', ['pendingApplications' => $pendingApplications])
-                                    @endif
-                                </div>
-                                <div class="tab-pane fade" id="my-tab">
-                                    @if ($myApplications->isEmpty())
-                                    <div class="no-data-message">You haven't submitted or acted on any applications yet.</div>
-                                    @else
-                                    @include('dashboard._sales-table')
-                                    @endif
-                                </div>
-                                @if(Auth::check() && Auth::user()->employee && Auth::user()->employee->isMisTeam())
-                                <div class="tab-pane fade" id="mis-tab">
-                                    @if ($misApplications->isEmpty())
-                                    <div class="no-data-message">No applications pending MIS processing.</div>
-                                    @else
-                                    @include('dashboard._mis-table')
-                                    @endif
-                                </div>
-                                @endif
-                                <div class="tab-pane fade" id="master-tab">
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card mb-0">
-                                                <div class="card-header">
-                                            <h5 class="header-title">Turnaround Time (TAT) Analysis</h5>
-                                                </div>
-                                            @if ($tatData['total']['avg_tat'] == 0 && $tatData['total']['max_tat'] == 0)
-                                            <div class="no-data-message">No TAT data available.</div>
-                                            @else
-                                            <div class="card-body table-responsive">
-                                                <table class="table table-sm tat-table table-hover">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Stage</th>
-                                                            <th>Avg. TAT</th>
-                                                            <th>Max TAT</th>
-                                                            <th>Exceeding SLA</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="tat-table-body">
-                                                        <tr>
-                                                            <td>Sub → RBM</td>
-                                                            <td id="tat-submission-to-rbm-avg">{{ $tatData['submission_to_rbm']['avg_tat'] }} Days</td>
-                                                            <td id="tat-submission-to-rbm-max">{{ $tatData['submission_to_rbm']['max_tat'] }} Days</td>
-                                                            <td id="tat-submission-to-rbm-exceeding">{{ $tatData['submission_to_rbm']['exceeding_sla'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>RBM → ZBM</td>
-                                                            <td id="tat-rbm-to-zbm-avg">{{ $tatData['rbm_to_zbm']['avg_tat'] }} Days</td>
-                                                            <td id="tat-rbm-to-zbm-max">{{ $tatData['rbm_to_zbm']['max_tat'] }} Days</td>
-                                                            <td id="tat-rbm-to-zbm-exceeding">{{ $tatData['rbm_to_zbm']['exceeding_sla'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>ZBM → GM</td>
-                                                            <td id="tat-zbm-to-gm-avg">{{ $tatData['zbm_to_gm']['avg_tat'] }} Days</td>
-                                                            <td id="tat-zbm-to-gm-max">{{ $tatData['zbm_to_gm']['max_tat'] }} Days</td>
-                                                            <td id="tat-zbm-to-gm-exceeding">{{ $tatData['zbm_to_gm']['exceeding_sla'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>GM → MIS</td>
-                                                            <td id="tat-gm-to-mis-avg">{{ $tatData['gm_to_mis']['avg_tat'] }} Days</td>
-                                                            <td id="tat-gm-to-mis-max">{{ $tatData['gm_to_mis']['max_tat'] }} Days</td>
-                                                            <td id="tat-gm-to-mis-exceeding">{{ $tatData['gm_to_mis']['exceeding_sla'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>MIS → Final</td>
-                                                            <td id="tat-mis-to-final-avg">{{ $tatData['mis_to_final']['avg_tat'] }} Days</td>
-                                                            <td id="tat-mis-to-final-max">{{ $tatData['mis_to_final']['max_tat'] }} Days</td>
-                                                            <td id="tat-mis-to-final-exceeding">{{ $tatData['mis_to_final']['exceeding_sla'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td><strong>Total</strong></td>
-                                                            <td id="tat-total-avg"><strong>{{ $tatData['total']['avg_tat'] }} Days</strong></td>
-                                                            <td id="tat-total-max"><strong>{{ $tatData['total']['max_tat'] }} Days</strong></td>
-                                                            <td id="tat-total-exceeding"><strong>{{ $tatData['total']['exceeding_sla'] }}</strong></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                            @endif
-                                            </div>
-                                            <divv class="card">
-                                                <div class="card-header">
-                                            <h5 class="header-title">Applications</h5>
-                                            </div>
+                            <h4 class="card-title mb-0 flex-grow-1 header-title">Key Indicators</h4>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row g-1" id="approver-kpi-container">
+                                @php
+                                    $queryString = http_build_query($filters);
+                                    $approverUrl = route('approver.applications') . ($queryString ? '?' . $queryString : '');
+                                @endphp
+                                <div class="col-6 col-md-3 col-lg-2">
+                                    <a href="#" class="text-decoration-none kpi-link" data-kpi="pending_your_approval">
+                                        <div class="card kpi-card clickable" data-kpi="pending_your_approval" data-count="{{ $data['counts']['pending_your_approval'] }}">
                                             <div class="card-body">
-                                            <div id="master-table-container">
-                                                @if ($masterReportApplications->isEmpty())
-                                                <div class="no-data-message">No applications found.</div>
-                                                @else
-                                                @include('dashboard._master-table', ['masterReportApplications' => $masterReportApplications])
-                                                @endif
-                                            </div>
+                                                <h6 class="small">🔍 Forms Pending Your Approval</h6>
+                                                <div class="kpi-value">{{ $data['counts']['pending_your_approval'] }}</div>
+                                                <span class="kpi-trend-neutral">—</span>
                                             </div>
                                         </div>
-                                    </div>
+                                    </a>
+                                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                                    <a href="#" class="text-decoration-none kpi-link" data-kpi="on_hold_by_you">
+                                        <div class="card kpi-card clickable" data-kpi="on_hold_by_you" data-count="{{ $data['counts']['on_hold_by_you'] }}">
+                                            <div class="card-body">
+                                                <h6 class="small">🕓 On Hold by You</h6>
+                                                <div class="kpi-value">{{ $data['counts']['on_hold_by_you'] }}</div>
+                                                <span class="kpi-trend-neutral">—</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                                    <a href="#" class="text-decoration-none kpi-link" data-kpi="approved_by_you">
+                                        <div class="card kpi-card clickable" data-kpi="approved_by_you" data-count="{{ $data['counts']['approved_by_you'] }}">
+                                            <div class="card-body">
+                                                <h6 class="small">✅ Approved by You</h6>
+                                                <div class="kpi-value">{{ $data['counts']['approved_by_you'] }}</div>
+                                                <span class="kpi-trend-up">🔼 {{ $data['kpi_trends']['approved_by_you'] ?? 0 }}%</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                                    <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected_by_you">
+                                        <div class="card kpi-card clickable" data-kpi="rejected_by_you" data-count="{{ $data['counts']['rejected_by_you'] }}">
+                                            <div class="card-body">
+                                                <h6 class="small">❌ Rejected by You</h6>
+                                                <div class="kpi-value">{{ $data['counts']['rejected_by_you'] }}</div>
+                                                <span class="kpi-trend-down">🔽 {{ $data['kpi_trends']['rejected_by_you'] ?? 0 }}%</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="col-6 col-md-3 col-lg-2">
+                                    <a href="#" class="text-decoration-none kpi-link" data-kpi="reverted_by_you">
+                                        <div class="card kpi-card clickable" data-kpi="reverted_by_you" data-count="{{ $data['counts']['reverted_by_you'] }}">
+                                            <div class="card-body">
+                                                <h6 class="small">🔁 Reverted by You</h6>
+                                                <div class="kpi-value">{{ $data['counts']['reverted_by_you'] }}</div>
+                                                <span class="kpi-trend-up">🔼 {{ $data['kpi_trends']['reverted_by_you'] ?? 0 }}%</span>
+                                            </div>
+                                        </div>
+                                    </a>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-  
-@else
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
+        @endif
+    @endif
+
+    {{-- Main Content --}}
+    <div class="row mb-1">
+        <div class="col-12">
             <div class="card">
-                <div class="card-header">Welcome Home</div>
-                <div class="card-body">
-                    <p>Now you can fill your vendor registration form</p>
-                    {{--<a href="{{ url('/') }}" class="btn btn-primary">Return Home</a>--}}
+                
+                <div >
+                    @if($showAdminDashboard)
+                        {{-- Admin Table --}}
+                        <div class="card-header d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="header-title mb-0" id="table-title">
+                                @if($viewMode == 'all')
+                                    All Applications (<span id="table-count">{{ $data['counts']['total'] ?? 0 }}</span>)
+                                @else
+                                    Pending Approvals (<span id="table-count">{{ $data['counts']['pending'] ?? 0 }}</span>)
+                                @endif
+                            </h5>
+                        </div>
+                        <div class="card-body" id="main-container">
+                            @if($viewMode == 'all')
+                                @if (isset($masterReportApplications) && $masterReportApplications->isEmpty())
+                                    <div class="no-data-message">No applications found.</div>
+                                @else
+                                    <div class="table-responsive">
+                                        <table class="table table-sm compact-table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Application ID</th>
+                                                    <th>Distributor Name</th>
+                                                    <th>Territory</th>
+                                                    <th>Region</th>
+                                                    <th>Initiator</th>
+                                                    <th>Stage</th>
+                                                    <th>Status</th>
+                                                    <th>Submission Date</th>
+                                                    <th>Approval Date</th>
+                                                    <th>Final Appointment Date</th>
+                                                    <th>TAT (Days)</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse ($masterReportApplications as $application)
+                                                <tr>
+                                                    <td>
+                                                        <div class="app-id-with-toggle">
+                                                            <button class="toggle-timeline" 
+                                                                    data-application-id="{{ $application->id }}"
+                                                                    title="Show Approval Timeline">
+                                                                <i class="ri-add-circle-line"></i>
+                                                            </button>
+                                                            <span>{{ $application->id }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
+                                                    <td>{{ $application->territoryDetail->territory_name ?? 'N/A' }}</td>
+                                                    <td>{{ $application->regionDetail->region_name ?? 'N/A' }}</td>
+                                                    <td>{{ $application->createdBy->emp_name ?? 'Unknown' }} ({{ $application->createdBy->emp_designation ?? 'N/A' }})</td>
+                                                    <td>{{ ucfirst($application->approval_level ?? 'N/A') }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ $application->status_badge ?? 'secondary' }}">
+                                                            {{ ucwords(str_replace('_', ' ', $application->status ?? 'N/A')) }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ $application->created_at->format('d M Y') }}</td>
+                                                    <td>
+                                                        @php
+                                                            $approvalLog = $application->approvalLogs->where('action', 'approved')->sortByDesc('created_at')->first();
+                                                        @endphp
+                                                        {{ $approvalLog ? $approvalLog->created_at->format('d M Y') : 'N/A' }}
+                                                    </td>
+                                                    <td>
+                                                        {{ in_array($application->status, explode(',', $statusGroups['completed']['slugs'] ?? '')) ? $application->updated_at->format('d M Y') : 'N/A' }}
+                                                    </td>
+                                                    <td>
+                                                        {{ in_array($application->status, explode(',', $statusGroups['completed']['slugs'] ?? '')) ? $application->created_at->diffInDays($application->updated_at) : 'N/A' }}
+                                                    </td>
+                                                    <td>
+                                                        <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" title="View">
+                                                            <i class="ri-eye-line"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                <tr class="timeline-row" id="timeline-{{ $application->id }}">
+                                                    <td colspan="12" class="p-3">
+                                                        @php
+                                                            $approvalLevels = [
+                                                                'Draft/Initiated' => null,
+                                                                'Area Coordinator' => null,
+                                                                'Regional Business Manager' => null,
+                                                                'Zonal Business Manager' => null,
+                                                                'General Manager' => null,
+                                                                'MIS' => null,
+                                                            ];
+
+                                                            foreach ($application->approvalLogs as $log) {
+                                                                if ($log->role == 'Executive' && is_null($approvalLevels['Area Coordinator'])) {
+                                                                    $approvalLevels['Area Coordinator'] = $log;
+                                                                } elseif ($log->role == 'Assistant Manager' && is_null($approvalLevels['Regional Business Manager'])) {
+                                                                    $approvalLevels['Regional Business Manager'] = $log;
+                                                                } elseif ($log->role == 'Manager' && is_null($approvalLevels['Zonal Business Manager'])) {
+                                                                    $approvalLevels['Zonal Business Manager'] = $log;
+                                                                } elseif ($log->role == 'General Manager' && is_null($approvalLevels['General Manager'])) {
+                                                                    $approvalLevels['General Manager'] = $log;
+                                                                } elseif ($log->role == 'MIS' && is_null($approvalLevels['MIS'])) {
+                                                                    $approvalLevels['MIS'] = $log;
+                                                                }
+                                                            }
+
+                                                            $stages = [
+                                                                [
+                                                                    'label' => 'Draft/Initiated',
+                                                                    'log' => $approvalLevels['Draft/Initiated'],
+                                                                    'status' => in_array($application->status, ['draft', 'initiated']) ? 'pending' : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) ? 'approved' : 'not-started'),
+                                                                    'date' => in_array($application->status, ['draft', 'initiated']) ? $application->created_at->format('d M Y') : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) ? $application->created_at->format('d M Y') : '-'),
+                                                                    'remarks' => $approvalLevels['Draft/Initiated'] ? $approvalLevels['Draft/Initiated']->remarks : '-',
+                                                                    'icon' => 'ri-draft-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'ABM',
+                                                                    'log' => $approvalLevels['Area Coordinator'],
+                                                                    'status' => $approvalLevels['Area Coordinator'] ? $approvalLevels['Area Coordinator']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) || in_array($application->approval_level, ['Regional Business Manager', 'Zonal Business Manager', 'General Manager']) ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['Area Coordinator'] ? $approvalLevels['Area Coordinator']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['Area Coordinator'] ? $approvalLevels['Area Coordinator']->remarks : '-',
+                                                                    'icon' => 'ri-user-2-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'RBM',
+                                                                    'log' => $approvalLevels['Regional Business Manager'],
+                                                                    'status' => $approvalLevels['Regional Business Manager'] ? $approvalLevels['Regional Business Manager']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) || in_array($application->approval_level, ['Zonal Business Manager', 'General Manager']) ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['Regional Business Manager'] ? $approvalLevels['Regional Business Manager']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['Regional Business Manager'] ? $approvalLevels['Regional Business Manager']->remarks : '-',
+                                                                    'icon' => 'ri-user-3-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'ZBM',
+                                                                    'log' => $approvalLevels['Zonal Business Manager'],
+                                                                    'status' => $approvalLevels['Zonal Business Manager'] ? $approvalLevels['Zonal Business Manager']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) || $application->approval_level == 'General Manager' ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['Zonal Business Manager'] ? $approvalLevels['Zonal Business Manager']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['Zonal Business Manager'] ? $approvalLevels['Zonal Business Manager']->remarks : '-',
+                                                                    'icon' => 'ri-user-4-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'GM',
+                                                                    'log' => $approvalLevels['General Manager'],
+                                                                    'status' => $approvalLevels['General Manager'] ? $approvalLevels['General Manager']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['General Manager'] ? $approvalLevels['General Manager']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['General Manager'] ? $approvalLevels['General Manager']->remarks : '-',
+                                                                    'icon' => 'ri-user-5-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'MIS',
+                                                                    'log' => $approvalLevels['MIS'],
+                                                                    'status' => in_array($application->status, $misSlugs) ? 'pending' : (in_array($application->status, $completionSlugs) ? 'approved' : (in_array($application->status, $rejectionSlugs) ? 'rejected' : 'not-started')),
+                                                                    'date' => in_array($application->status, array_merge($misSlugs, $completionSlugs, $rejectionSlugs)) ? $application->updated_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['MIS'] ? $approvalLevels['MIS']->remarks : '-',
+                                                                    'icon' => 'ri-file-text-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'Final',
+                                                                    'log' => null,
+                                                                    'status' => in_array($application->status, $completionSlugs) ? 'approved' : 'not-started',
+                                                                    'date' => in_array($application->status, $completionSlugs) ? $application->updated_at->format('d M Y') : '-',
+                                                                    'remarks' => '-',
+                                                                    'icon' => 'ri-checkbox-circle-fill'
+                                                                ]
+                                                            ];
+                                                        @endphp
+                                                        <div class="timeline-container d-flex flex-row align-items-center justify-content-start p-3 overflow-x-auto overflow-y-hidden bg-light rounded">
+                                                            @foreach($stages as $stage)
+                                                            <div class="timeline-item text-center px-2">
+                                                                <i class="{{ $stage['icon'] }} mb-2 {{ $stage['status'] == 'approved' ? 'text-success' : ($stage['status'] == 'rejected' ? 'text-danger' : ($stage['status'] == 'pending' ? 'text-warning' : 'text-muted')) }}"
+                                                                    title="{{ $stage['label'] }} - {{ ucfirst($stage['status']) }}"
+                                                                    style="font-size: 1.2rem;"></i>
+                                                                <div class="timeline-stage-info">
+                                                                    <strong class="small">{{ $stage['label'] }}</strong><br>
+                                                                    <span class="badge bg-{{ $stage['status'] == 'approved' ? 'success' : ($stage['status'] == 'rejected' ? 'danger' : ($stage['status'] == 'pending' ? 'warning' : 'secondary')) }}">
+                                                                        {{ ucfirst($stage['status']) }}
+                                                                    </span><br>
+                                                                    <small class="text-muted"><strong>Date:</strong> {{ $stage['date'] }}</small><br>
+                                                                    <small class="text-muted"><strong>Remarks:</strong> {{ $stage['remarks'] }}</small>
+                                                                </div>
+                                                            </div>
+                                                            @if(!$loop->last)
+                                                            <div class="arrow px-2 d-flex align-items-center">
+                                                                <span style="font-size: 1.2rem; color: #6c757d;">→</span>
+                                                            </div>
+                                                            @endif
+                                                            @endforeach
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                @empty
+                                                <tr>
+                                                    <td colspan="12" class="text-center no-data-message">No applications found based on current filters.</td>
+                                                </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                        {{ $masterReportApplications->links() }}
+                                    </div>
+                                @endif
+                            @else
+                                @if (isset($pendingApplications) && $pendingApplications->isEmpty())
+                                    <div class="no-data-message">No applications pending your approval.</div>
+                                @else
+                                    @include('dashboard._approver-table', ['pendingApplications' => $pendingApplications ?? collect()])
+                                @endif
+                            @endif
+                        </div>
+                    @elseif($showApproverDashboard)
+                        {{-- Approver Table --}}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="header-title mb-0" id="approver-table-title">
+                                📂 Pending Forms Assigned to You (<span id="approver-table-count">{{ $data['counts']['pending_your_approval'] ?? 0 }}</span>)
+                            </h5>
+                        </div>
+                        <div id="approver-pending-container">
+                            @if (isset($approverPendingApplications) && $approverPendingApplications->isEmpty())
+                                <div class="no-data-message">No pending forms assigned to you.</div>
+                            @else
+                                @include('dashboard._approver-pending-table', ['approverPendingApplications' => $approverPendingApplications ?? collect()])
+                            @endif
+                        </div>
+                    @elseif($showMisDashboard)
+                        {{-- MIS Table --}}
+                        <div class="card-header">
+                            <h5 class="card-title mb-0 float-start">All Application List</h5>
+                             <div class="d-flex justify-content-end align-items-center" style="gap:10px;">
+                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
+                                    <option value="">Select Status</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                </select>
+                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
+                                    <option value="">Select Initiator Role</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                </select>
+                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
+                                    <option value="">Select Approval Stage</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                </select>
+                                <a href="attendance-hr-report.html" class="btn btn-sm btn-light">
+                                        View All
+                                    </a>
+                        </div>
+                        <div class="card-body" id="mis-table-container">
+                            @if (isset($misApplications) && $misApplications->isEmpty())
+                                <div class="no-data-message">No applications found.</div>
+                            @else
+                                @include('dashboard._mis-table', ['misApplications' => $misApplications ?? collect()])
+                            @endif
+                        </div>
+                    @elseif($showSalesDashboard)
+                        {{-- Sales Table --}}
+                        <div class="card-header">
+                             <h5 class="card-title mb-0 float-start">All Application List</h5>
+                             <div class="d-flex justify-content-end align-items-center" style="gap:10px;">
+                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
+                                    <option value="">Select Status</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                </select>
+                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
+                                    <option value="">Select Initiator Role</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                </select>
+                                <select style="width:170px;" id="departmentSelect" class="form-control form-select form-select-sm">
+                                    <option value="">Select Approval Stage</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                    <option value="">w</option>
+                                </select>
+                                <a href="attendance-hr-report.html" class="btn btn-sm btn-light">
+                                        View All
+                                    </a>
+                            </div>
+                        </div>
+                        <div class="card-body" id="sales-table-container">
+                            @if (isset($myApplications) && $myApplications->isEmpty())
+                                <div class="no-data-message">No applications created by you.</div>
+                            @else
+                                @include('dashboard._sales-table', ['myApplications' => $myApplications ?? collect()])
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
-</div>
+@else
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">Welcome Home</div>
+                    <div class="card-body">
+                        <p>Now you are logged in!!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 @endif
 
-
+<!-- Toast Container for Notifications -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+    <div id="actionToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body">
+                <strong id="toast-title"></strong>
+                <div id="toast-message"></div>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
 @endsection
+
 @push('scripts')
 <script>
+let chartInstances = {};
+
+const formsStatusData = {!! json_encode($chartData['forms_status'] ?? (object)[]) !!};
+const formsReceivedData = {!! json_encode($chartData['forms_received'] ?? (object)[]) !!};
+const approvalStatusData = {!! json_encode($chartData['approval_status'] ?? (object)[]) !!};
+const initiatorData = {!! json_encode($chartData['initiator_status'] ?? (object)[]) !!};
+
+console.log({
+    formsStatusData,
+    formsReceivedData,
+    approvalStatusData,
+    initiatorData
+});
+
+document.addEventListener('DOMContentLoaded', initializeCharts);
+
+
+// Function to update charts with new data
+function updateCharts(chartData) {
+    if (!chartData) return;
+
+    console.log('Updating charts with data:', chartData);
+
+    // Update Forms Status Chart
+    if (chartInstances.formsChart) {
+        chartInstances.formsChart.data.labels = Object.keys(chartData.forms_status || {});
+        chartInstances.formsChart.data.datasets[0].data = Object.values(chartData.forms_status || {});
+        chartInstances.formsChart.update();
+        // Update title
+        $('.chart-card:has(#formsChart) .chart-title').text(`Total Forms Submitted: ${chartData.total_forms_submitted || 0}`);
+    }
+
+    // Update Forms Received Chart
+    if (chartInstances.formsChart1) {
+        chartInstances.formsChart1.data.labels = chartData.forms_received?.labels || [];
+        chartInstances.formsChart1.data.datasets[0].data = chartData.forms_received?.approval || [];
+        chartInstances.formsChart1.data.datasets[1].data = chartData.forms_received?.pending || [];
+        chartInstances.formsChart1.update();
+        // Update title
+        $('.chart-card:has(#formsChart1) .chart-title').text(`Forms Received from Sales: ${chartData.forms_received_from_sales || 0}`);
+    }
+
+    // Update Approval Status Chart
+    if (chartInstances.formsChart3) {
+        chartInstances.formsChart3.data.labels = Object.keys(chartData.approval_status || {});
+        chartInstances.formsChart3.data.datasets[0].data = Object.values(chartData.approval_status || {});
+        chartInstances.formsChart3.update();
+    }
+
+    // Update Initiator Status Chart
+    if (chartInstances.formsChart4) {
+        chartInstances.formsChart4.data.labels = Object.keys(chartData.initiator_status || {});
+        chartInstances.formsChart4.data.datasets[0].data = Object.values(chartData.initiator_status || {}).map(item => item.approval || 0);
+        chartInstances.formsChart4.data.datasets[1].data = Object.values(chartData.initiator_status || {}).map(item => item.pending || 0);
+        chartInstances.formsChart4.update();
+    }
+
+    // Update Zone Data
+    updateZoneData(chartData.zone_data || {});
+}
+
+// Function to update zone list dynamically
+function updateZoneData(zoneData) {
+    const zoneList = $('.zone-list');
+    zoneList.empty();
+    
+    Object.entries(zoneData).forEach(([zoneName, zoneInfo]) => {
+        const zoneHtml = `
+            <li>
+                <div class="float-start">
+                    <img class="zone-img" src="">
+                </div>
+                <div class="float-start">
+                    <b>${zoneInfo.total || 0}</b><br>
+                    <span>Verify: ${zoneInfo.verify || 0}</span>
+                </div>
+                <div class="float-end">
+                    <b class="text-success">${zoneName}</b><br>
+                    <span>Pending: ${zoneInfo.pending || 0}</span>
+                </div>
+            </li>
+        `;
+        zoneList.append(zoneHtml);
+    });
+}
+
+// Initialize charts on page load
+function initializeCharts() {
+     // Destroy existing charts before reinitializing
+    if (Object.keys(chartInstances).length > 0) {
+    Object.keys(chartInstances).forEach(key => {
+        if (chartInstances[key]) {
+            chartInstances[key].destroy();
+            chartInstances[key] = null;
+        }
+    });
+}
+    // Forms Status Chart
+    const ctx = document.getElementById('formsChart');
+    if (ctx) {
+        chartInstances.formsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(formsStatusData),
+                datasets: [{
+                    data: Object.values(formsStatusData),
+                    backgroundColor: 'rgba(100, 150, 150, 0.6)',
+                    borderRadius: 5,
+                    barThickness: 35
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'start',
+                        color: '#000',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: Math.round
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, border: { display: true } },
+                    x: { 
+                        grid: { display: false }, 
+                        border: { display: true },
+                        ticks: { font: { size: 11 }, maxRotation: 45, minRotation: 45 }
+                    }
+                },
+                animation: { duration: 800 }
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    // Forms Received Chart
+    const ctx2 = document.getElementById('formsChart1');
+    if (ctx2) {
+        chartInstances.formsChart1 = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: formsReceivedData.labels || [],
+                datasets: [
+                    {
+                        label: 'Approval',
+                        data: formsReceivedData.approval || [],
+                        backgroundColor: 'rgba(100, 150, 150, 0.6)',
+                        borderRadius: 5,
+                        barThickness: 30
+                    },
+                    {
+                        label: 'Pending',
+                        data: formsReceivedData.pending || [],
+                        backgroundColor: 'rgba(230, 200, 80, 0.8)',
+                        borderRadius: 5,
+                        barThickness: 30
+                    }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { usePointStyle: true } },
+                    tooltip: { enabled: true },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'start',
+                        color: '#000',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (value) => value.toString().padStart(2, '0')
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, border: { display: true } },
+                    x: { grid: { display: false }, border: { display: true }, ticks: { font: { size: 11 } } }
+                },
+                animation: { duration: 800 },
+                responsive: true,
+                maintainAspectRatio: false
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    // Approval Status Chart
+    const ctx3 = document.getElementById('formsChart3');
+    if (ctx3) {
+        chartInstances.formsChart3 = new Chart(ctx3, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(approvalStatusData),
+                datasets: [{
+                    data: Object.values(approvalStatusData),
+                    backgroundColor: 'rgba(100, 150, 150, 0.6)',
+                    borderRadius: 5,
+                    barThickness: 35
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { enabled: true },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'start',
+                        color: '#000',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: Math.round
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, border: { display: true } },
+                    x: { 
+                        grid: { display: false }, 
+                        border: { display: true },
+                        ticks: { font: { size: 11 }, maxRotation: 45, minRotation: 45 }
+                    }
+                },
+                animation: { duration: 800 }
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+
+    // Initiator Status Chart
+    const ctx4 = document.getElementById('formsChart4');
+    if (ctx4) {
+        chartInstances.formsChart4 = new Chart(ctx4, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(initiatorData),
+                datasets: [
+                    {
+                        label: 'Approval',
+                        data: Object.values(initiatorData).map(item => item.approval || 0),
+                        backgroundColor: 'rgba(100, 150, 150, 0.6)',
+                        borderRadius: 5,
+                        barThickness: 30
+                    },
+                    {
+                        label: 'Pending',
+                        data: Object.values(initiatorData).map(item => item.pending || 0),
+                        backgroundColor: 'rgba(230, 200, 80, 0.8)',
+                        borderRadius: 5,
+                        barThickness: 30
+                    }
+                ]
+            },
+            options: {
+                plugins: {
+                    legend: { display: true, position: 'bottom', labels: { usePointStyle: true } },
+                    tooltip: { enabled: true },
+                    datalabels: {
+                        anchor: 'end',
+                        align: 'start',
+                        color: '#000',
+                        font: { weight: 'bold', size: 12 },
+                        formatter: (value) => value.toString().padStart(2, '0')
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: false }, border: { display: true } },
+                    x: { grid: { display: false }, border: { display: true }, ticks: { font: { size: 11 } } }
+                },
+                animation: { duration: 800 },
+                responsive: true,
+                maintainAspectRatio: false
+            },
+            plugins: [ChartDataLabels]
+        });
+    }
+}
+
     const loader = $("#elmLoader");
-    let isUpdating = false; // Flag to prevent concurrent updates
+    let isUpdating = false;
+    const isMisUser = {{ $showMisDashboard ? 'true' : 'false' }};
+    const isSalesUser = {{ $showSalesDashboard ? 'true' : 'false' }};
+    const isApproverUser = {{ $showApproverDashboard ? 'true' : 'false' }};
+    const formId = isMisUser ? '#mis-filter-form' : (isApproverUser ? '#approver-filter-form' : (isSalesUser ? '#sales-filter-form' : '#filter-form'));
+    const updateFunction = isMisUser ? updateMISDashboard : (isApproverUser ? updateApproverDashboard : (isSalesUser ? updateSalesDashboard : updateDashboard));
+    const hasTabs = false; // No tabs anymore
+
+    // Dynamic status data
+    let statusGroups = @json($statusGroups ?? []);
+    let kpiStatusMappings = @json($kpiStatusMappings ?? []);
 
     $(document).ready(function() {
-        $('[data-bs-toggle="tooltip"]').tooltip();
+        // Initialize Select2 for all filter dropdowns
+        $(`${formId} select`).select2({
+            width: '100%',
+            minimumResultsForSearch: 10,
+            placeholder: "Select an option",
+            allowClear: true
+        });
 
         // Handle filter changes with debounce
         let debounceTimer;
-        $('#filter-form select, #filter-form input').on('change', function() {
+        $(`${formId} select, ${formId} input`).on('change', function() {
             clearTimeout(debounceTimer);
             debounceTimer = setTimeout(() => {
-                if (!isUpdating) updateDashboard();
+                updateFunction();
             }, 300);
         });
 
         // Prevent form submission on Enter key
-        $('#filter-form').on('submit', function(e) {
+        $(`${formId}`).on('submit', function(e) {
             e.preventDefault();
-            if (!isUpdating) updateDashboard();
+            if (!isUpdating) updateFunction();
         });
 
         // Initial load
-        updateDashboard();
+        updateFunction();
 
-        // Cascade handlers
+        // Cascade handlers (common for both)
         $("#region").on("change", function() {
             var region = $(this).val();
             getTerritoryByRegion(region);
@@ -839,328 +1733,824 @@
             getZoneByBU(bu);
         });
 
-
-        // Modal handler for all actions
-        const actionMap = {
-            revertModal: {
-                form: '#revert-form',
-                input: '#revert_application_id',
-                action: 'revert'
-            },
-            holdModal: {
-                form: '#hold-form',
-                input: '#hold_application_id',
-                action: 'hold'
-            },
-            rejectModal: {
-                form: '#reject-form',
-                input: '#reject_application_id',
-                action: 'reject'
-            },
-            approveModal: {
-                form: '#approve-form',
-                input: '#approve_application_id',
-                action: 'approve'
-            }
-        };
-
-        $(document).on('show.bs.modal', '.action-modal', function(event) {
-            const button = $(event.relatedTarget);
-            const applicationId = button.data('application-id');
-            const modalId = $(this).attr('id');
-            const config = actionMap[modalId];
-
-            console.log('Modal opened:', modalId);
-            console.log('Button data:', button.data());
-            console.log('Application ID:', applicationId);
-            console.log('Config:', config);
-
-            if (config) {
-                $(config.input).val(applicationId);
-                const url = `{{ url('approvals') }}/${applicationId}/${config.action}`;
-                $(config.form).attr('action', url);
-                console.log('Form action set to:', url);
-                console.log('Application ID input set to:', $(config.input).val());
-            } else {
-                console.error('No config found for modal:', modalId);
-            }
+        // Additional cascade for approver filters if needed
+        @if($showApproverDashboard)
+        $("#initiated_by_role").on("change", function() {
+            updateApproverDashboard();
         });
-
-        // Disable submit buttons on form submit
-        $('#revert-form, #hold-form, #reject-form, #approve-form').on('submit', function() {
-            $(this).find('button[type="submit"]').prop('disabled', true).text('Processing...');
-            $(this).find('.btn-close').prop('disabled', true);
+        $("#status").on("change", function() {
+            updateApproverDashboard();
         });
+        @endif
 
-        // Expandable panel for MIS table rows
+        // Expandable panel for tables
         $(document).on('click', '.expandable-panel', function() {
             $(this).next('.panel-content').toggle();
         });
+
+        // Handle Select2 open event
+        $('.select2-container').on('select2:open', function() {
+            $('.select2-dropdown').css('z-index', 10000);
+        });
+
+        // Initialize modal, toast, and KPI clicks
+        initializeModalListeners();
+        initializeToast();
+        initializeKpiClicks();
+        initializeAllFeatures();
     });
 
-    function updateDashboard() {
-        if (isUpdating) return; // Prevent concurrent calls
+    // Unified update function wrapper
+    function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'approver' : (isSalesUser ? 'sales' : 'regular'))) {
+        if (isUpdating) return;
         isUpdating = true;
-        const formData = $('#filter-form').serialize();
+        let formData = $(formId).serialize();
+        if (!isSalesUser && !isMisUser && !isApproverUser) {
+            const viewMode = $('#view_mode').val() || 'pending';
+            formData += '&view_mode=' + viewMode;
+        }
         $.ajax({
             url: "{{ route('dashboard.dynamic-data') }}",
             type: 'GET',
-            data: formData,
+            data: formData + (dashboardType === 'approver' ? '&dashboard_type=approver' : (dashboardType === 'mis' ? '&dashboard_type=mis' : (dashboardType === 'sales' ? '&dashboard_type=sales' : ''))),
             dataType: 'json',
             beforeSend: function() {
                 loader.removeClass('d-none');
             },
             success: function(data) {
                 loader.addClass('d-none');
-                console.log("Received data:", data); // Debugging line
+                console.log(`Received ${dashboardType} data:`, data);
 
-                if (!data || !data.counts || !data.tat || !data.kpi_trends) {
+                if (!data) {
                     console.error('Invalid response structure:', data);
-                    $('#kpi-container').html('<div class="col-12 no-data-message">Error: Incomplete data structure from server.</div>');
-                    $('#tat-table-body').html('<tr><td colspan="4" class="no-data-message">No TAT data available.</td></tr>');
-                    $('#master-table-container').html('<div class="no-data-message">No applications found.</div>');
+                    const containerId = isApproverUser ? '#approver-pending-container' : (isMisUser ? '#mis-table-container' : (isSalesUser ? '#sales-table-container' : '#main-container'));
+                    $(containerId).html('<div class="col-12 no-data-message">Error: Incomplete data structure from server.</div>');
                     isUpdating = false;
                     return;
                 }
 
-                // Update KPI values dynamically
-                const kpiContainer = $('#kpi-container');
-                if (data.counts.total === 0) {
-                    kpiContainer.html('<div class="col-12 no-data-message text-center">No applications found based on current filters.</div>');
-                } else {
-                    kpiContainer.html(`
-                    <div class="col-xl-3 col-md-6">    
-                        <div class="card card-animate mb-3">
-                            <div class="py-4 px-3">
-                                <h5 class="text-muted text-uppercase fs-13">Total Forms <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"> <span id="kpi-trend-total-submitted"> ${data.kpi_trends.total_submitted || 0}%</span></i> </h5>
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <i style="font-size:28px;" class="ri-file-text-line display-6 text-muted cfs-22"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $data['counts']['total'] }}" id="kpi-total-submitted">${data.counts.total || 0}</span></h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-md-6">    
-                        <div class="card card-animate mb-3">
-                            <div class="mt-3 mt-md-0 py-4 px-3">
-                                <h5 class="text-muted text-uppercase fs-13">Avg. TAT <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-avg-tat">${data.kpi_trends.avg_tat || 0} Days</span></i></h5>
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <i style="font-size:28px;" class="ri-exchange-dollar-line display-6 text-muted cfs-22"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="{{ $tatData['total']['avg_tat'] }}"  id="kpi-avg-tat">${data.tat.total?.avg_tat || 0} Days</span></h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        </div><!-- end col -->
-                    <div class="col-xl-3 col-md-6">    
-                        <div class="card card-animate mb-3">
-                            <div class="mt-3 mt-md-0 py-4 px-3">
-                                <h5 class="text-muted text-uppercase fs-13">Appointments <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-trend-appointments-completed">${data.kpi_trends.appointments_completed || 0}%</span></i></h5>
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <i style="font-size:28px;" class="ri-file-user-line display-6 text-muted cfs-22"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="32.89" id="kpi-appointments-completed">${data.counts.distributors_created || 0}</h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div><!-- end col -->
-                        <div class="col-xl-3 col-md-6">    
-                        <div class="card card-animate mb-3">
-                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                <h5 class="text-muted text-uppercase fs-13">In Process <i class="ri-arrow-up-circle-line text-success fs-18 float-end align-middle"><span id="kpi-trend-in-process">—</span></i></h5>
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <i style="font-size:28px;" class="ri-loader-4-line display-6 text-muted cfs-22"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="${data.counts.in_process || 0}" id="kpi-in-process">${data.counts.in_process || 0}</span></h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        </div><!-- end col -->
-                        <div class="col-xl-3 col-md-6">    
-                        <div class="card card-animate mb-3">
-                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                <h5 class="text-muted text-uppercase fs-13">Reverted <i class="ri-arrow-down-circle-line text-success fs-18 float-end align-middle"><span id="kpi-reverted"> ${data.counts.reverted || 0}</span></i></h5>
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <i style="font-size:28px;" class="ri-device-recover-line display-6 text-muted cfs-22"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="${data.kpi_trends.reverted || 0}" id="kpi-trend-reverted"> ${data.kpi_trends.reverted || 0}</span></h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        </div><!-- end col -->
-                        <div class="col-xl-3 col-md-6">    
-                        <div class="card card-animate mb-3">
-                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                <h5 class="text-muted text-uppercase fs-13">Rejected <i class="ri-arrow-down-circle-line text-danger fs-18 float-end align-middle"> <span id="kpi-rejected">${data.counts.rejected || 0}</span></i></h5>
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <i style="font-size:28px;" class="ri-close-circle-line display-6 text-muted cfs-22"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h2 class="mb-0 cfs-22"><span style="font-size:20px;" class="counter-value" data-target="${data.kpi_trends.rejected || 0}" id="kpi-trend-rejected"> ${data.kpi_trends.rejected || 0}</span></h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        </div><!-- end col -->
-                        <div class="col-xl-3 col-md-6">    
-                        <div class="card card-animate mb-3">
-                            <div class="mt-3 mt-lg-0 py-4 px-3">
-                                <h5 class="text-muted text-uppercase fs-13">To MIS <i class="ri-arrow-down-circle-line text-success fs-18 float-end align-middle"> <span  id="kpi-trend-forwarded-to-mis"> ${data.kpi_trends.forwarded_to_mis || 0}%</span></i></h5>
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-shrink-0">
-                                        <i style="font-size:28px;" class="ri-service-line display-6 text-muted cfs-22"></i>
-                                    </div>
-                                    <div class="flex-grow-1 ms-3">
-                                        <h2 class="mb-0 cfs-22 "><span style="font-size:20px;" class="counter-value" data-target="${data.counts.forwarded_to_mis || 0}" id="kpi-forwarded-to-mis"> ${data.counts.forwarded_to_mis || 0}</span></h2>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        </div><!-- end col -->
-                     
-                        <!--<div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="card kpi-card">
-                                <div class="card-body">
-                                    <h6 class="small">Avg. TAT</h6>
-                                    <div class="kpi-value" id="kpi-avg-tat">${data.tat.total?.avg_tat || 0} Days</div>
-                                    <span class="kpi-trend-down" id="kpi-trend-avg-tat">⏬ ${data.kpi_trends.avg_tat || 0} Days</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="card kpi-card">
-                                <div class="card-body">
-                                    <h6 class="small">Appointments</h6>
-                                    <div class="kpi-value" id="kpi-appointments-completed">${data.counts.distributors_created || 0}</div>
-                                    <span class="kpi-trend-up" id="kpi-trend-appointments-completed">🔼 ${data.kpi_trends.appointments_completed || 0}%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="card kpi-card">
-                                <div class="card-body">
-                                    <h6 class="small">In Process</h6>
-                                    <div class="kpi-value" id="kpi-in-process">${data.counts.in_process || 0}</div>
-                                    <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="card kpi-card">
-                                <div class="card-body">
-                                    <h6 class="small">Reverted</h6>
-                                    <div class="kpi-value" id="kpi-reverted">${data.counts.reverted || 0}</div>
-                                    <span class="kpi-trend-up" id="kpi-trend-reverted">🔼 ${data.kpi_trends.reverted || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="card kpi-card">
-                                <div class="card-body">
-                                    <h6 class="small">Rejected</h6>
-                                    <div class="kpi-value" id="kpi-rejected">${data.counts.rejected || 0}</div>
-                                    <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 ${data.kpi_trends.rejected || 0}</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-sm-4 col-md-3 col-lg-2">
-                            <div class="card kpi-card">
-                                <div class="card-body">
-                                    <h6 class="small">To MIS</h6>
-                                    <div class="kpi-value" id="kpi-forwarded-to-mis">${data.counts.forwarded_to_mis || 0}</div>
-                                    <span class="kpi-trend-up" id="kpi-trend-forwarded-to-mis">🔼 ${data.kpi_trends.forwarded_to_mis || 0}%</span>
-                                </div>
-                            </div>
-                        </div>-->
-                    `);
+                // Update dynamic status data if available
+                if (data.statusGroups) {
+                    statusGroups = data.statusGroups;
+                }
+                if (data.kpiStatusMappings) {
+                    kpiStatusMappings = data.kpiStatusMappings;
                 }
 
-                // Update tab counts
-                $('#tab-pending-count').text(data.counts.pending || 0);
-                $('#tab-my-count').text(data.counts.my || 0);
-                $('#tab-master-count').text(data.counts.total || 0);
-                @if(Auth::check() && Auth::user()->employee && Auth::user()->employee->isMisTeam())
-                $('#tab-mis-count').text(data.counts.mis || 0);
-                @endif
-
-                // Update TAT table
-                const tatTableBody = $('#tat-table-body');
-                if (data.tat.total.avg_tat === 0 && data.tat.total.max_tat === 0) {
-                    tatTableBody.html('<tr><td colspan="4" class="no-data-message">No TAT data available.</td></tr>');
-                } else {
-                    tatTableBody.html(`
-                        <tr>
-                            <td>Sub → RBM</td>
-                            <td id="tat-submission-to-rbm-avg">${data.tat.submission_to_rbm?.avg_tat || 0} Days</td>
-                            <td id="tat-submission-to-rbm-max">${data.tat.submission_to_rbm?.max_tat || 0} Days</td>
-                            <td id="tat-submission-to-rbm-exceeding">${data.tat.submission_to_rbm?.exceeding_sla || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>RBM → ZBM</td>
-                            <td id="tat-rbm-to-zbm-avg">${data.tat.rbm_to_zbm?.avg_tat || 0} Days</td>
-                            <td id="tat-rbm-to-zbm-max">${data.tat.rbm_to_zbm?.max_tat || 0} Days</td>
-                            <td id="tat-rbm-to-zbm-exceeding">${data.tat.rbm_to_zbm?.exceeding_sla || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>ZBM → GM</td>
-                            <td id="tat-zbm-to-gm-avg">${data.tat.zbm_to_gm?.avg_tat || 0} Days</td>
-                            <td id="tat-zbm-to-gm-max">${data.tat.zbm_to_gm?.max_tat || 0} Days</td>
-                            <td id="tat-zbm-to-gm-exceeding">${data.tat.zbm_to_gm?.exceeding_sla || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>GM → MIS</td>
-                            <td id="tat-gm-to-mis-avg">${data.tat.gm_to_mis?.avg_tat || 0} Days</td>
-                            <td id="tat-gm-to-mis-max">${data.tat.gm_to_mis?.max_tat || 0} Days</td>
-                            <td id="tat-gm-to-mis-exceeding">${data.tat.gm_to_mis?.exceeding_sla || 0}</td>
-                        </tr>
-                        <tr>
-                            <td>MIS → Final</td>
-                            <td id="tat-mis-to-final-avg">${data.tat.mis_to_final?.avg_tat || 0} Days</td>
-                            <td id="tat-mis-to-final-max">${data.tat.mis_to_final?.max_tat || 0} Days</td>
-                            <td id="tat-mis-to-final-exceeding">${data.tat.mis_to_final?.exceeding_sla || 0}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Total</strong></td>
-                            <td id="tat-total-avg"><strong>${data.tat.total?.avg_tat || 0} Days</strong></td>
-                            <td id="tat-total-max"><strong>${data.tat.total?.max_tat || 0} Days</strong></td>
-                            <td id="tat-total-exceeding"><strong>${data.tat.total?.exceeding_sla || 0}</strong></td>
-                        </tr>
-                    `);
+                if (data.chart_data) {
+                    updateCharts(data.chart_data);
                 }
 
-                // Update Master Report table
-                $('#master-table-container').html(data.master_table_html || '<div class="no-data-message">No applications found.</div>');
+                // Update KPIs if applicable
+                updateKpiContainer(data, dashboardType);
 
-                // Re-initialize tooltips for newly loaded content
-                $('[data-bs-toggle="tooltip"]').tooltip('dispose'); // Destroy existing tooltips
-                $('[data-bs-toggle="tooltip"]').tooltip(); // Initialize new ones
+                if (isApproverUser) {
+                    // Approver-specific update
+                    if (data.approver_pending_table_html) {
+                        $('#approver-pending-container').html(data.approver_pending_table_html);
+                        setTimeout(initializeAllFeatures, 100);
+                    }
+                    // Update table count
+                    $('#approver-table-count').text(data.counts.pending_your_approval || 0);
+                    setTimeout(() => {
+                        initializeTimelineToggles();
+                    }, 100);
+                } else if (isMisUser) {
+                    // MIS-specific update
+                    if (data.mis_table_html) {
+                        $('#mis-table-container').html(data.mis_table_html);
+                    }
+                } else if (isSalesUser) {
+                    // Sales update
+                    let tableHtml = data.my_table_html || '<div class="no-data-message">No applications created by you.</div>';
+                    const salesTotalCreated = data.sales_counts ? data.sales_counts.total_created || 0 : 0;
+                    $('#sales-table-container').html('<h5 class="header-title mb-0">My Applications (<span id="sales-table-count">' + salesTotalCreated + '</span>)</h5>' + tableHtml);
+                    // Update sales table count
+                    $('#sales-table-count').text(salesTotalCreated);
+                } else {
+                    // Admin updates
+                    let tableHtml;
+                    const viewMode = $('#view_mode').val() || 'pending';
+                    tableHtml = viewMode === 'all' ? (data.master_table_html || '<div class="no-data-message">No applications found.</div>') : (data.pending_table_html || '<div class="no-data-message">No applications pending your approval.</div>');
+                    $('#main-container').html(tableHtml);
+                    // Update table title and count
+                    updateTableTitle($('#view_mode').val() || 'pending', data.counts);
+                }
+
+                // Re-initialize
+                $('[data-bs-toggle="tooltip"]').tooltip('dispose');
+                $('[data-bs-toggle="tooltip"]').tooltip();
+                initializeModalListeners();
+                initializeKpiClicks(); // Re-bind KPI clicks after update
+                initializeAllFeatures();
                 isUpdating = false;
             },
             error: function(xhr) {
                 loader.addClass('d-none');
-                console.error('Error fetching dashboard data:', xhr.responseText);
-                $('#kpi-container').html('<div class="col-12 no-data-message">Error loading data. Please try again.</div>');
-                $('#tat-table-body').html('<tr><td colspan="4" class="no-data-message">Error loading TAT data.</td></tr>');
-                $('#master-table-container').html('<div class="no-data-message">Error loading applications.</div>');
+                console.error(`Error fetching ${dashboardType} data:`, xhr.responseText);
+                const containerId = isApproverUser ? '#approver-pending-container' : (isMisUser ? '#mis-table-container' : (isSalesUser ? '#sales-table-container' : '#main-container'));
+                $(containerId).html('<div class="col-12 no-data-message">Error loading data. Please try again.</div>');
                 isUpdating = false;
             }
+        });
+    }
+
+    function updateDashboard() {
+        unifiedUpdate('regular');
+    }
+
+    function updateApproverDashboard() {
+        unifiedUpdate('approver');
+    }
+
+    function updateMISDashboard() {
+        unifiedUpdate('mis');
+    }
+
+    function updateSalesDashboard() {
+        unifiedUpdate('sales');
+    }
+
+    // Update table title for admin
+    function updateTableTitle(viewMode, counts) {
+        let titleText = '';
+        let count = 0;
+        if (viewMode === 'all') {
+            titleText = 'All Applications';
+            count = counts.total || 0;
+        } else {
+            titleText = 'Pending Approvals';
+            count = counts.pending || 0;
+        }
+        $('#table-title').html(`${titleText} (<span id="table-count">${count}</span>)`);
+    }
+
+    // Update KPI container
+    function updateKpiContainer(data, dashboardType) {
+        let kpiContainerId = 'kpi-container';
+    if (dashboardType === 'approver') {
+        kpiContainerId = 'approver-kpi-container';
+    }
+    const kpiContainer = $('#' + kpiContainerId);
+    let counts = {};
+    let trends = {};
+
+    if (dashboardType === 'approver') {
+        counts = data.counts || {};
+        trends = data.kpi_trends || {};
+        
+        // FIX: Don't return early for approver - check if ALL counts are zero
+        const hasAnyData = Object.values(counts).some(count => count > 0);
+        if (!hasAnyData) {
+            kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
+            return;
+        }
+    } else if (dashboardType === 'regular') {
+        counts = data.counts || {};
+        trends = data.kpi_trends || {};
+        if (counts.total === 0) {
+            kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
+            return;
+        }
+    } else if (dashboardType === 'mis') {
+        counts = data.counts || {};
+        trends = data.kpi_trends || {};
+        if (counts.total === 0) {
+            kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
+            return;
+        }
+    } else if (dashboardType === 'sales') {
+        counts = data.sales_counts || data.counts || {};
+        trends = data.sales_kpi_trends || data.kpi_trends || {};
+        if (counts.total_created === 0) {
+            kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
+            return;
+        }
+    }
+
+        let kpiHtml = '';
+        if (dashboardType === 'approver') {
+        console.log('Rendering Approved KPI with value:', counts.approved_by_you);
+        // Approver KPIs
+        kpiHtml = `
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="pending_your_approval" data-count="${counts.pending_your_approval || 0}">
+                        <div class="card-body">
+                            <h6 class="small">🔍 Forms Pending Your Approval</h6>
+                            <div class="kpi-value">${counts.pending_your_approval || 0}</div>
+                            <span class="kpi-trend-neutral">—</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="on_hold_by_you" data-count="${counts.on_hold_by_you || 0}">
+                        <div class="card-body">
+                            <h6 class="small">🕓 On Hold by You</h6>
+                            <div class="kpi-value">${counts.on_hold_by_you || 0}</div>
+                            <span class="kpi-trend-neutral">—</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="approved_by_you" data-count="${counts.approved_by_you || 0}">
+                        <div class="card-body">
+                            <h6 class="small">✅ Approved by You</h6>
+                            <div class="kpi-value">${counts.approved_by_you || 0}</div>
+                            <span class="kpi-trend-up">🔼 ${trends.approved_by_you || 0}%</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="rejected_by_you" data-count="${counts.rejected_by_you || 0}">
+                        <div class="card-body">
+                            <h6 class="small">❌ Rejected by You</h6>
+                            <div class="kpi-value">${counts.rejected_by_you || 0}</div>
+                            <span class="kpi-trend-down">🔽 ${trends.rejected_by_you || 0}%</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="reverted_by_you" data-count="${counts.reverted_by_you || 0}">
+                        <div class="card-body">
+                            <h6 class="small">🔁 Reverted by You</h6>
+                            <div class="kpi-value">${counts.reverted_by_you || 0}</div>
+                            <span class="kpi-trend-up">🔼 ${trends.reverted_by_you || 0}%</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        `;
+    } else if (dashboardType === 'regular') {
+             kpiHtml = `
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="total" data-count="${counts.total || 0}">
+                        <div class="card-body text-center">
+                            <div class="kpi-value" id="kpi-total-submitted">${counts.total || 0}</div>
+                            <h6 class="text-success"><b>Total Forms</b></h6>
+                            <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up "><i class="ri-arrow-up-line"></i> ${trends.total_submitted || 0}%</span>
+                            
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="appointments" data-count="${counts.distributorship_created || 0}">
+                        <div class="card-body text-center">
+                            
+                            <div class="kpi-value" id="kpi-appointments-completed">${counts.distributorship_created || 0}</div>
+                            <h6 class="text-success"><b>Appointments</b></h6>
+                            <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-appointments-completed"><i class="ri-arrow-up-line"></i> ${trends.appointments_completed || 0}%</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="in_process" data-count="${counts.in_process || 0}">
+                        <div class="card-body text-center">
+                            <div class="kpi-value" id="kpi-in-process">${counts.in_process || 0}</div>
+                            <h6 class="text-warning"><b>In Process</b></h6>
+                            <span class="kpi-trend-neutral badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-in-process">—</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="reverted" data-count="${counts.reverted || 0}">
+                        <div class="card-body text-center">
+                            
+                            <div class="kpi-value" id="kpi-reverted">${counts.reverted || 0}</div>
+                            <h6 class="text-danger"><b>Reverted</b></h6>
+                            <span class="kpi-trend-up badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> ${trends.reverted || 0}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="rejected" data-count="${counts.rejected || 0}">
+                        <div class="card-body text-center">
+                            
+                            <div class="kpi-value" id="kpi-rejected">${counts.rejected || 0}</div>
+                            <h6 class="text-danger"><b>Rejected</b></h6>
+                            <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected || 0}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+                <a href="#" class="text-decoration-none">
+                    <div class="card kpi-card clickable" data-kpi="to_mis" data-count="${counts.forwarded_to_mis || 0}">
+                        <div class="card-body text-center">
+                            
+                            <div class="kpi-value" id="kpi-forwarded-to-mis">${counts.forwarded_to_mis || 0}</div>
+                            <h6 class="text-success"><b>To MIS</b></h6>
+                            <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-forwarded-to-mis"><i class="ri-arrow-up-line"></i> ${trends.forwarded_to_mis || 0}%</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        `;
+           
+        } else if (dashboardType === 'sales') {
+            // Sales KPIs
+            kpiHtml = `
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="total_created" data-count="${counts.total_created || 0}">
+                            <div class="card-body text-center">
+                                
+                                <div class="kpi-value" id="kpi-total-created">${counts.total_created || 0}</div>
+                                <h6 class="text-success"><b>Total Created</b></h6>
+                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-total-created"><i class="ri-arrow-up-line"></i> ${trends.total_created || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="in_approval" data-count="${counts.in_approval || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-in-approval">${counts.in_approval || 0}</div>
+                                <h6 class="text-success"><b>In Approval</b></h6>
+                                <span class="kpi-trend-neutral badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-in-approval">—</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="to_mis" data-count="${counts.to_mis || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-to-mis">${counts.to_mis || 0}</div>
+                                <h6 class="text-success"><b>In MIS</b></h6>
+                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-to-mis"><i class="ri-arrow-up-line"></i> ${trends.to_mis || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="completed" data-count="${counts.completed || 0}">
+                            <div class="card-body text-center">
+                                
+                                <div class="kpi-value" id="kpi-completed">${counts.completed || 0}</div>
+                                <h6 class="text-success"><b>Completed</b></h6>
+                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-completed"><i class="ri-arrow-up-line"></i> ${trends.completed || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="rejected" data-count="${counts.rejected || 0}">
+                            <div class="card-body text-center">
+                                
+                                <div class="kpi-value" id="kpi-rejected">${counts.rejected || 0}</div>
+                                <h6 class="text-danger"><b>Rejected</b></h6>
+                                <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            `;
+        } else {
+            // MIS KPIs
+            kpiHtml = `
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="total" data-count="${counts.total || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-total-submitted">${counts.total || 0}</div>
+                                <h6 class="text-success"><b>Total Forms</b></h6>
+                                <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success mt-2 float-end"><i class="ri-arrow-up-line"></i> ${trends.total_submitted || 0}%</span>
+                                
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <!--<div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="document_verified" data-count="${counts.document_verified || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-document-verified">${counts.document_verified || 0}</div>
+                                <h6 class="text-success">Docs Verified</h6>
+                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-document-verified"><i class="ri-arrow-up-line"></i> ${trends.document_verified || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>-->
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="agreement_created" data-count="${counts.agreement_created || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-agreement-created">${counts.agreement_created || 0}</div>
+                                <h6 class="text-success"><b>Agreements</b></h6>
+                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-agreement-created"><i class="ri-arrow-up-line"></i> ${trends.agreement_created || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="physical_docs_verified" data-count="${counts.physical_docs_verified || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-physical-docs-verified">${counts.physical_docs_verified || 0}</div>
+                                <h6 class="text-success"><b>Physical Docs</b></h6>
+                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-physical-docs-verified"><i class="ri-arrow-up-line"></i> ${trends.physical_docs_verified || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="distributorship_created" data-count="${counts.distributorship_created || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-distributors-created">${counts.distributorship_created || 0}</div>
+                                <h6 class="text-success"><b>Completed</b></h6>
+                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-distributors-created"><i class="ri-arrow-up-line"></i> ${trends.distributorship_created || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="mis_rejected" data-count="${counts.mis_rejected || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-mis-rejected">${counts.mis_rejected || 0}</div>
+                                <h6 class="text-danger"><b>Rejected</b></h6>
+                                <span class="badge bg-danger-subtle text-danger mt-2 float-end kpi-trend-up" id="kpi-trend-mis-rejected"><i class="ri-arrow-down-line"></i> ${trends.mis_rejected || 0}%</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 col-lg-2">
+                    <a href="#" class="text-decoration-none">
+                        <div class="card kpi-card clickable" data-kpi="in_process" data-count="${counts.in_process || 0}">
+                            <div class="card-body text-center">
+                                <div class="kpi-value" id="kpi-in-process">${counts.in_process || 0}</div>
+                                <h6 class="text-warning"><b>In Process</b></h6>
+                                <span class="badge bg-warning-subtle text-warning mt-2 float-end kpi-trend-neutral" id="kpi-trend-in-process">—</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            `;
+        }
+        kpiContainer.html(kpiHtml);
+        initializeKpiClicks();
+    }
+
+    // KPI Click Handlers - Enhanced for all user types including approver
+    function initializeKpiClicks() {
+        $('.kpi-card.clickable').off('click').on('click', function(e) {
+            e.preventDefault();
+            const kpi = $(this).data('kpi');
+            const count = $(this).data('count');
+            
+            console.log('KPI clicked:', kpi, 'Count:', count, 'User type:', isApproverUser ? 'approver' : (isSalesUser ? 'sales' : (isMisUser ? 'mis' : 'admin')));
+            
+            // If count is 0, don't do anything
+            if (count === 0) {
+                console.log('Count is 0, skipping navigation');
+                return;
+            }
+
+            // Get current filters
+            const formData = $(formId).serialize();
+            
+            // Define KPI configurations for different user types
+            const kpiConfigs = {
+                // Approver-specific KPIs
+                'pending_your_approval': {
+                    approver: { status: statusGroups.pending ? statusGroups.pending.slugs : '', label: 'Forms Pending Your Approval' }
+                },
+                'on_hold_by_you': {
+                    approver: { status: statusGroups.hold ? statusGroups.hold.slugs : '', label: 'On Hold by You' }
+                },
+                'approved_by_you': {
+                    approver: { status: statusGroups.approved ? statusGroups.approved.slugs : '', label: 'Approved by You' }
+                },
+                'rejected_by_you': {
+                    approver: { status: statusGroups.rejected ? statusGroups.rejected.slugs : '', label: 'Rejected by You' }
+                },
+                'reverted_by_you': {
+                    approver: { status: statusGroups.reverted ? statusGroups.reverted.slugs : '', label: 'Reverted by You' }
+                },
+                // Sales user specific KPIs
+                'total_created': {
+                    sales: { status: '', label: 'Total Created' }
+                },
+                'in_approval': {
+                    sales: { status: statusGroups.pending ? statusGroups.pending.slugs : '', label: 'In Approval' }
+                },
+                'to_mis': {
+                    sales: { status: statusGroups.mis ? statusGroups.mis.slugs : '', label: 'In MIS' }
+                },
+                'completed': {
+                    sales: { status: statusGroups.completed ? statusGroups.completed.slugs : '', label: 'Completed' }
+                },
+                'rejected': {
+                    sales: { status: statusGroups.rejected ? statusGroups.rejected.slugs : '', label: 'Rejected' }
+                },
+                // MIS user specific KPIs
+                'document_verified': {
+                    mis: { status: kpiStatusMappings.document_verified || 'documents_verified', label: 'Docs Verified' }
+                },
+                'agreement_created': {
+                    mis: { status: kpiStatusMappings.agreement_created || 'agreement_created', label: 'Agreements' }
+                },
+                'physical_docs_verified': {
+                    mis: { status: kpiStatusMappings.physical_docs_verified || 'physical_docs_verified', label: 'Physical Docs' }
+                },
+                'distributorship_created': {
+                    mis: { status: kpiStatusMappings.distributorship_created || 'distributorship_created', label: 'Completed' }
+                },
+                'mis_rejected': {
+                    mis: { status: kpiStatusMappings.mis_rejected || statusGroups.rejected.slugs, label: 'Rejected' }
+                },
+                'in_process': {
+                    mis: { status: kpiStatusMappings.in_process || statusGroups.mis.slugs, label: 'In Process' }
+                },
+                // Admin user specific KPIs
+                'total': {
+                    admin: { status: '', label: 'Total Forms' }
+                },
+                'appointments': {
+                    admin: { status: statusGroups.completed ? statusGroups.completed.slugs : '', label: 'Appointments' }
+                },
+                'in_process_admin': {
+                    admin: { status: statusGroups.pending ? statusGroups.pending.slugs : '', label: 'In Process' }
+                },
+                'reverted': {
+                    admin: { status: statusGroups.reverted ? statusGroups.reverted.slugs : '', label: 'Reverted' }
+                },
+                'rejected_admin': {
+                    admin: { status: statusGroups.rejected ? statusGroups.rejected.slugs : '', label: 'Rejected' }
+                },
+                'to_mis_admin': {
+                    admin: { 
+                        status: statusGroups.mis ? statusGroups.mis.slugs : '', 
+                        label: 'To MIS' 
+                    }
+                },
+                // Fallback mappings for inconsistent KPI names
+                'in_process': {
+                    admin: { status: statusGroups.mis ? statusGroups.mis.slugs : '', label: 'In Process' }
+                },
+                'to_mis': {
+                    admin: { status: statusGroups.mis ? statusGroups.mis.slugs : '', label: 'To MIS' }
+                }
+            };
+
+            // Determine user type
+            let userType;
+            if (isApproverUser) {
+                userType = 'approver';
+            } else if (isSalesUser) {
+                userType = 'sales';
+            } else if (isMisUser) {
+                userType = 'mis';
+            } else {
+                userType = 'admin';
+            }
+
+            // Find configuration
+            let config = kpiConfigs[kpi]?.[userType];
+            if (!config) {
+                config = { status: '', label: kpi };
+            }
+
+            console.log('Using configuration:', config);
+
+            // Build URL with filters
+            let baseUrl;
+            if (isApproverUser) {
+                baseUrl = "{{ route('approver.applications') }}";
+            } else if (isSalesUser) {
+                baseUrl = "{{ route('applications.index') }}";
+            } else if (isMisUser) {
+                baseUrl = "{{ route('mis.applications') }}";
+            } else {
+                baseUrl = "{{ route('approver.applications') }}";
+            }
+
+            // Build query parameters
+            let queryParams = new URLSearchParams(formData);
+            
+            // Add status filter if specified
+            if (config.status) {
+                queryParams.set('status', config.status);
+            }
+            
+            // Add mode for admin users
+            if (!isSalesUser && !isMisUser && !isApproverUser) {
+                queryParams.set('view_mode', 'all');
+            }
+
+            // Add KPI label for reference
+            queryParams.set('kpi_filter', kpi);
+            
+            const url = `${baseUrl}?${queryParams.toString()}`;
+            
+            console.log(`Redirecting to: ${url}`);
+            window.location.href = url;
+        });
+    }
+
+    // Rest of the script (toast, modal, cascade, timeline, dropdowns unchanged)
+    function initializeToast() {
+        const toastEl = document.getElementById('actionToast');
+        return new bootstrap.Toast(toastEl);
+    }
+
+    function showToast(type, message, title = '') {
+        const toastEl = document.getElementById('actionToast');
+        const toastTitle = document.getElementById('toast-title');
+        const toastMessage = document.getElementById('toast-message');
+
+        toastEl.className = `toast align-items-center text-bg-${type === 'error' ? 'danger' : 'success'} border-0`;
+
+        toastTitle.textContent = title || (type === 'error' ? 'Error' : 'Success');
+        toastMessage.textContent = message;
+
+        const toast = initializeToast();
+        toast.show();
+
+        setTimeout(() => {
+            toast.hide();
+        }, 5000);
+    }
+
+    function getActionTitle(action) {
+        const titles = {
+            'approve': 'Application Approved',
+            'reject': 'Application Rejected',
+            'revert': 'Application Reverted',
+            'hold': 'Application On Hold'
+        };
+        return titles[action] || 'Action Completed';
+    }
+
+    function initializeModalListeners() {
+        $(document).off('click', '.take-action-btn');
+        $(document).off('change', '#actionType');
+        $(document).off('submit', '#action-form');
+        $(document).off('hidden.bs.modal', '#actionModal');
+
+        $(document).on('click', '.take-action-btn', function() {
+            const applicationId = $(this).data('application-id');
+            const distributorName = $(this).data('distributor-name') || 'N/A';
+            const submissionDate = $(this).data('submission-date') || 'N/A';
+            const initiator = $(this).data('initiator') || 'N/A';
+            const status = $(this).data('status') || '';
+
+            $('#modal-distributor-name').text(distributorName);
+            $('#modal-submission-date').text(submissionDate);
+            $('#modal-initiator').text(initiator);
+            $('#application_id').val(applicationId);
+            $('#action-form').attr('action', `/approvals/${applicationId}/${status === 'reverted' ? 'edit' : 'approve'}`);
+            $('#actionType').val('');
+            $('#remarks').val('');
+            $('#modal-action-date').val(new Date().toISOString().split('T')[0]);
+            $('#followUpSection').addClass('d-none');
+            $('#follow_up_date').val('').prop('required', false);
+
+            const nonActionableStatuses = ['distributorship_created', 'rejected', 'mis_rejected', 'agreement_created', 'document_verified', 'documents_received', 'mis_processing'];
+            const submitBtn = $('#action-submit-btn');
+            if (nonActionableStatuses.includes(status)) {
+                submitBtn.prop('disabled', true).addClass('disabled');
+                $('#actionType').prop('disabled', true);
+                $('#remarks').prop('disabled', true);
+                $('#actionType').html('<option value="" selected>Action not allowed for this status</option>');
+            } else {
+                submitBtn.prop('disabled', false).removeClass('disabled');
+                $('#actionType').prop('disabled', false);
+                $('#remarks').prop('disabled', false);
+                $('#actionType').html(`
+                    <option value="" disabled selected>Choose action...</option>
+                    <option value="approve">Approve</option>
+                    <option value="revert">Revert</option>
+                    <option value="hold">Hold</option>
+                    <option value="reject">Reject</option>
+                `);
+            }
+
+            $('#actionModal').modal('show');
+        });
+
+        $(document).on('change', '#actionType', function() {
+            const action = $(this).val();
+            const applicationId = $('#application_id').val();
+            if (action && applicationId) {
+                const url = `{{ url('approvals') }}/${applicationId}/${action}`;
+                $('#action-form').attr('action', url);
+            } else {
+                $('#action-form').attr('action', '');
+            }
+
+            if (action === 'hold') {
+                $('#followUpSection').removeClass('d-none');
+                $('#follow_up_date').prop('required', true);
+                const defaultFollowUp = new Date();
+                defaultFollowUp.setDate(defaultFollowUp.getDate() + 7);
+                $('#follow_up_date').val(defaultFollowUp.toISOString().split('T')[0]);
+            } else {
+                $('#followUpSection').addClass('d-none');
+                $('#follow_up_date').prop('required', false).val('');
+            }
+        });
+
+        $(document).on('submit', '#action-form', function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const action = $('#actionType').val();
+            const remarks = $('#remarks').val().trim();
+            const followUpDate = $('#follow_up_date').val();
+            const submitBtn = $('#action-submit-btn');
+            const spinner = submitBtn.find('.spinner-border');
+            const submitText = submitBtn.find('.submit-text');
+
+            if (!action) {
+                showToast('error', 'Please select an action.', 'Validation Error');
+                return;
+            }
+            if (!remarks) {
+                showToast('error', 'Remarks are required.', 'Validation Error');
+                return;
+            }
+            if (action === 'hold' && !followUpDate) {
+                showToast('error', 'Follow-up date is required for Hold action.', 'Validation Error');
+                return;
+            }
+
+            submitBtn.prop('disabled', true);
+            spinner.removeClass('d-none');
+            submitText.text('Processing...');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#actionModal').modal('hide');
+                    const actionMessages = {
+                        'approve': 'Application approved successfully!',
+                        'reject': 'Application rejected successfully!',
+                        'revert': 'Application reverted successfully!',
+                        'hold': 'Application put on hold successfully!'
+                    };
+                    showToast('success', actionMessages[action] || 'Action completed successfully!', getActionTitle(action));
+                    setTimeout(() => {
+                        updateFunction();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    let errorMsg = 'Error performing action: ';
+                    let title = 'Action Failed';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMsg += xhr.responseJSON.message;
+                    } else if (xhr.status === 403) {
+                        errorMsg = 'You are not authorized to perform this action.';
+                        title = 'Unauthorized';
+                    } else if (xhr.status === 422) {
+                        errorMsg = 'Please correct the form errors and try again.';
+                        title = 'Validation Error';
+                    } else {
+                        errorMsg += 'Something went wrong. Please try again.';
+                    }
+                    showToast('error', errorMsg, title);
+                    submitBtn.prop('disabled', false);
+                    spinner.addClass('d-none');
+                    submitText.text('Submit');
+                }
+            });
+        });
+
+        $(document).on('hidden.bs.modal', '#actionModal', function() {
+            $('#action-form').attr('action', '');
+            $('#actionType').val('');
+            $('#remarks').val('');
+            $('#follow_up_date').val('').prop('required', false);
+            $('#followUpSection').addClass('d-none');
+            $('#action-submit-btn').prop('disabled', false);
+            $('#action-submit-btn .spinner-border').addClass('d-none');
+            $('#action-submit-btn .submit-text').text('Submit');
         });
     }
 
@@ -1168,17 +2558,11 @@
         const zoneSelect = $('#zone');
         $.ajax({
             url: "{{ route('get_zone_by_bu') }}",
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            data: {
-                bu: bu
-            },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            data: { bu: bu },
             type: 'POST',
             dataType: 'json',
-            beforeSend: function() {
-                if (!isUpdating) loader.removeClass('d-none');
-            },
+            beforeSend: function() { if (!isUpdating) loader.removeClass('d-none'); },
             success: function(data) {
                 loader.addClass('d-none');
                 const zoneList = data.zoneList || [];
@@ -1186,9 +2570,8 @@
                 $.each(zoneList, function(index, zone) {
                     zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
                 });
-                // Only trigger dashboard update if BU changed and zone list is populated
                 if (bu !== 'All' && zoneList.length > 0 && !isUpdating) {
-                    updateDashboard();
+                    updateFunction();
                 }
                 isUpdating = false;
             },
@@ -1204,17 +2587,11 @@
         const regionSelect = $('#region');
         $.ajax({
             url: "{{ route('get_region_by_zone') }}",
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            data: {
-                zone: zone
-            },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            data: { zone: zone },
             type: 'POST',
             dataType: 'json',
-            beforeSend: function() {
-                if (!isUpdating) loader.removeClass('d-none');
-            },
+            beforeSend: function() { if (!isUpdating) loader.removeClass('d-none'); },
             success: function(data) {
                 loader.addClass('d-none');
                 const regionList = data.regionList || [];
@@ -1223,7 +2600,7 @@
                     regionSelect.append(`<option value="${region.id}">${region.region_name}</option>`);
                 });
                 if (zone !== 'All' && regionList.length > 0 && !isUpdating) {
-                    updateDashboard();
+                    updateFunction();
                 }
                 isUpdating = false;
             },
@@ -1239,17 +2616,11 @@
         const territorySelect = $('#territory');
         $.ajax({
             url: "{{ route('get_territory_by_region') }}",
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            data: {
-                region: region
-            },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            data: { region: region },
             type: 'POST',
             dataType: 'json',
-            beforeSend: function() {
-                if (!isUpdating) loader.removeClass('d-none');
-            },
+            beforeSend: function() { if (!isUpdating) loader.removeClass('d-none'); },
             success: function(data) {
                 loader.addClass('d-none');
                 const territoryList = data.territoryList || [];
@@ -1258,7 +2629,7 @@
                     territorySelect.append(`<option value="${territory.id}">${territory.territory_name}</option>`);
                 });
                 if (region !== 'All' && territoryList.length > 0 && !isUpdating) {
-                    updateDashboard();
+                    updateFunction();
                 }
                 isUpdating = false;
             },
@@ -1269,5 +2640,329 @@
             }
         });
     }
+
+  
+
+    function initializeAllFeatures() {
+        console.log('Initializing all features...');
+        initializeTimelineToggles();
+        initializeTableDropdowns();
+        initializeCharts();
+        setupTabReinitialization();
+    }
+
+    function setupTabReinitialization() {
+        console.log('Reinitializing table features on load...');
+        setTimeout(() => {
+            initializeTimelineToggles();
+        }, 300);
+    }
+
+    function initializeTimelineToggles() {
+        console.log('Initializing timeline toggles...');
+        
+        const allButtons = document.querySelectorAll('.toggle-timeline');
+        //console.log('Found toggle buttons:', allButtons.length);
+        
+        if (allButtons.length === 0) {
+            return;
+            //console.warn('No toggle buttons found! Checking if tables are loaded...');
+            const tables = document.querySelectorAll('table');
+            //console.log('Available tables:', tables.length);
+            tables.forEach((table, index) => {
+                console.log(`Table ${index + 1}:`, table.innerHTML.substring(0, 200) + '...');
+            });
+            //return;
+        }
+        
+        allButtons.forEach(button => {
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+        });
+        
+        const freshButtons = document.querySelectorAll('.toggle-timeline');
+        
+        freshButtons.forEach(button => {
+            button.__clickListenerAdded = true;
+            
+            button.addEventListener('click', function(e) {
+                console.log('Toggle button clicked - Event fired!', this);
+                e.preventDefault();
+                e.stopPropagation();
+                handleTimelineToggle(this);
+            });
+            
+            button.style.transition = 'all 0.2s ease';
+            button.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.2)';
+                this.style.color = '#007bff';
+            });
+            button.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+                if (!this.classList.contains('active')) {
+                    this.style.color = '#6c757d';
+                }
+            });
+        });
+        
+        console.log('Timeline toggles initialized. Buttons processed:', freshButtons.length);
+    }
+
+    function handleTimelineToggle(button) {
+        const applicationId = button.getAttribute('data-application-id');
+        console.log('Handling toggle for application:', applicationId);
+        
+        if (!applicationId) {
+            console.error('No application ID found on button:', button);
+            return;
+        }
+        
+        const table = button.closest('table');
+        if (!table) {
+            console.error('No table found for button:', button);
+            return;
+        }
+        
+        const timelineRowId = `timeline-${applicationId}`;
+        const timelineRow = table.querySelector(`#${timelineRowId}`);
+        const icon = button.querySelector('i');
+        
+        console.log('Looking for timeline row:', timelineRowId, 'Found:', !!timelineRow);
+        
+        if (!timelineRow) {
+            console.error('Timeline row not found for application:', applicationId);
+            console.log('Available timeline rows in table:', table.querySelectorAll('.timeline-row').length);
+            
+            const allTimelineRows = table.querySelectorAll('.timeline-row');
+            allTimelineRows.forEach(row => {
+                console.log('Available timeline row ID:', row.id);
+            });
+            return;
+        }
+        
+        if (timelineRow.style.display === 'table-row') {
+            timelineRow.style.display = 'none';
+            icon.className = 'ri-add-circle-line';
+            button.setAttribute('title', 'Show Approval Timeline');
+            button.classList.remove('active');
+            console.log('Timeline closed for:', applicationId);
+        } else {
+            const allTimelineRows = table.querySelectorAll('.timeline-row');
+            const allToggleButtons = table.querySelectorAll('.toggle-timeline');
+            
+            console.log('Closing other timelines in table. Total found:', allTimelineRows.length);
+            
+            allTimelineRows.forEach(row => {
+                row.style.display = 'none';
+            });
+            allToggleButtons.forEach(btn => {
+                const btnIcon = btn.querySelector('i');
+                btnIcon.className = 'ri-add-circle-line';
+                btn.setAttribute('title', 'Show Approval Timeline');
+                btn.classList.remove('active');
+            });
+            
+            timelineRow.style.display = 'table-row';
+            icon.className = 'ri-indeterminate-circle-line';
+            button.setAttribute('title', 'Hide Approval Timeline');
+            button.classList.add('active');
+            console.log('Timeline opened for:', applicationId);
+        }
+    }
+
+    function initializeTableDropdowns() {
+    console.log('Initializing table dropdowns...');
+    
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
+    function closeAllTableDropdowns() {
+        $('.table-dropdown-menu').removeClass('show').css('display', 'none');
+        $('.table-dropdown-btn').attr('aria-expanded', 'false');
+        console.log('All table dropdowns closed');
+    }
+
+    // Remove existing event handlers first to prevent duplicates
+    $(document).off('click', '.table-dropdown-btn');
+    $(document).off('click', '.view-doc-btn');
+    $(document).off('click', '.view-physical-doc-btn');
+    $(document).off('click', '.confirm-distributor-btn');
+    $(document).off('click', '#confirm-distributor-submit');
+    $(document).off('click', '.mis-action-btn'); // Add this for MIS action buttons
+
+    // Table dropdown button click handler
+    $(document).on('click', '.table-dropdown-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var $button = $(this);
+        var $dropdown = $button.next('.table-dropdown-menu');
+        var isVisible = $dropdown.hasClass('show');
+        
+        closeAllTableDropdowns();
+        
+        if (!isVisible) {
+            var buttonRect = $button[0].getBoundingClientRect();
+            var dropdownWidth = $dropdown.outerWidth();
+            var dropdownHeight = $dropdown.outerHeight();
+
+            var leftPosition = buttonRect.left;
+            var topPosition = buttonRect.bottom;
+
+            if (leftPosition + dropdownWidth > window.innerWidth) {
+                leftPosition = window.innerWidth - dropdownWidth - 10;
+            }
+
+            if (topPosition + dropdownHeight > window.innerHeight) {
+                topPosition = buttonRect.top - dropdownHeight;
+            }
+
+            $dropdown.css({
+                'position': 'fixed',
+                'top': topPosition + 'px',
+                'left': leftPosition + 'px',
+                'display': 'block'
+            }).addClass('show');
+
+            $button.attr('aria-expanded', 'true');
+            console.log('Table dropdown opened for application ID:', $button.closest('tr').data('application-id'));
+        } else {
+            $dropdown.removeClass('show').css('display', 'none');
+            $button.attr('aria-expanded', 'false');
+            console.log('Table dropdown closed for application ID:', $button.closest('tr').data('application-id'));
+        }
+    });
+
+    // Close dropdowns when clicking outside
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.table-dropdown-container').length && 
+            !$(e.target).closest('#page-topbar').length) {
+            closeAllTableDropdowns();
+        }
+    });
+
+    // Prevent dropdown close when clicking inside dropdown items
+    $(document).on('click', '.dropdown-item', function(e) {
+        e.stopPropagation();
+    });
+
+    // MIS Action buttons (Verify Checklist, Manage Physical Documents)
+    $(document).on('click', '.mis-action-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAllTableDropdowns();
+        
+        const url = $(this).attr('href');
+        const applicationId = $(this).data('application-id');
+        const distributorName = $(this).data('distributor-name');
+        
+        console.log('MIS action clicked:', url, 'for application:', applicationId, 'Distributor:', distributorName);
+        
+        // Redirect to the MIS action page
+        if (url) {
+            window.location.href = url;
+        }
+    });
+
+    // View Document Verification buttons
+    $(document).on('click', '.view-doc-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAllTableDropdowns();
+        var url = $(this).data('url');
+        var applicationId = $(this).data('application-id');
+        $('#docVerificationModalLabel').text('Document Verification Details for Application ' + applicationId);
+        $('#doc-verification-content').html('Loading...');
+
+        $('#docVerificationModal').modal('show');
+
+        $.get(url, function(response) {
+            $('#doc-verification-content').html(response);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            $('#doc-verification-content').html('<p>Error loading document verification details: ' + textStatus + '</p>');
+        });
+    });
+
+    // View Physical Document Verification buttons
+    $(document).on('click', '.view-physical-doc-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAllTableDropdowns();
+        var url = $(this).data('url');
+        var applicationId = $(this).data('application-id');
+        $('#physicalDocVerificationModalLabel').text('Physical Document Verification Details for Application ' + applicationId);
+        $('#physical-doc-verification-content').html('Loading...');
+
+        $('#physicalDocVerificationModal').modal('show');
+
+        $.get(url, function(response) {
+            $('#physical-doc-verification-content').html(response);
+        }).fail(function(jqXHR, textStatus, errorThrown) {
+            $('#physical-doc-verification-content').html('<p>Error loading physical document verification details: ' + textStatus + '</p>');
+        });
+    });
+
+    // Confirm Distributor buttons
+    $(document).on('click', '.confirm-distributor-btn', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAllTableDropdowns();
+        var url = $(this).data('url');
+        var applicationId = $(this).data('application-id');
+        var distributorName = $(this).data('distributor-name');
+        $('#confirm-application-id').text(applicationId);
+        $('#confirm-distributor-name').text(distributorName);
+        $('#confirm-remarks').val('');
+        $('#confirmDistributorModal').modal('show');
+        $('#confirm-distributor-submit').data('url', url);
+    });
+
+    // Confirm Distributor Submit
+    $(document).on('click', '#confirm-distributor-submit', function() {
+        var url = $(this).data('url');
+        var remarks = $('#confirm-remarks').val();
+        $.ajax({
+            url: url,
+            method: 'POST',
+            data: { remarks: remarks },
+            success: function(response) {
+                if (response.success) {
+                    alert(response.message);
+                    $('#confirmDistributorModal').modal('hide');
+                    if (response.redirect) {
+                        window.location.href = response.redirect;
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert(response.message);
+                }
+            },
+            error: function(jqXHR, textStatus, errorThrown) {
+                alert('Error: ' + (jqXHR.responseJSON ? jqXHR.responseJSON.message : textStatus));
+            }
+        });
+    });
+
+    // Modal cleanup handlers
+    $('#docVerificationModal').off('hidden.bs.modal').on('hidden.bs.modal', function() {
+        $('#doc-verification-content').html('Loading...');
+    });
+    $('#physicalDocVerificationModal').off('hidden.bs.modal').on('hidden.bs.modal', function() {
+        $('#physical-doc-verification-content').html('Loading...');
+    });
+
+    // Window resize handler
+    $(window).off('resize').on('resize', function() {
+        closeAllTableDropdowns();
+    });
+
+    console.log('Table dropdowns initialized successfully');
+}
+
+    window.initializeTimelineToggles = initializeTimelineToggles;
+    window.initializeAllFeatures = initializeAllFeatures;
 </script>
 @endpush

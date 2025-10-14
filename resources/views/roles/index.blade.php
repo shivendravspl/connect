@@ -24,20 +24,16 @@
         <div class="col-lg-12">
             <div class="card">
                 @can('add-role')
-                <div class="card-header border-0">
-                    <div class="row g-4 align-items-center">
-                        <div class="col-sm-auto ms-auto">
-                            <div class="hstack gap-2">
-                                <button type="button" class="btn btn-success add-btn" data-bs-toggle="modal"
-                                    data-bs-target="#AddNewRoleModal"><i class="ri-add-line align-bottom me-1"></i> Add
-                                    Role
-                                </button>
-                                <a class="btn btn-primary" href="{{ route('permission') }}" target="_blank">Permission
-                                    List</a>
-                            </div>
-                        </div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Role & Permission</h5>
+                    <div>
+                        <button type="button" class="btn btn-success add-btn btn-sm" data-bs-toggle="modal"
+                            data-bs-target="#AddNewRoleModal"><i class="ri-add-line align-bottom me-1"></i> Add Role
+                        </button>
+                        <a class="btn btn-primary btn-sm" href="{{ route('permission') }}" target="_blank">Permission List</a>
                     </div>
                 </div>
+
                 @endcan
                 <div class="card-body">
                     <div class="table-data">

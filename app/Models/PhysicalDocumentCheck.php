@@ -34,6 +34,16 @@ class PhysicalDocumentCheck extends Model
         return $this->belongsTo(Onboarding::class, 'application_id');
     }
 
+    public function securityChequeDetails()
+    {
+        return $this->hasMany(SecurityChequeDetail::class);
+    }
+
+    public function securityDepositDetail()
+    {
+        return $this->hasOne(SecurityDepositDetail::class);
+    }
+
     public function submittedBy()
     {
         return $this->belongsTo(Employee::class, 'submitted_by', 'id');

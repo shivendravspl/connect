@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth')->group(function(){
    Route::get('/applications/pending-documents', [OnboardingController::class, 'pendingDocuments'])->name('applications.pending-documents');
    Route::post('/applications/pending-documents/{application}/upload', [OnboardingController::class, 'uploadPendingDocuments'])->name('applications.upload-pending-documents');
+     Route::get('/applications/{application}/bank-details', [OnboardingController::class, 'getBankDetails'])->name('applications.bank-details');
 
 	Route::resource('applications', OnboardingController::class);
     Route::post('applications/datatable', [OnboardingController::class, 'datatable'])->name('applications.datatable');

@@ -97,6 +97,40 @@ $(document).ready(function() {
 
     console.log('Initial application_id:', applicationId);
 
+    function loadBankDetails() {
+    if (currentStep === 6 && applicationId) {
+        console.log('Loading bank details for application:', applicationId);
+        $.ajax({
+            url: `/applications/${applicationId}/bank-details`,
+            method: 'GET',
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success: function(response) {
+                if (response.success) {
+                    // Update bank form fields
+                    $('#bank_name').val(response.data.bank_name || '');
+                    $('#account_holder').val(response.data.account_holder_name || '');
+                    $('#account_number').val(response.data.account_number || '');
+                    $('#ifsc_code').val(response.data.ifsc_code || '');
+                    
+                    // Remove readonly attribute to allow editing
+                    $('#bank_name, #account_holder, #account_number, #ifsc_code').prop('readonly', false);
+                    
+                    console.log('Bank details loaded successfully:', response.data);
+                }
+            },
+            error: function(xhr) {
+                console.log('Failed to load bank details');
+                // Remove readonly anyway to allow manual input
+                $('#bank_name, #account_holder, #account_number, #ifsc_code').prop('readonly', false);
+            }
+        });
+    } else if (currentStep === 6 && !applicationId) {
+        // If no applicationId, ensure fields are editable
+        $('#bank_name, #account_holder, #account_number, #ifsc_code').prop('readonly', false);
+    }
+}
+
+
  $(document).on('click', '.step.clickable', function() {
     const stepNumber = parseInt($(this).data('step'));
     console.log('Step clicked:', stepNumber);
@@ -245,6 +279,9 @@ $(document).ready(function() {
     function showStep(step) {
         stepContents.hide();
         $(`.step-content[data-step="${step}"]`).show();
+         if (step === 6) {
+            loadBankDetails();
+        }
         console.log('Showing step:', step);
     }
 
@@ -489,7 +526,20 @@ $(document).ready(function() {
             const formData = new FormData();
             const currentFields = $(`.step-content[data-step="${step}"]`).find('input:not(:disabled), select:not(:disabled), textarea:not(:disabled)');
 
-            if (step === 1) {
+            if (step === 6) {
+            // Include all bank details
+            const bankFields = [
+                'bank_name', 'account_holder', 'account_number', 'ifsc_code',
+                'financial_status', 'retailer_count', 'account_type',
+                'relationship_duration', 'od_limit', 'od_security'
+            ];
+            
+            bankFields.forEach(field => {
+                const value = $(`#${field}`).val() || '';
+                formData.append(field, value);
+                console.log(`Bank field ${field}:`, value);
+            });
+        } else if (step === 1) {
                 formData.append('territory', $('#territory').val() || '');
                 formData.append('region', $('#region_id').val() || '');
                 formData.append('zone', $('#zone_id').val() || '');

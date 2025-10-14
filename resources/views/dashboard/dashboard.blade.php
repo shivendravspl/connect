@@ -363,6 +363,28 @@
             font-size: 0.75rem;
         }
     }
+     .chart-card {
+      border: 1px solid #dce3f0;
+      border-radius: 10px;
+      padding: 15px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      width: 100%;
+      max-width: 500px;
+      margin: 30px auto;
+    }
+    .chart-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+       #formsChart1 {
+  height: 320px !important; /* or 200px */
+}
+ #formsChart4 {
+  height: 320px !important; /* or 200px */
+}
 </style>
 @endpush
 
@@ -398,10 +420,10 @@
                     </h4>
 
                     <div class="flex-shrink-0">
-                            <a href="{{ url('applications/create') }}" class="btn btn-sm bg-primary text-white">
-                                Appoint Distributor Form
-                            </a>
-                                                    <a class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
+                        <a href="{{ url('applications/create') }}" class="btn btn-sm bg-primary text-white">
+                            Appoint Distributor Form
+                        </a>
+                        <a class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
                         <a class="ms-3 me-2" href="">List of Required Documents <i class="ri-attachment-line"></i></a>
                         <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
                             <i class="ri-filter-2-line"></i> Filters

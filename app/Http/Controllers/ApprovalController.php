@@ -29,7 +29,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Status;
 
-
+use App\Models\SecurityChequeDetail;
+use App\Models\SecurityDepositDetail;
 
 class ApprovalController extends Controller
 {
@@ -1443,271 +1444,312 @@ class ApprovalController extends Controller
 
 
     // In ApprovalController.php
-
     public function showPhysicalDocuments(Onboarding $application)
-    {
-        if (!Auth::user()->employee->isMisTeam() && !in_array(Auth::user()->role, ['TM', 'GM'])) {
-            abort(403, 'Unauthorized');
-        }
-
-        // Fetch all physical document checks for the application, including original_filename if column exists
-        $physicalDocumentChecks = PhysicalDocumentCheck::where('application_id', $application->id)
-            ->select(['*']) // Assuming original_filename is added to the table
-            ->get();
-
-        // Fetch physical dispatch record
-        $physicalDispatch = PhysicalDispatch::where('application_id', $application->id)->first() ?? new PhysicalDispatch();
-
-        // Eager load checkpoints to display in "List of Documents"
-        $application->load('checkpoints');
-
-        // Load entityDetails with supporting document paths
-        $application->load('entityDetails');
-
-        // Dynamically collect supporting documents if paths exist
-        $supportingDocuments = collect();
-        $entityDetails = $application->entityDetails;
-
-        // Check for ownership_info_path
-        if ($entityDetails->ownership_info_path) {
-            $supportingDocuments->push([
-                'type' => 'ownership_info',
-                'label' => 'Ownership Information',
-                'path' => $entityDetails->ownership_info_path,
-                'existing_file' => basename($entityDetails->ownership_info_path)
-            ]);
-        }
-
-        // Check for itr_acknowledgement_path
-        if ($entityDetails->itr_acknowledgement_path) {
-            $supportingDocuments->push([
-                'type' => 'itr_acknowledgement',
-                'label' => 'ITR Acknowledgement',
-                'path' => $entityDetails->itr_acknowledgement_path,
-                'existing_file' => basename($entityDetails->itr_acknowledgement_path)
-            ]);
-        }
-
-        // Check for balance_sheet_path
-        if ($entityDetails->balance_sheet_path) {
-            $supportingDocuments->push([
-                'type' => 'balance_sheet',
-                'label' => 'Balance Sheet',
-                'path' => $entityDetails->balance_sheet_path,
-                'existing_file' => basename($entityDetails->balance_sheet_path)
-            ]);
-        }
-
-        return view('approvals.physical-documents', compact('application', 'physicalDocumentChecks', 'physicalDispatch', 'supportingDocuments'));
+{
+    if (!Auth::user()->employee->isMisTeam() && !in_array(Auth::user()->role, ['TM', 'GM'])) {
+        abort(403, 'Unauthorized');
     }
 
-    public function updatePhysicalDocuments(Request $request, Onboarding $application)
-    {
-        // Check if any document is marked as received
-        $anyReceived = false;
-        $documents = $request->input('documents', []);
-        foreach ($documents as $data) {
-            if (($data['received'] ?? false) == true) {
-                $anyReceived = true;
-                break;
+    // Fetch all physical document checks for the application, including original_filename if column exists
+    $physicalDocumentChecks = PhysicalDocumentCheck::where('application_id', $application->id)
+        ->with(['securityChequeDetails', 'securityDepositDetail'])
+        ->select(['*']) // Assuming original_filename is added to the table
+        ->get();
+
+    // Fetch physical dispatch record
+    $physicalDispatch = PhysicalDispatch::where('application_id', $application->id)->first() ?? new PhysicalDispatch();
+
+    // Eager load checkpoints to display in "List of Documents"
+    $application->load('checkpoints');
+
+    // Load entityDetails with supporting document paths
+    $application->load('entityDetails');
+
+    // Dynamically collect supporting documents if paths exist
+    $supportingDocuments = collect();
+    $entityDetails = $application->entityDetails;
+
+    // Check for ownership_info_path
+    if ($entityDetails->ownership_info_path) {
+        $supportingDocuments->push([
+            'type' => 'ownership_info',
+            'label' => 'Ownership Information',
+            'path' => $entityDetails->ownership_info_path,
+            'existing_file' => basename($entityDetails->ownership_info_path)
+        ]);
+    }
+
+    // Check for itr_acknowledgement_path
+    if ($entityDetails->itr_acknowledgement_path) {
+        $supportingDocuments->push([
+            'type' => 'itr_acknowledgement',
+            'label' => 'ITR Acknowledgement',
+            'path' => $entityDetails->itr_acknowledgement_path,
+            'existing_file' => basename($entityDetails->itr_acknowledgement_path)
+        ]);
+    }
+
+    // Check for balance_sheet_path
+    if ($entityDetails->balance_sheet_path) {
+        $supportingDocuments->push([
+            'type' => 'balance_sheet',
+            'label' => 'Balance Sheet',
+            'path' => $entityDetails->balance_sheet_path,
+            'existing_file' => basename($entityDetails->balance_sheet_path)
+        ]);
+    }
+
+    return view('approvals.physical-documents', compact('application', 'physicalDocumentChecks', 'physicalDispatch', 'supportingDocuments'));
+}
+
+public function updatePhysicalDocuments(Request $request, Onboarding $application)
+{
+    // dd($request->all()); // Comment out after debug
+
+    // Check if any document is marked as received
+    $anyReceived = false;
+    $documents = $request->input('documents', []);
+    foreach ($documents as $data) {
+        if (is_array($data) && isset($data['received']) && ($data['received'] ?? false) == true) {
+            $anyReceived = true;
+            break;
+        }
+    }
+
+    // Define validation rules with custom messages
+    $rules = [
+        'receive_date' => ['required_if:any_received,true', 'nullable', 'date', 'before_or_equal:today'],
+        'verified_date' => 'required|date|before_or_equal:today',
+        'documents' => 'required|array|min:1',
+        'documents.*.received' => 'nullable|boolean',
+        'documents.*.status' => 'required|in:verified,not_verified',
+        'documents.*.reason' => 'required_if:documents.*.status,not_verified|string|max:500|nullable',
+        // Standard docs
+        'existing_agreement_copy_file' => 'nullable|string',
+        'existing_agreement_copy_file_original' => 'nullable|string',
+        'existing_security_cheques_file' => 'nullable|array',
+        'existing_security_cheques_file.*' => 'string',
+        'existing_security_cheques_file_original' => 'nullable|array',
+        'existing_security_cheques_file_original.*' => 'string',
+        'existing_security_deposit_file' => 'nullable|string',
+        'existing_security_deposit_file_original' => 'nullable|string',
+        // Security Cheques details - required if verified and files present
+        'security_cheques_details' => 'required_if:documents.security_cheques.status,verified|nullable|array',
+        'security_cheques_details.*.date_obtained' => 'required_if:documents.security_cheques.status,verified|nullable|date|before_or_equal:today',
+        'security_cheques_details.*.cheque_no' => 'required_if:documents.security_cheques.status,verified|nullable|string|max:50',
+        'security_cheques_details.*.date_use' => 'nullable|date|before_or_equal:today',
+        'security_cheques_details.*.purpose' => 'nullable|string|max:200',
+        'security_cheques_details.*.date_return' => 'nullable|date|before_or_equal:today',
+        'security_cheques_details.*.remark_return' => 'nullable|string|max:500',
+        // Supporting docs
+        'existing_ownership_info_file' => 'nullable|string',
+        'existing_itr_acknowledgement_file' => 'nullable|string',
+        'existing_balance_sheet_file' => 'nullable|string',
+        // Security Deposit details - required if verified
+        'deposit_date' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'date', 'before_or_equal:today'],
+        'deposit_mode' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'string', 'in:Cash,Cheque,NEFT/Online'],
+        'deposit_reference' => ['required_if:deposit_mode,NEFT/Online', 'nullable', 'string', 'max:100'],
+        'security_deposit_amount' => ['required_if:documents.security_deposit.status,verified', 'nullable', 'numeric', 'min:0'],
+    ];
+
+    $messages = [
+        // ... (keep existing messages, remove all ack-related)
+        'receive_date.required_if' => 'The date of receiving documents is required when any document is marked as received.',
+        'receive_date.date' => 'The date of receiving documents must be a valid date.',
+        'receive_date.before_or_equal' => 'The date of receiving documents cannot be in the future.',
+        'verified_date.required' => 'The verified date is required.',
+        'verified_date.date' => 'The verified date must be a valid date.',
+        'verified_date.before_or_equal' => 'The verified date cannot be in the future.',
+        'documents.required' => 'Document data is required.',
+        'documents.min' => 'At least one document must be processed.',
+        'documents.*.status.required' => 'Please select a verification status for :attribute.',
+        'documents.*.status.in' => 'Verification status must be either Verified or Not Verified.',
+        'documents.*.reason.required_if' => 'Remarks are required when the document is not verified.',
+        'documents.*.reason.max' => 'Remarks cannot exceed 500 characters.',
+        // Security Cheques details messages
+        'security_cheques_details.required_if' => 'Security Cheque details are required when verified.',
+        'security_cheques_details.*.date_obtained.required_if' => 'Date of obtained is required when verified.',
+        'security_cheques_details.*.date_obtained.date' => 'Date of obtained must be a valid date.',
+        'security_cheques_details.*.date_obtained.before_or_equal' => 'Date of obtained cannot be in the future.',
+        'security_cheques_details.*.cheque_no.required_if' => 'Cheque No is required when verified.',
+        'security_cheques_details.*.cheque_no.max' => 'Cheque No cannot exceed 50 characters.',
+        'security_cheques_details.*.date_use.date' => 'Date of Use must be a valid date.',
+        'security_cheques_details.*.date_use.before_or_equal' => 'Date of Use cannot be in the future.',
+        'security_cheques_details.*.purpose.max' => 'Purpose of use cannot exceed 200 characters.',
+        'security_cheques_details.*.date_return.date' => 'Date of Return must be a valid date.',
+        'security_cheques_details.*.date_return.before_or_equal' => 'Date of Return cannot be in the future.',
+        'security_cheques_details.*.remark_return.max' => 'Remark/reason of return cannot exceed 500 characters.',
+        // Security Deposit details messages
+        'deposit_date.required_if' => 'Deposit Date is required when Security Deposit is verified.',
+        'deposit_date.date' => 'Deposit Date must be a valid date.',
+        'deposit_date.before_or_equal' => 'Deposit Date cannot be in the future.',
+        'deposit_mode.required_if' => 'Mode of payment is required when Security Deposit is verified.',
+        'deposit_mode.in' => 'Mode of payment must be Cash, Cheque, or NEFT/Online.',
+        'deposit_reference.required_if' => 'Reference No. is required when mode is NEFT/Online.',
+        'deposit_reference.max' => 'Reference No. cannot exceed 100 characters.',
+        'security_deposit_amount.required_if' => 'Security Deposit Amount is required when Security Deposit is verified.',
+        'security_deposit_amount.numeric' => 'Security Deposit Amount must be a valid number.',
+        'security_deposit_amount.min' => 'Security Deposit Amount cannot be negative.',
+        // File rules (keep, remove ack)
+        'existing_agreement_copy_file.string' => 'Agreement Copy file is invalid.',
+        'existing_agreement_copy_file_original.string' => 'Agreement Copy original name is invalid.',
+        'existing_security_cheques_file.array' => 'Security Cheques files must be an array.',
+        'existing_security_cheques_file.*.string' => 'Each Security Cheques file is invalid.',
+        'existing_security_cheques_file_original.array' => 'Security Cheques original names must be an array.',
+        'existing_security_cheques_file_original.*.string' => 'Each Security Cheques original name is invalid.',
+        'existing_security_deposit_file.string' => 'Security Deposit file is invalid.',
+        'existing_security_deposit_file_original.string' => 'Security Deposit original name is invalid.',
+        'existing_ownership_info_file.string' => 'Ownership Information file is invalid.',
+        'existing_itr_acknowledgement_file.string' => 'ITR Acknowledgement file is invalid.',
+        'existing_balance_sheet_file.string' => 'Balance Sheet file is invalid.',
+    ];
+
+    $validator = Validator::make(array_merge($request->all(), ['any_received' => $anyReceived ? 'true' : 'false']), $rules, $messages);
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation failed. Please check the form for errors.',
+            'errors' => $validator->errors()->toArray(),
+        ], 422);
+    }
+
+    DB::beginTransaction();
+
+    try {
+        // Delete existing physical document checks and related details
+        $application->physicalDocumentChecks()->each(function ($check) {
+            SecurityChequeDetail::where('physical_document_check_id', $check->id)->delete();
+            SecurityDepositDetail::where('physical_document_check_id', $check->id)->delete();
+        });
+        $application->physicalDocumentChecks()->delete();
+
+        // Update or create physical_dispatch record
+        PhysicalDispatch::updateOrCreate(
+            ['application_id' => $application->id],
+            [
+                'receive_date' => $anyReceived ? $request->input('receive_date') : null,
+                'updated_by' => Auth::id(),
+            ]
+        );
+
+        $savedCount = 0;
+        foreach ($documents as $type => $data) {
+            $received = ($data['received'] ?? false) == true;
+            $status = $data['status'] ?? 'pending';
+            $reason = $data['reason'] ?? null;
+            $amount = null; // Default for non-security_deposit types
+
+            if ($type === 'security_deposit') {
+                $amount = $request->input('security_deposit_amount');
+                $deposit_date = $request->input('deposit_date');
+                $mode = $request->input('deposit_mode');
+                $reference = $request->input('deposit_reference');
+                // If verified and amount provided, use amount; otherwise, use reason for non-verified cases
+                if ($status === 'verified' && $amount) {
+                    // Amount is stored in 'amount' column; reason can be null or additional notes
+                    $reason = null; // Store details in separate table
+                } else if ($status === 'not_verified') {
+                    // Reason is required for not verified
+                    $amount = null;
+                }
             }
+
+            if ($type === 'security_cheques') {
+    $files = $request->input("existing_security_cheques_file", []);
+    $originalNames = $request->input("existing_security_cheques_file_original", []);
+    $details = $request->input("security_cheques_details", []);
+
+    // ONLY create records for files that actually exist
+    foreach ($files as $index => $fileName) {
+        if (!empty($fileName)) {
+            $originalName = $originalNames[$index] ?? $fileName;
+            $detailData = $details[$index] ?? [];
+            
+            $check = PhysicalDocumentCheck::create([
+                'application_id' => $application->id,
+                'document_type' => $type,
+                'received' => $received,
+                'status' => $status,
+                'reason' => $reason,
+                'amount' => $amount,
+                'file_path' => $fileName,
+                'original_filename' => $originalName,
+                'submitted_by' => Auth::user()->emp_id,
+                'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+            ]);
+            
+            // Create details only if we have data
+            if ($status === 'verified' && (!empty($detailData['cheque_no']) || !empty($detailData['date_obtained']))) {
+                $check->securityChequeDetails()->create($detailData);
+            }
+            $savedCount++;
         }
-
-        // Define validation rules with custom messages
-        $rules = [
-            'receive_date' => ['required_if:any_received,true', 'nullable', 'date', 'before_or_equal:today'],
-            'verified_date' => 'required|date|before_or_equal:today',
-            'documents' => 'required|array|min:1',
-            'documents.*.received' => 'nullable|boolean',
-            'documents.*.status' => 'required|in:verified,not_verified',
-            'documents.*.reason' => 'required_if:documents.*.status,not_verified|string|max:500|nullable',
-            // Standard docs
-            'existing_agreement_copy_file' => 'nullable|string',
-            'existing_agreement_copy_file_original' => 'nullable|string',
-            'existing_security_cheques_file' => 'nullable|array',
-            'existing_security_cheques_file.*' => 'string',
-            'existing_security_cheques_file_original' => 'nullable|array',
-            'existing_security_cheques_file_original.*' => 'string',
-            'existing_security_deposit_file' => 'nullable|string',
-            'existing_security_deposit_file_original' => 'nullable|string',
-            // Supporting docs
-            'existing_ownership_info_file' => 'nullable|string',
-            'existing_itr_acknowledgement_file' => 'nullable|string',
-            'existing_balance_sheet_file' => 'nullable|string',
-            'security_deposit_amount' => 'required_if:documents.security_deposit.received,1|numeric|min:0',
-        ];
-
-        $messages = [
-            'receive_date.required_if' => 'The date of receiving documents is required when any document is marked as received.',
-            'receive_date.date' => 'The date of receiving documents must be a valid date.',
-            'receive_date.before_or_equal' => 'The date of receiving documents cannot be in the future.',
-            'verified_date.required' => 'The verified date is required.',
-            'verified_date.date' => 'The verified date must be a valid date.',
-            'verified_date.before_or_equal' => 'The verified date cannot be in the future.',
-            'documents.required' => 'Document data is required.',
-            'documents.min' => 'At least one document must be processed.',
-            'documents.*.status.required' => 'Please select a verification status for :attribute.',
-            'documents.*.status.in' => 'Verification status must be either Verified or Not Verified.',
-            'documents.*.reason.required_if' => 'Remarks are required when the document is not verified.',
-            'documents.*.reason.max' => 'Remarks cannot exceed 500 characters.',
-            // File rules
-            'existing_agreement_copy_file.string' => 'Agreement Copy file is invalid.',
-            'existing_agreement_copy_file_original.string' => 'Agreement Copy original name is invalid.',
-            'existing_security_cheques_file.array' => 'Security Cheques files must be an array.',
-            'existing_security_cheques_file.*.string' => 'Each Security Cheques file is invalid.',
-            'existing_security_cheques_file_original.array' => 'Security Cheques original names must be an array.',
-            'existing_security_cheques_file_original.*.string' => 'Each Security Cheques original name is invalid.',
-            'existing_security_deposit_file.string' => 'Security Deposit file is invalid.',
-            'existing_security_deposit_file_original.string' => 'Security Deposit original name is invalid.',
-            'existing_ownership_info_file.string' => 'Ownership Information file is invalid.',
-            'existing_itr_acknowledgement_file.string' => 'ITR Acknowledgement file is invalid.',
-            'existing_balance_sheet_file.string' => 'Balance Sheet file is invalid.',
-            'security_deposit_amount.required_if' => 'Security Deposit Amount is required when Security Deposit is received.',
-            'security_deposit_amount.numeric' => 'Security Deposit Amount must be a valid number.',
-            'security_deposit_amount.min' => 'Security Deposit Amount cannot be negative.',
-        ];
-
-        $validator = Validator::make(array_merge($request->all(), ['any_received' => $anyReceived ? 'true' : 'false']), $rules, $messages);
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed. Please check the form for errors.',
-                'errors' => $validator->errors()->toArray(),
-            ], 422);
-        }
-
-        DB::beginTransaction();
-
-        try {
-            // Delete existing physical document checks
-            $application->physicalDocumentChecks()->delete();
-
-            // Update or create physical_dispatch record
-            PhysicalDispatch::updateOrCreate(
-                ['application_id' => $application->id],
-                [
-                    'receive_date' => $anyReceived ? $request->input('receive_date') : null,
-                    'updated_by' => Auth::id(),
-                ]
-            );
-
-            $savedCount = 0;
-            foreach ($documents as $type => $data) {
-                $received = ($data['received'] ?? false) == true;
-                $status = $data['status'] ?? 'pending';
-                $reason = $data['reason'] ?? null;
-                $amount = null; // Default for non-security_deposit types
-
-                // Handle security_deposit amount/reason logic
-                if ($type === 'security_deposit') {
-                    $amount = $request->input('security_deposit_amount');
-                    // If verified and amount provided, use amount; otherwise, use reason for non-verified cases
-                    if ($status === 'verified' && $amount) {
-                        // Amount is stored in 'amount' column; reason can be null or additional notes
-                        $reason = null; // Or keep if additional remarks provided, but based on view, it's amount-focused
-                    } else if ($status === 'not_verified') {
-                        // Reason is required for not verified
-                        $amount = null;
-                    }
+    }
+    
+} else {
+                // Single file for other types
+                $fileName = null;
+                $originalName = null;
+                if (in_array($type, ['agreement_copy', 'security_deposit'])) {
+                    $fileName = $request->input("existing_{$type}_file");
+                    $originalName = $request->input("existing_{$type}_file_original", $fileName);
                 }
 
-                if ($type === 'security_cheques') {
-                    // Handle multiple files for security_cheques
-                    $files = $request->input("existing_security_cheques_file", []);
-                    $originalNames = $request->input("existing_security_cheques_file_original", []);
-                    if (!empty($files)) {
-                        foreach ($files as $index => $fileName) {
-                            if (!empty($fileName)) {
-                                $originalName = $originalNames[$index] ?? $fileName;
-                                PhysicalDocumentCheck::create([
-                                    'application_id' => $application->id,
-                                    'document_type' => $type,
-                                    'received' => $received,
-                                    'status' => $status,
-                                    'reason' => $reason,
-                                    'amount' => $amount,
-                                    'file_path' => $fileName,
-                                    'original_filename' => $originalName,
-                                    'submitted_by' => Auth::user()->emp_id,
-                                    'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
-                                ]);
-                                $savedCount++;
-                            }
-                        }
-                    } else {
-                        // No files, but data exists - create record without file
-                        if ($received || $status !== 'pending') {
-                            PhysicalDocumentCheck::create([
-                                'application_id' => $application->id,
-                                'document_type' => $type,
-                                'received' => $received,
-                                'status' => $status,
-                                'reason' => $reason,
-                                'amount' => $amount,
-                                'file_path' => null,
-                                'original_filename' => null,
-                                'submitted_by' => Auth::user()->emp_id,
-                                'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
-                            ]);
-                            $savedCount++;
-                        }
-                    }
-                } else {
-                    // Single file for other types
-                    $fileName = null;
-                    $originalName = null;
-                    if (in_array($type, ['agreement_copy', 'security_deposit'])) {
-                        $fileName = $request->input("existing_{$type}_file");
-                        $originalName = $request->input("existing_{$type}_file_original", $fileName);
-                    }
-
-                    // Skip if no data
-                    if ($received || $status !== 'pending' || $fileName) {
-                        PhysicalDocumentCheck::create([
-                            'application_id' => $application->id,
-                            'document_type' => $type,
-                            'received' => $received,
-                            'status' => $status,
-                            'reason' => $reason,
+                // Skip if no data
+                if ($received || $status !== 'pending' || $fileName) {
+                    $check = PhysicalDocumentCheck::create([
+                        'application_id' => $application->id,
+                        'document_type' => $type,
+                        'received' => $received,
+                        'status' => $status,
+                        'reason' => $reason,
+                        'amount' => $amount,
+                        'file_path' => $fileName ?: null,
+                        'original_filename' => $originalName ?: null,
+                        'submitted_by' => Auth::user()->emp_id,
+                        'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+                    ]);
+                    if ($type === 'security_deposit' && $status === 'verified') {
+                        Log::info('Deposit Debug', ['deposit_date' => $request->input('deposit_date'), 'amount' => $amount]); // Debug log
+                        $check->securityDepositDetail()->create([
+                            'deposit_date' => $request->input('deposit_date'),
                             'amount' => $amount,
-                            'file_path' => $fileName ?: null,
-                            'original_filename' => $originalName ?: null,
-                            'submitted_by' => Auth::user()->emp_id,
-                            'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+                            'mode_of_payment' => $request->input('deposit_mode'),
+                            'reference_no' => $request->input('deposit_reference'),
                         ]);
-                        $savedCount++;
                     }
+                    $savedCount++;
                 }
             }
-
-            $allPhysicalDocsVerified = PhysicalDocumentCheck::where('application_id', $application->id)
-                ->where('status', '!=', 'verified')
-                ->doesntExist();
-
-            if ($allPhysicalDocsVerified) {
-                $application->physical_docs_status = 'verified';
-                $application->status = 'physical_docs_verified';
-                $application->save();
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => "Physical document status updated successfully. Saved {$savedCount} records.",
-                'saved_count' => $savedCount,
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error saving physical documents', ['error' => $e->getMessage(), 'application_id' => $application->id]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to save physical document status: ' . $e->getMessage(),
-            ], 500);
         }
-    }
 
+        $allPhysicalDocsVerified = PhysicalDocumentCheck::where('application_id', $application->id)
+            ->where('status', '!=', 'verified')
+            ->doesntExist();
+
+        if ($allPhysicalDocsVerified) {
+            $application->physical_docs_status = 'verified';
+            $application->status = 'physical_docs_verified';
+            $application->save();
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Physical document status updated successfully. Saved {$savedCount} records.",
+            'saved_count' => $savedCount,
+        ]);
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error('Error saving physical documents', ['error' => $e->getMessage(), 'application_id' => $application->id]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to save physical document status: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 
 
     public function viewDocVerification(Onboarding $application)

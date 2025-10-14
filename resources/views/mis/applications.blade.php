@@ -350,7 +350,7 @@
 												@endif
 
 												{{-- Document Verified Actions --}}
-												@if ($application->status == 'documents_verified')
+												@if ($application->status == 'documents_verified' && $application->physicalDispatch)
 												<li>
 													<a class="dropdown-item mis-action-btn"
 														href="{{ route('approvals.physical-documents', $application->id) }}"

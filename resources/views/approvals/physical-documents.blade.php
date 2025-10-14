@@ -101,7 +101,7 @@
                     <div class="security-cheques-section">
                         <!-- Upload Row -->
                         <div class="upload-row mb-2">
-                            <label class="small fw-bold">Upload Cheques</label>
+                            {{--<label class="small fw-bold">Upload Cheques</label>--}}
                             @foreach($checks as $loopIndex => $chqCheck)
                                 @php $hasFileInRow = $chqCheck->file_path ?? false; @endphp
                                 <div class="file-upload-row mb-1 d-flex align-items-center" data-index="{{ $loopIndex }}">
@@ -447,9 +447,6 @@
         }
     </style>
 
-    <!-- Bootstrap JS Bundle -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-
     <script>
         // S3 URL Constructor
         function getS3Url(type, filename) {
@@ -636,7 +633,98 @@
         }
     });
 
-     // Create detail rows only when files are actually uploaded
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('.add-file-upload')) {
+        const uploadContainer = e.target.closest('.upload-row');
+        const detailsContainer = document.getElementById('cheque-details-container');
+        const index = uploadContainer.querySelectorAll('.file-upload-row').length;
+
+        // Create upload row
+        const newUploadRow = document.createElement('div');
+        newUploadRow.className = 'file-upload-row mb-1 d-flex align-items-center';
+        newUploadRow.dataset.index = index;
+        newUploadRow.innerHTML = `
+            <input type="file" class="form-control form-control-sm me-2 document-upload"
+                   data-type="security_cheques"
+                   data-display-type="Security Cheque"
+                   accept=".pdf,.doc,.docx,.jpg,.png"
+                   id="file-input-security_cheques-${index}">
+            <span class="file-name small me-2" id="file-name-security_cheques-${index}"></span>
+            <button type="button" class="btn btn-sm btn-danger remove-file-upload">
+                <i class="ri-delete-bin-line"></i>
+            </button>
+            <div class="hidden-file-container d-none"></div>
+        `;
+
+        // Insert upload row before the Add button
+        const addButton = e.target.closest('.add-file-upload');
+        uploadContainer.insertBefore(newUploadRow, addButton);
+
+        // Create corresponding detail row immediately
+        const newDetailRow = document.createElement('div');
+        newDetailRow.className = 'cheque-detail-row mb-2 p-2 border rounded';
+        newDetailRow.dataset.index = index;
+
+        newDetailRow.innerHTML = `
+            <div class="row g-1">
+                <div class="col-md-4">
+                    <label class="small">Sr. No</label>
+                    <input type="text" class="form-control form-control-sm" value="${parseInt(index) + 1}" readonly>
+                </div>
+                <div class="col-md-4">
+                    <label class="small">Date of obtained</label>
+                    <input type="date" class="form-control form-control-sm"
+                           name="security_cheques_details[${index}][date_obtained]"
+                           max="${new Date().toISOString().split('T')[0]}">
+                    <div id="security_cheques_details_${index}_date_obtained_error" class="text-danger small mt-1"></div>
+                </div>
+                <div class="col-md-4">
+                    <label class="small">Cheque No</label>
+                    <input type="text" class="form-control form-control-sm"
+                           name="security_cheques_details[${index}][cheque_no]"
+                           maxlength="50">
+                    <div id="security_cheques_details_${index}_cheque_no_error" class="text-danger small mt-1"></div>
+                </div>
+            </div>
+            <div class="row g-1 mt-1">
+                <div class="col-md-6">
+                    <label class="small">Date of Use</label>
+                    <input type="date" class="form-control form-control-sm"
+                           name="security_cheques_details[${index}][date_use]"
+                           max="${new Date().toISOString().split('T')[0]}">
+                    <div id="security_cheques_details_${index}_date_use_error" class="text-danger small mt-1"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="small">Purpose of use</label>
+                    <input type="text" class="form-control form-control-sm"
+                           name="security_cheques_details[${index}][purpose]"
+                           maxlength="200">
+                    <div id="security_cheques_details_${index}_purpose_error" class="text-danger small mt-1"></div>
+                </div>
+            </div>
+            <div class="row g-1 mt-1">
+                <div class="col-md-6">
+                    <label class="small">Date of Return</label>
+                    <input type="date" class="form-control form-control-sm"
+                           name="security_cheques_details[${index}][date_return]"
+                           max="${new Date().toISOString().split('T')[0]}">
+                    <div id="security_cheques_details_${index}_date_return_error" class="text-danger small mt-1"></div>
+                </div>
+                <div class="col-md-6">
+                    <label class="small">Remark/reason of return</label>
+                    <textarea class="form-control form-control-sm"
+                              name="security_cheques_details[${index}][remark_return]" rows="1"></textarea>
+                    <div id="security_cheques_details_${index}_remark_return_error" class="text-danger small mt-1"></div>
+                </div>
+            </div>
+        `;
+
+        detailsContainer.appendChild(newDetailRow);
+        console.log('Added new cheque row with details at index:', index);
+    }
+});
+
+
 document.addEventListener('change', function(e) {
     if (e.target.matches('.document-upload[data-type="security_cheques"]')) {
         const input = e.target;
@@ -714,7 +802,6 @@ document.addEventListener('change', function(e) {
         }
     }
 });
-
 
         // Remove file upload field - remove both upload and detail
       document.addEventListener('click', function(e) {

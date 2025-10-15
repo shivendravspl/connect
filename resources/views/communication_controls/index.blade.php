@@ -1,11 +1,20 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid py-3">
+<div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="page-title-box">
-                <h6 class="page-title">Communication Controls</h6>
+            <div
+                class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
+                <h4 class="mb-sm-0">Communication Controls</h4>
+
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
+                        <li class="breadcrumb-item active">Communication Controls</li>
+                    </ol>
+                </div>
+
             </div>
         </div>
     </div>
@@ -13,14 +22,17 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-body">
-                    <div class="row mb-2">
-                        <div class="col-sm-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+					<h5>Communication Controls</h5>
+					<div class="d-flex">
+                        <div class="">
                             <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#createControlModal">
                                 Add New Control
                             </button>
                         </div>
                     </div>
+                </div>
+                <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-bordered table-sm">
                             <thead>

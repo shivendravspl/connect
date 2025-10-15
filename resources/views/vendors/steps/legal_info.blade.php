@@ -3,7 +3,7 @@
 
     <div class="row mb-3">
         <div class="form-group">
-            <label class="form-label small" for="legal_status">Legal Status *</label>
+            <label class="form-label small" for="legal_status">Legal Status <span class="text-danger">*</span></label>
             <select class="form-control form-control-sm" id="legal_status" name="legal_status" required>
                 <option value="">Select Legal Status</option>
                 @foreach(['Sole Proprietorship', 'Partnership', 'LLP', 'Private Limited Company', 'Public Company', 'One Person Company', 'Other'] as $option)
@@ -17,15 +17,15 @@
     </div>
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="form-group">
-                <label class="form-label small" for="pan_number">PAN Number *</label>
+                <label class="form-label small" for="pan_number">PAN Number <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="pan_number" name="pan_number"
                     value="{{ old('pan_number', $vendor->pan_number ?? '') }}" required>
                 <small class="form-text text-muted">Format: AAAAA9999A</small>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="form-group">
                 <label for="pan_card_copy" class="form-label small">PAN Card Copy</label>
                 <div class="input-group">
@@ -39,18 +39,16 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
+   
+        <div class="col-md-3">
             <div class="form-group">
-                <label for="aadhar_number" class="form-label small">Aadhar Card No. *</label>
+                <label for="aadhar_number" class="form-label small">Aadhar Card No. <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="aadhar_number" name="aadhar_number"
                     value="{{ old('aadhar_number', $vendor->aadhar_number ?? '') }}" required>
                 <small class="form-text text-muted">12-digit number</small>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="form-group">
                 <label for="aadhar_card_copy" class="form-label small">Aadhar Card Copy</label>
                 <div class="input-group">
@@ -67,17 +65,17 @@
     </div>
 
     <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="form-group">
-                <label for="gst_number" class="form-label small">GST Number *</label>
+                <label for="gst_number" class="form-label small">GST Number <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="gst_number" name="gst_number"
                     value="{{ old('gst_number', $vendor->gst_number ?? '') }}">
                 <small class="form-text text-muted">Format: 22AAAAA0000A1Z5</small>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="form-group">
-                <label for="gst_certificate_copy" class="form-label small">GST Registration Certificate Copy *</label>
+                <label for="gst_certificate_copy" class="form-label small">GST Registration Certificate Copy <span class="text-danger">*</span></label>
                 <div class="input-group">
                     <input type="file" class="form-control" id="gst_certificate_copy" name="gst_certificate_copy">
                     @if(isset($vendor) && $vendor->gst_certificate_copy_path)
@@ -89,19 +87,17 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-6">
+   
+        <div class="col-md-3">
             <div class="form-group">
-                <label for="msme_number" class="form-label small">MSME Registration / Udyog Aadhar No. *</label>
+                <label for="msme_number" class="form-label small">MSME Registration / Udyog Aadhar No. <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="msme_number" name="msme_number"
                     value="{{ old('msme_number', $vendor->msme_number ?? '') }}">
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-3">
             <div class="form-group">
-                <label for="msme_certificate_copy" class="form-label small">Udyam Certificate / Udyog Aadhar Copy *</label>
+                <label for="msme_certificate_copy" class="form-label small">Udyam Certificate / Udyog Aadhar Copy <span class="text-danger">*</span></label>
                 <div class="input-group">
                     <input type="file" class="form-control form-control-sm" id="msme_certificate_copy" name="msme_certificate_copy">
                     @if(isset($vendor) && $vendor->msme_certificate_copy_path)

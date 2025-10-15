@@ -24,7 +24,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Vertical Records</h5>
                     <div>
-                        <a href="{{ route('verticals.export') }}" class="btn btn-success">
+                        <a href="{{ route('verticals.export') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
                     </div>

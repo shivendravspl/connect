@@ -206,14 +206,14 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
     <div class="row g-2">
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
-                <label for="establishment_name" class="form-label small">Name of Establishment *</label>
+                <label for="establishment_name" class="form-label small">Name of Establishment <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="establishment_name" name="establishment_name"
                     value="{{ old('establishment_name', $application->entityDetails->establishment_name ?? '') }}" required>
             </div>
         </div>
         <div class="col-12 col-md-6">
             <div class="form-group mb-2">
-                <label for="entity_type" class="form-label small">Type/Nature of Establishment *</label>
+                <label for="entity_type" class="form-label small">Type/Nature of Establishment <span class="text-danger">*</span></label>
                 <select class="form-select form-select-sm" id="entity_type" name="entity_type" required onchange="showRelevantFields()">
                     <option value="">Select Type</option>
                     @foreach(['individual_person' => 'Individual Person','sole_proprietorship' => 'Sole Proprietorship', 'partnership' => 'Partnership', 'llp' => 'Limited Liability Partnership (LLP)', 'private_company' => 'Private Company', 'public_company' => 'Public Company', 'cooperative_society' => 'Cooperative Societies', 'trust' => 'Trust'] as $value => $label)
@@ -238,7 +238,7 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                 <div class="row g-2">
                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
-                            <label for="individual_name" class="form-label small">Full Name *</label>
+                            <label for="individual_name" class="form-label small">Full Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="individual_name" name="individual_name"
                                 value="{{ old('individual_name', $individual->name ?? '') }}" 
                                 data-required="true" required>
@@ -246,7 +246,7 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                     </div>
                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
-                            <label for="individual_father_name" class="form-label small">Father's / Spouse's Name *</label>
+                            <label for="individual_father_name" class="form-label small">Father's / Spouse's Name <span class="text-danger">*</span></label>
                             <input type="text" class="form-control form-control-sm" id="individual_father_name" name="individual_father_name"
                                 value="{{ old('individual_father_name', $individual->father_name ?? '') }}" 
                                 data-required="true" required>
@@ -254,7 +254,7 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
                     </div>
                     <div class="col-12 col-md-3">
                         <div class="form-group mb-2">
-                            <label for="individual_dob" class="form-label small">Date of Birth *</label>
+                            <label for="individual_dob" class="form-label small">Date of Birth <span class="text-danger">*</span></label>
                             <input type="date" 
                                 class="form-control form-control-sm dob-input" 
                                 id="individual_dob" 

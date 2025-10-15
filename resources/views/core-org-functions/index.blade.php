@@ -24,7 +24,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Function Records</h5>
                     <div>
-                        <a href="{{ route('org-functions.export') }}" class="btn btn-success">
+                        <a href="{{ route('org-functions.export') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
                     </div>

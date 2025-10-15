@@ -2,8 +2,8 @@
     <div class="row g-2 p-2">
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
-                <label for="territory" class="form-label small">Territory *</label>
-                <select class="form-control form-control-sm select2-territory" id="territory" name="territory" required>
+                <label for="territory" class="form-label small">Territory <span class="text-danger">*</span></label>
+                <select class="form-control form-control-sm form-select-sm select2-territory" id="territory" name="territory" required>
                     <option value="">Select Territory</option>
                     @foreach($territory_list as $id => $name)
                         <option value="{{ $id }}"
@@ -17,7 +17,7 @@
 
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
-                <label class="form-label small">Region *</label>
+                <label class="form-label small">Region <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="region_display" readonly
                     value="{{ isset($application) && $application->exists && $application->region && isset($region_list[$application->region]) ? $region_list[$application->region] : (isset($preselected['region']) && isset($region_list[$preselected['region']]) ? $region_list[$preselected['region']] : '') }}">
                 <input type="hidden" name="region" id="region_id"
@@ -27,7 +27,7 @@
 
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
-                <label class="form-label small">Zone *</label>
+                <label class="form-label small">Zone <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="zone_display" readonly
                     value="{{ isset($application) && $application->exists && $application->zone && isset($zone_list[$application->zone]) ? $zone_list[$application->zone] : (isset($preselected['zone']) && isset($zone_list[$preselected['zone']]) ? $zone_list[$preselected['zone']] : '') }}">
                 <input type="hidden" name="zone" id="zone_id"
@@ -36,7 +36,7 @@
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
-                <label class="form-label small">Business Unit *</label>
+                <label class="form-label small">Business Unit <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="bu_display" readonly
                     value="{{ isset($application) && $application->exists && $application->business_unit && isset($bu_list[$application->business_unit]) ? $bu_list[$application->business_unit] : (isset($preselected['bu']) && isset($bu_list[$preselected['bu']]) ? $bu_list[$preselected['bu']] : '') }}">
                 <input type="hidden" name="business_unit" id="bu_id"
@@ -45,7 +45,7 @@
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-2">
             <div class="form-group mb-2">
-                <label class="form-label small">Crop Vertical *</label>
+                <label class="form-label small">Crop Vertical <span class="text-danger">*</span></label>
                 <input type="text" class="form-control form-control-sm" id="crop_vertical_display" readonly
                     value="{{ isset($application) && $application->exists && $application->crop_vertical && isset($vertical_list[$application->crop_vertical]) ? $vertical_list[$application->crop_vertical] : (isset($preselected['crop_vertical']) && isset($vertical_list[$preselected['crop_vertical']]) ? $vertical_list[$preselected['crop_vertical']] : '') }}">
                 <input type="hidden" name="crop_vertical" id="crop_vertical"

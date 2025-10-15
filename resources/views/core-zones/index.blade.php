@@ -24,10 +24,10 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Zone Records</h5>
                     <div>
-                        <button type="button" class="btn btn-info" data-bs-toggle="offcanvas" href="#FilterCanvas">
+                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="offcanvas" href="#FilterCanvas">
                             <i class="ri-filter-3-line align-bottom me-1"></i> Filters
                         </button>
-                        <a href="{{ route('zones.export') }}" class="btn btn-success">
+                        <a href="{{ route('zones.export') }}" class="btn btn-success btn-sm">
                             <i class="fas fa-file-excel me-1"></i> Export Excel
                         </a>
                     </div>

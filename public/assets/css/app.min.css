@@ -2774,7 +2774,7 @@
     -ms-flex-align: center;
     align-items: center;
     margin: 0 auto;
-    height: 85px;
+    height: 55px;
     padding: 0 var(--vz-grid-gutter-width) 0 calc(var(--vz-grid-gutter-width) * .5)
 }
 
@@ -2902,7 +2902,7 @@
 }
 
 .header-item {
-    height: 70px;
+    height: 55px;
     display: -webkit-box;
     display: -ms-flexbox;
     display: flex;
@@ -3241,7 +3241,7 @@
 }
 
 .page-content {
-    padding: calc(70px + var(--vz-grid-gutter-width)) calc(var(--vz-grid-gutter-width) * .5) 60px calc(var(--vz-grid-gutter-width) * .5)
+    padding: calc(40px + var(--vz-grid-gutter-width)) calc(var(--vz-grid-gutter-width) * .5) 60px calc(var(--vz-grid-gutter-width) * .5)
 }
 
 .navbar-menu {

@@ -5,8 +5,17 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="page-title-box">
-                <h4 class="page-title">Indent Management</h4>
+            <div
+                class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
+                <h4 class="mb-sm-0">Indent Management</h4>
+
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
+                        <li class="breadcrumb-item active">Indent Management</li>
+                    </ol>
+                </div>
+
             </div>
         </div>
     </div>
@@ -14,15 +23,17 @@
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-body">
-                    <div class="row mb-2">
-                        <div class="col-sm-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+					<h5>Indent Management</h5>
+					<div class="d-flex">
+                        <div class="">
                             <a href="{{ route('indents.create') }}" class="btn btn-sm btn-danger mb-2">
                                 <i class="ri-add-circle-line align-middle"></i> Create Indent
                             </a>
                         </div>
                     </div>
-
+                </div>
+                <div class="card-body">
                     @if(session('success'))
                     <div class="alert alert-success" id="successAlert">
                         {{ session('success') }}

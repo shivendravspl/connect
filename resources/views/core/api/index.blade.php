@@ -34,7 +34,7 @@
                         <div class="col-sm-auto ms-auto">
                             <div class="hstack gap-2">
                                 <button class="btn btn-soft-success" id="import-actions"><i class=" ri-download-cloud-2-line"></i> Import</button>
-                                <button type="button" class="btn btn-success add-btn" id="syncAPI"><i
+                                <button type="button" class="btn btn-success add-btn btn-sm" id="syncAPI"><i
                                         class="ri-restart-line align-bottom me-1"></i> Sync APIs
                                 </button>
 

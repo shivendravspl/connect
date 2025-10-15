@@ -2296,47 +2296,159 @@
         });
     });
 
-    // Confirm Distributor buttons
-    $(document).on('click', '.confirm-distributor-btn', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        closeAllTableDropdowns();
-        var url = $(this).data('url');
-        var applicationId = $(this).data('application-id');
-        var distributorName = $(this).data('distributor-name');
-        $('#confirm-application-id').text(applicationId);
-        $('#confirm-distributor-name').text(distributorName);
-        $('#confirm-remarks').val('');
-        $('#confirmDistributorModal').modal('show');
-        $('#confirm-distributor-submit').data('url', url);
-    });
+    // Update the confirm distributor modal handler
+$(document).on('click', '.confirm-distributor-btn', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeAllTableDropdowns();
+    
+    var url = $(this).data('url');
+    var applicationId = $(this).data('application-id');
+    var distributorName = $(this).data('distributor-name');
+    
+    // Set the application details
+    $('#confirm-application-id').text(applicationId);
+    $('#confirm-distributor-name').text(distributorName);
+    
+    // Reset and initialize the form
+    $('#confirm-distributor-form')[0].reset();
+    $('#confirm-distributor-form').removeClass('was-validated');
+    
+    // Set today's date as default for appointment date
+    var today = new Date().toISOString().split('T')[0];
+    $('#date-of-appointment').val(today);
+    
+    // Store the submission URL in the form
+    $('#confirm-distributor-form').data('url', url);
+    
+    $('#confirmDistributorModal').modal('show');
+});
 
-    // Confirm Distributor Submit
-    $(document).on('click', '#confirm-distributor-submit', function() {
-        var url = $(this).data('url');
-        var remarks = $('#confirm-remarks').val();
-        $.ajax({
-            url: url,
-            method: 'POST',
-            data: { remarks: remarks },
-            success: function(response) {
-                if (response.success) {
-                    alert(response.message);
-                    $('#confirmDistributorModal').modal('hide');
-                    if (response.redirect) {
-                        window.location.href = response.redirect;
-                    } else {
-                        location.reload();
-                    }
-                } else {
-                    alert(response.message);
-                }
-            },
-            error: function(jqXHR, textStatus, errorThrown) {
-                alert('Error: ' + (jqXHR.responseJSON ? jqXHR.responseJSON.message : textStatus));
+ 
+let isConfirmSubmitting = false;
+
+$(document).on('click', '.confirm-distributor-btn', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    closeAllTableDropdowns();
+    
+    var url = $(this).data('url');
+    var applicationId = $(this).data('application-id');
+    var distributorName = $(this).data('distributor-name');
+    var currentStatus = $(this).data('status');
+    
+    // Quick check - if already confirmed, don't open modal
+    if (currentStatus === 'distributorship_created') {
+        showToast('info', 'This distributor has already been confirmed.', 'Info');
+        return;
+    }
+    
+    // Set the application details
+    $('#confirm-application-id').text(applicationId);
+    $('#confirm-distributor-name').text(distributorName);
+    
+    // Reset and initialize the form
+    $('#confirm-distributor-form')[0].reset();
+    $('#confirm-distributor-form').removeClass('was-validated');
+    
+    // Set today's date as default for appointment date
+    var today = new Date().toISOString().split('T')[0];
+    $('#date-of-appointment').val(today);
+    
+    // Store the submission URL in the form
+    $('#confirm-distributor-form').data('url', url);
+    
+    $('#confirmDistributorModal').modal('show');
+});
+
+$(document).on('submit', '#confirm-distributor-form', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (isConfirmSubmitting) {
+        return;
+    }
+    
+    var form = $(this)[0];
+    var url = $(this).data('url');
+    
+    if (!form.checkValidity()) {
+        $(this).addClass('was-validated');
+        return;
+    }
+    
+    isConfirmSubmitting = true;
+    var formData = $(this).serialize();
+    var submitBtn = $('#confirm-distributor-submit');
+    
+    console.log('Submitting form data:', formData);
+    console.log('URL:', url);
+    
+    submitBtn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm" role="status"></span> Processing...');
+    
+    $.ajax({
+        url: url,
+        method: 'POST',
+        data: formData,
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function(response) {
+            console.log('Success response:', response);
+            if (response.success) {
+                showToast('success', response.message, 'Success');
+                $('#confirmDistributorModal').modal('hide');
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showToast('error', response.message, 'Error');
+                submitBtn.prop('disabled', false).html('Confirm Distributor');
+                isConfirmSubmitting = false;
             }
-        });
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            console.log('Error response:', jqXHR);
+            
+            // Silent handling for 403 errors (already confirmed)
+            if (jqXHR.status === 403) {
+                $('#confirmDistributorModal').modal('hide');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
+                isConfirmSubmitting = false;
+                return;
+            }
+            
+            var errorMessage = 'An error occurred while processing your request.';
+            
+            if (jqXHR.responseJSON && jqXHR.responseJSON.errors) {
+                var errors = jqXHR.responseJSON.errors;
+                errorMessage = Object.values(errors).flat().join('<br>');
+                $('#confirm-distributor-form').addClass('was-validated');
+            } else if (jqXHR.responseJSON && jqXHR.responseJSON.message) {
+                errorMessage = jqXHR.responseJSON.message;
+            } else if (jqXHR.status === 500) {
+                errorMessage = 'Internal server error. Please try again later.';
+            }
+            
+            showToast('error', errorMessage, 'Error');
+            submitBtn.prop('disabled', false).html('Confirm Distributor');
+            isConfirmSubmitting = false;
+        }
     });
+});
+
+$('#confirmDistributorModal').on('hidden.bs.modal', function() {
+    isConfirmSubmitting = false;
+    $('#confirm-distributor-form')[0].reset();
+    $('#confirm-distributor-form').removeClass('was-validated');
+    $('#confirm-distributor-submit').prop('disabled', false).html('Confirm Distributor');
+    $('#date-of-appointment, #distributor-code').removeClass('is-valid is-invalid');
+});
+
+
 
     // Modal cleanup handlers
     $('#docVerificationModal').off('hidden.bs.modal').on('hidden.bs.modal', function() {

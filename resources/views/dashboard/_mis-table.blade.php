@@ -402,7 +402,7 @@ use App\Models\Status;
     </div>
 
     <!-- Confirm Distributor Modal -->
-    <div class="modal fade" id="confirmDistributorModal" tabindex="-1" aria-labelledby="confirmDistributorModalLabel" aria-hidden="true">
+    {{--<div class="modal fade" id="confirmDistributorModal" tabindex="-1" aria-labelledby="confirmDistributorModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -422,7 +422,9 @@ use App\Models\Status;
                 </div>
             </div>
         </div>
-    </div>
+    </div>--}}
+    @include('mis.partials.modals')
+
 </div>
 
 <style>

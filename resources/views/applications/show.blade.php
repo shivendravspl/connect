@@ -1282,7 +1282,7 @@
                             $truthful = $application->declarations->where('question_key', 'declaration_truthful')->first();
                             @endphp
                             <tr>
-                                <th>a. Truthfulness and Completeness</th>
+                                <th>I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief</th>
                                 <td>{{ $truthful && $truthful->has_issue ? 'Affirmed' : 'Not Affirmed' }}</td>
                             </tr>
                         </tbody>

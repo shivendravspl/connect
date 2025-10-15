@@ -1824,112 +1824,123 @@ class ApprovalController extends Controller
         ));
     }
 
-    public function confirmDistributor(Request $request, Onboarding $application)
-    {
-        // Check authorization (MIS team or distributor_approval permission)
-        $user = Auth::user();
-        if (!$user->employee->isMisTeam() && !$user->hasPermissionTo('distributor_approval')) {
-            Log::error('Unauthorized access to confirm distributor', [
-                'user_id' => $user->emp_id,
-                'application_id' => $application->id
-            ]);
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
-            }
-            return redirect()->back()->with('error', 'Unauthorized access.');
+   public function confirmDistributor(Request $request, Onboarding $application)
+{
+    $user = Auth::user();
+    
+    // Check authorization (MIS team or distributor_approval permission)
+    if (!$user->employee->isMisTeam() && !$user->hasPermissionTo('distributor_approval')) {
+        if ($request->ajax()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
         }
+        return redirect()->back()->with('error', 'Unauthorized access.');
+    }
 
-        // Validate application status
-        if (!in_array($application->status, ['agreement_created', 'physical_docs_verified'])) {
-            Log::error('Invalid application status for confirming distributor', [
-                'application_id' => $application->id,
-                'status' => $application->status
-            ]);
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Cannot confirm distributor for application with status: ' . $application->status
-                ], 403);
-            }
-            return redirect()->back()->with('error', 'Cannot confirm distributor for application with status: ' . $application->status);
+    // Validate application status - PREVENT DUPLICATE CONFIRMATION
+    if (!in_array($application->status, ['agreement_created', 'physical_docs_verified'])) {
+        $message = 'Cannot confirm distributor for application with status: ' . $application->status;
+        if ($application->status === 'distributorship_created') {
+            $message = 'Distributor has already been confirmed for this application.';
         }
+        
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => $message
+            ], 403);
+        }
+        return redirect()->back()->with('error', $message);
+    }
 
-        // Validate request
-        $validator = Validator::make($request->all(), [
-            'remarks' => 'nullable|string|min:5|max:255'
-        ], [
-            'remarks.min' => 'Remarks, if provided, must be at least 5 characters.',
-            'remarks.max' => 'Remarks cannot exceed 255 characters.'
+    // Validate request - FIXED UNIQUE VALIDATION
+    $validator = Validator::make($request->all(), [
+        'date_of_appointment' => 'required|date|before_or_equal:today',
+        'distributor_code' => 'required|string|max:50|unique:onboardings,distributor_code,' . $application->id, // FIXED
+        'remarks' => 'nullable|string|min:5|max:255',
+        'authorized_person_name' => 'required|string|max:255',
+        'authorized_person_designation' => 'required|string|max:255'
+    ], [
+        'date_of_appointment.required' => 'Appointment date is required.',
+        'date_of_appointment.before_or_equal' => 'Appointment date cannot be in the future.',
+        'distributor_code.required' => 'Distributor code is required.',
+        'distributor_code.unique' => 'This distributor code is already in use.',
+        'remarks.min' => 'Remarks, if provided, must be at least 5 characters.',
+        'remarks.max' => 'Remarks cannot exceed 255 characters.',
+        'authorized_person_name.required' => 'Authorized person name is required.',
+        'authorized_person_designation.required' => 'Authorized person designation is required.'
+    ]);
+
+    if ($validator->fails()) {
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+        return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Validation failed.');
+    }
+
+    try {
+        // Begin transaction
+        DB::beginTransaction();
+
+        // Update application with distributor details
+        $application->update([
+            'status' => 'distributorship_created',
+            'distributor_code' => $request->distributor_code,
+            'date_of_appointment' => $request->date_of_appointment,
+            'authorized_person_name' => $request->authorized_person_name,
+            'authorized_person_designation' => $request->authorized_person_designation,
+            'distributorship_confirmed_at' => now(),
+            'final_approver_id' => $user->emp_id
         ]);
 
-        if ($validator->fails()) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed.',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Validation failed.');
+        // Log the action
+        $this->createApprovalLog(
+            $application->id,
+            $user->emp_id,
+            $user->employee->emp_designation,
+            'distributor_confirmed',
+            $request->input('remarks', 'Distributor confirmed with code: ' . $request->distributor_code . 
+                ' and appointment date: ' . $request->date_of_appointment .
+                ' by authorized person: ' . $request->authorized_person_name)
+        );
+
+        // Notify creator and sales hierarchy
+        $this->notifyCreator(
+            $application,
+            'Distributorship Confirmed',
+            "Your application has been confirmed as a distributor.\n" .
+                "Distributor Code: {$request->distributor_code}\n" .
+                "Appointment Date: {$request->date_of_appointment}\n" .
+                "Authorized By: {$request->authorized_person_name} ({$request->authorized_person_designation})"
+        );
+
+        $this->notifySalesHierarchy($application, 'Distributorship Confirmed');
+
+        // Commit transaction
+        DB::commit();
+        
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Distributor confirmed successfully!',
+                'redirect' => route('dashboard')
+            ]);
         }
-
-        try {
-            // Begin transaction
-            DB::beginTransaction();
-
-            // Update application status
-            $previousStatus = $application->status;
-            $application->update([
-                'status' => 'distributorship_created',
-                'distributorship_confirmed_at' => now(),
-                'final_approver_id' => $user->emp_id
-            ]);
-
-            // Log the action
-            $this->createApprovalLog(
-                $application->id,
-                $user->emp_id,
-                $user->employee->emp_designation,
-                'distributor_confirmed',
-                $request->input('remarks', 'Distributor confirmed by ' . $user->employee->emp_name)
-            );
-
-            // Notify creator and sales hierarchy
-            $this->notifyCreator($application, 'Distributorship Confirmed', 'Your application has been confirmed as a distributor.');
-            $this->notifySalesHierarchy($application, 'Distributorship Confirmed');
-
-            // Commit transaction
-            DB::commit();
-
-            Log::info('Distributor confirmed', [
-                'application_id' => $application->id,
-                'user_id' => $user->emp_id
-            ]);
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Distributor confirmed successfully!',
-                    'redirect' => route('dashboard')
-                ]);
-            }
-            return redirect()->route('dashboard')->with('success', 'Distributor confirmed successfully!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error confirming distributor', [
-                'application_id' => $application->id,
-                'user_id' => $user->emp_id,
-                'error' => $e->getMessage()
-            ]);
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'An unexpected error occurred: ' . $e->getMessage()
-                ], 500);
-            }
-            return redirect()->back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
+        return redirect()->route('dashboard')->with('success', 'Distributor confirmed successfully!');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred: ' . $e->getMessage()
+            ], 500);
         }
+        return redirect()->back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
     }
+}
 
 
 

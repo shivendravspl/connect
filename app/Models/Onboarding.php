@@ -32,7 +32,12 @@ class Onboarding extends Model
         'doc_verification_status',
         'agreement_status',
         'physical_docs_status',
-        'final_status'
+        'final_status',
+        'distributor_code',
+        'date_of_appointment',
+        'authorized_person_name', 
+        'authorized_person_designation',
+        'distributorship_confirmed_at'
     ];
 
     protected $casts = [

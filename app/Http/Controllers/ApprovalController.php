@@ -1504,8 +1504,7 @@ class ApprovalController extends Controller
 
     public function updatePhysicalDocuments(Request $request, Onboarding $application)
     {
-        // dd($request->all()); // Comment out after debug
-
+        //dd($request->all());
         // Check if any document is marked as received
         $anyReceived = false;
         $documents = $request->input('documents', []);
@@ -1521,7 +1520,7 @@ class ApprovalController extends Controller
             'receive_date' => ['required_if:any_received,true', 'nullable', 'date', 'before_or_equal:today'],
             'verified_date' => 'required|date|before_or_equal:today',
             'documents' => 'required|array|min:1',
-            'documents.*.received' => 'nullable|boolean',
+            'documents.*.received' => 'required|in:0,1',
             'documents.*.status' => 'required|in:verified,not_verified',
             'documents.*.reason' => 'required_if:documents.*.status,not_verified|string|max:500|nullable',
             // Standard docs
@@ -1534,7 +1533,7 @@ class ApprovalController extends Controller
             'existing_security_deposit_file' => 'nullable|string',
             'existing_security_deposit_file_original' => 'nullable|string',
             // Security Cheques details - required if verified and files present
-            'security_cheques_details' => 'required_if:documents.security_cheques.status,verified|nullable|array',
+            'security_cheques_details' => 'required_if:documents.security_cheques.received,1|nullable|array',
             'security_cheques_details.*.date_obtained' => 'required_if:documents.security_cheques.status,verified|nullable|date|before_or_equal:today',
             'security_cheques_details.*.cheque_no' => 'required_if:documents.security_cheques.status,verified|nullable|string|max:50',
             'security_cheques_details.*.date_use' => 'nullable|date|before_or_equal:today',
@@ -1553,7 +1552,6 @@ class ApprovalController extends Controller
         ];
 
         $messages = [
-            // ... (keep existing messages, remove all ack-related)
             'receive_date.required_if' => 'The date of receiving documents is required when any document is marked as received.',
             'receive_date.date' => 'The date of receiving documents must be a valid date.',
             'receive_date.before_or_equal' => 'The date of receiving documents cannot be in the future.',
@@ -1562,6 +1560,8 @@ class ApprovalController extends Controller
             'verified_date.before_or_equal' => 'The verified date cannot be in the future.',
             'documents.required' => 'Document data is required.',
             'documents.min' => 'At least one document must be processed.',
+            'documents.*.received.required' => 'Please select received status for :attribute.',
+            'documents.*.received.in' => 'Received status must be either Received or Not Received.',
             'documents.*.status.required' => 'Please select a verification status for :attribute.',
             'documents.*.status.in' => 'Verification status must be either Verified or Not Verified.',
             'documents.*.reason.required_if' => 'Remarks are required when the document is not verified.',
@@ -1631,13 +1631,34 @@ class ApprovalController extends Controller
                     'updated_by' => Auth::id(),
                 ]
             );
+            // Track documents that need notification and overall status
+            $documentsNeedingNotification = [];
+            $hasUnreceivedDocuments = false;
+            $hasUnverifiedDocuments = false;
 
             $savedCount = 0;
             foreach ($documents as $type => $data) {
-                $received = ($data['received'] ?? false) == true;
+                $received = ($data['received'] ?? '0') == '1'; // Now it's string '1' or '0'
                 $status = $data['status'] ?? 'pending';
                 $reason = $data['reason'] ?? null;
-                $amount = null; // Default for non-security_deposit types
+                $amount = null;
+
+                // Check if document needs notification (Not Received OR Not Verified)
+                if (!$received || $status === 'not_verified') {
+                    $documentsNeedingNotification[] = [
+                        'type' => $type,
+                        'received' => $received,
+                        'status' => $status,
+                        'reason' => $reason
+                    ];
+
+                    if (!$received) {
+                        $hasUnreceivedDocuments = true;
+                    }
+                    if ($status === 'not_verified') {
+                        $hasUnverifiedDocuments = true;
+                    }
+                }
 
                 if ($type === 'security_deposit') {
                     $amount = $request->input('security_deposit_amount');
@@ -1659,12 +1680,10 @@ class ApprovalController extends Controller
                     $originalNames = $request->input("existing_security_cheques_file_original", []);
                     $details = $request->input("security_cheques_details", []);
 
-                    // ONLY create records for files that actually exist
-                    foreach ($files as $index => $fileName) {
-                        if (!empty($fileName)) {
-                            $originalName = $originalNames[$index] ?? $fileName;
-                            $detailData = $details[$index] ?? [];
-
+                    // If received is true, we must create at least one record even if no files
+                    if ($received) {
+                        // If no files but received is true, create one record without file
+                        if (empty($files)) {
                             $check = PhysicalDocumentCheck::create([
                                 'application_id' => $application->id,
                                 'document_type' => $type,
@@ -1672,18 +1691,60 @@ class ApprovalController extends Controller
                                 'status' => $status,
                                 'reason' => $reason,
                                 'amount' => $amount,
-                                'file_path' => $fileName,
-                                'original_filename' => $originalName,
+                                'file_path' => null, // No file
+                                'original_filename' => null,
                                 'submitted_by' => Auth::user()->emp_id,
                                 'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
                             ]);
 
-                            // Create details only if we have data
-                            if ($status === 'verified' && (!empty($detailData['cheque_no']) || !empty($detailData['date_obtained']))) {
-                                $check->securityChequeDetails()->create($detailData);
+                            // Create details if we have data (even without file)
+                            if ($status === 'verified' && isset($details[0]) && (!empty($details[0]['cheque_no']) || !empty($details[0]['date_obtained']))) {
+                                $check->securityChequeDetails()->create($details[0]);
                             }
                             $savedCount++;
+                        } else {
+                            // Create records for files that actually exist
+                            foreach ($files as $index => $fileName) {
+                                if (!empty($fileName)) {
+                                    $originalName = $originalNames[$index] ?? $fileName;
+                                    $detailData = $details[$index] ?? [];
+
+                                    $check = PhysicalDocumentCheck::create([
+                                        'application_id' => $application->id,
+                                        'document_type' => $type,
+                                        'received' => $received,
+                                        'status' => $status,
+                                        'reason' => $reason,
+                                        'amount' => $amount,
+                                        'file_path' => $fileName,
+                                        'original_filename' => $originalName,
+                                        'submitted_by' => Auth::user()->emp_id,
+                                        'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+                                    ]);
+
+                                    // Create details only if we have data
+                                    if ($status === 'verified' && (!empty($detailData['cheque_no']) || !empty($detailData['date_obtained']))) {
+                                        $check->securityChequeDetails()->create($detailData);
+                                    }
+                                    $savedCount++;
+                                }
+                            }
                         }
+                    } else {
+                        // Not received - create one record without file
+                        $check = PhysicalDocumentCheck::create([
+                            'application_id' => $application->id,
+                            'document_type' => $type,
+                            'received' => $received,
+                            'status' => $status,
+                            'reason' => $reason,
+                            'amount' => $amount,
+                            'file_path' => null,
+                            'original_filename' => null,
+                            'submitted_by' => Auth::user()->emp_id,
+                            'verified_date' => ($status === 'verified') ? $request->input('verified_date') : null,
+                        ]);
+                        $savedCount++;
                     }
                 } else {
                     // Single file for other types
@@ -1694,8 +1755,8 @@ class ApprovalController extends Controller
                         $originalName = $request->input("existing_{$type}_file_original", $fileName);
                     }
 
-                    // Skip if no data
-                    if ($received || $status !== 'pending' || $fileName) {
+                    // Skip if no data (but always save if there's an issue for notification)
+                    if ($received || $status !== 'pending' || $fileName || !$received || $status === 'not_verified') {
                         $check = PhysicalDocumentCheck::create([
                             'application_id' => $application->id,
                             'document_type' => $type,
@@ -1721,23 +1782,46 @@ class ApprovalController extends Controller
                     }
                 }
             }
+            // Determine application status based on document conditions
+            $allDocumentsReceivedAndVerified = !$hasUnreceivedDocuments && !$hasUnverifiedDocuments;
 
-            $allPhysicalDocsVerified = PhysicalDocumentCheck::where('application_id', $application->id)
-                ->where('status', '!=', 'verified')
-                ->doesntExist();
-
-            if ($allPhysicalDocsVerified) {
+            if ($allDocumentsReceivedAndVerified) {
+                // ALL documents are received AND verified
                 $application->physical_docs_status = 'verified';
                 $application->status = 'physical_docs_verified';
                 $application->save();
+
+                Log::info('All physical documents verified', [
+                    'application_id' => $application->id,
+                    'status' => 'physical_docs_verified'
+                ]);
+            } else {
+                // Some documents are not received or not verified
+                $application->physical_docs_status = 'pending';
+                if ($hasUnreceivedDocuments) {
+                    $application->status = 'physical_docs_pending';
+                } else if ($hasUnverifiedDocuments) {
+                    $application->status = 'physical_docs_pending';
+                }
+                $application->save();
             }
+
+            // Send notification if any documents need attention
+            if (!empty($documentsNeedingNotification)) {
+                $this->sendDocumentNotification($application, $documentsNeedingNotification, $allDocumentsReceivedAndVerified);
+            }
+
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Physical document status updated successfully. Saved {$savedCount} records.",
+                'message' => "Physical document status updated successfully. Saved {$savedCount} records." .
+                    ($allDocumentsReceivedAndVerified ?
+                        ' All documents verified successfully.' :
+                        ' Some documents need attention. Notification sent.'),
                 'saved_count' => $savedCount,
+                'all_verified' => $allDocumentsReceivedAndVerified
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -1748,6 +1832,104 @@ class ApprovalController extends Controller
                 'message' => 'Failed to save physical document status: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function sendDocumentNotification(Onboarding $application, array $documentsNeedingAttention, bool $allVerified = false)
+    {
+        try {
+            // Get the creator of the application
+            $creatorId = $application->created_by;
+            $establishmentName = $application->entityDetails->establishment_name ?? 'Unknown Establishment';
+            $applicationId = $application->id;
+
+            if (!$creatorId) {
+                Log::warning('No creator found for application', ['application_id' => $applicationId]);
+                return;
+            }
+
+            if ($allVerified) {
+                // Success notification - all documents verified
+                $title = "All Physical Documents Verified - {$establishmentName}";
+                $description = "All physical documents for {$establishmentName} have been successfully verified.\n\n";
+                $description .= "Application ID: {$applicationId}\n";
+                $description .= "Status: Ready for next steps.";
+            } else {
+                // Documents need attention
+                $title = "Physical Documents Need Attention - {$establishmentName}";
+
+                // Build detailed description
+                $description = "Physical document verification completed for {$establishmentName}.\n\n";
+                $description .= "The following documents require your attention:\n\n";
+
+                foreach ($documentsNeedingAttention as $doc) {
+                    $documentLabel = $this->getDocumentLabel($doc['type']);
+                    $description .= "• {$documentLabel}\n";
+
+                    if (!$doc['received']) {
+                        $description .= "  - Status: ❌ Not Received\n";
+                    }
+
+                    if ($doc['status'] === 'not_verified') {
+                        $description .= "  - Status: ⚠️ Not Verified\n";
+                    }
+
+                    if ($doc['reason']) {
+                        $description .= "  - Reason: {$doc['reason']}\n";
+                    }
+                    $description .= "\n";
+                }
+
+                $description .= "Application ID: {$applicationId}\n";
+                $description .= "Please review and take appropriate action.";
+            }
+
+            // Create notification
+            DB::table('notification')->insert([
+                'userid' => $creatorId,
+                'notification_read' => 0,
+                'title' => $title,
+                'description' => $description,
+                'created_at' => now(),
+            ]);
+
+            Log::info('Document notification sent', [
+                'application_id' => $applicationId,
+                'creator_id' => Auth::user()->id,
+                'all_verified' => $allVerified,
+                'documents_count' => count($documentsNeedingAttention)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send document notification', [
+                'application_id' => $application->id,
+                'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Get human-readable document label
+     */
+    private function getDocumentLabel($documentType)
+    {
+        $labels = [
+            'agreement_copy' => 'Agreement Copy',
+            'security_cheques' => 'Security Cheques',
+            'security_deposit' => 'Security Deposit',
+            'ownership_info' => 'Ownership Information',
+            'itr_acknowledgement' => 'ITR Acknowledgement',
+            'balance_sheet' => 'Balance Sheet',
+            'entity_details' => 'Entity Details',
+            'main_document_pan' => 'PAN Card',
+            'main_document_seed_license' => 'Seed License',
+            'main_document_bank' => 'Bank Document',
+            'main_document_entity_proof' => 'Entity Proof',
+            'main_document_bank_statement' => 'Bank Statement',
+            'main_document_itr_acknowledgement' => 'ITR Acknowledgement',
+            'authorized_letter_0' => 'Authorized Letter',
+            'authorized_aadhar_0' => 'Authorized Aadhar',
+        ];
+
+        return $labels[$documentType] ?? str_replace('_', ' ', ucfirst($documentType));
     }
 
 
@@ -1824,123 +2006,123 @@ class ApprovalController extends Controller
         ));
     }
 
-   public function confirmDistributor(Request $request, Onboarding $application)
-{
-    $user = Auth::user();
-    
-    // Check authorization (MIS team or distributor_approval permission)
-    if (!$user->employee->isMisTeam() && !$user->hasPermissionTo('distributor_approval')) {
-        if ($request->ajax()) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
+    public function confirmDistributor(Request $request, Onboarding $application)
+    {
+        $user = Auth::user();
+
+        // Check authorization (MIS team or distributor_approval permission)
+        if (!$user->employee->isMisTeam() && !$user->hasPermissionTo('distributor_approval')) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
+            }
+            return redirect()->back()->with('error', 'Unauthorized access.');
         }
-        return redirect()->back()->with('error', 'Unauthorized access.');
-    }
 
-    // Validate application status - PREVENT DUPLICATE CONFIRMATION
-    if (!in_array($application->status, ['agreement_created', 'physical_docs_verified'])) {
-        $message = 'Cannot confirm distributor for application with status: ' . $application->status;
-        if ($application->status === 'distributorship_created') {
-            $message = 'Distributor has already been confirmed for this application.';
+        // Validate application status - PREVENT DUPLICATE CONFIRMATION
+        if (!in_array($application->status, ['agreement_created', 'physical_docs_verified'])) {
+            $message = 'Cannot confirm distributor for application with status: ' . $application->status;
+            if ($application->status === 'distributorship_created') {
+                $message = 'Distributor has already been confirmed for this application.';
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $message
+                ], 403);
+            }
+            return redirect()->back()->with('error', $message);
         }
-        
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => $message
-            ], 403);
-        }
-        return redirect()->back()->with('error', $message);
-    }
 
-    // Validate request - FIXED UNIQUE VALIDATION
-    $validator = Validator::make($request->all(), [
-        'date_of_appointment' => 'required|date|before_or_equal:today',
-        'distributor_code' => 'required|string|max:50|unique:onboardings,distributor_code,' . $application->id, // FIXED
-        'remarks' => 'nullable|string|min:5|max:255',
-        'authorized_person_name' => 'required|string|max:255',
-        'authorized_person_designation' => 'required|string|max:255'
-    ], [
-        'date_of_appointment.required' => 'Appointment date is required.',
-        'date_of_appointment.before_or_equal' => 'Appointment date cannot be in the future.',
-        'distributor_code.required' => 'Distributor code is required.',
-        'distributor_code.unique' => 'This distributor code is already in use.',
-        'remarks.min' => 'Remarks, if provided, must be at least 5 characters.',
-        'remarks.max' => 'Remarks cannot exceed 255 characters.',
-        'authorized_person_name.required' => 'Authorized person name is required.',
-        'authorized_person_designation.required' => 'Authorized person designation is required.'
-    ]);
-
-    if ($validator->fails()) {
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed.',
-                'errors' => $validator->errors()
-            ], 422);
-        }
-        return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Validation failed.');
-    }
-
-    try {
-        // Begin transaction
-        DB::beginTransaction();
-
-        // Update application with distributor details
-        $application->update([
-            'status' => 'distributorship_created',
-            'distributor_code' => $request->distributor_code,
-            'date_of_appointment' => $request->date_of_appointment,
-            'authorized_person_name' => $request->authorized_person_name,
-            'authorized_person_designation' => $request->authorized_person_designation,
-            'distributorship_confirmed_at' => now(),
-            'final_approver_id' => $user->emp_id
+        // Validate request - FIXED UNIQUE VALIDATION
+        $validator = Validator::make($request->all(), [
+            'date_of_appointment' => 'required|date|before_or_equal:today',
+            'distributor_code' => 'required|string|max:50|unique:onboardings,distributor_code,' . $application->id, // FIXED
+            'remarks' => 'nullable|string|min:5|max:255',
+            'authorized_person_name' => 'required|string|max:255',
+            'authorized_person_designation' => 'required|string|max:255'
+        ], [
+            'date_of_appointment.required' => 'Appointment date is required.',
+            'date_of_appointment.before_or_equal' => 'Appointment date cannot be in the future.',
+            'distributor_code.required' => 'Distributor code is required.',
+            'distributor_code.unique' => 'This distributor code is already in use.',
+            'remarks.min' => 'Remarks, if provided, must be at least 5 characters.',
+            'remarks.max' => 'Remarks cannot exceed 255 characters.',
+            'authorized_person_name.required' => 'Authorized person name is required.',
+            'authorized_person_designation.required' => 'Authorized person designation is required.'
         ]);
 
-        // Log the action
-        $this->createApprovalLog(
-            $application->id,
-            $user->emp_id,
-            $user->employee->emp_designation,
-            'distributor_confirmed',
-            $request->input('remarks', 'Distributor confirmed with code: ' . $request->distributor_code . 
-                ' and appointment date: ' . $request->date_of_appointment .
-                ' by authorized person: ' . $request->authorized_person_name)
-        );
+        if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput()->with('error', 'Validation failed.');
+        }
 
-        // Notify creator and sales hierarchy
-        $this->notifyCreator(
-            $application,
-            'Distributorship Confirmed',
-            "Your application has been confirmed as a distributor.\n" .
-                "Distributor Code: {$request->distributor_code}\n" .
-                "Appointment Date: {$request->date_of_appointment}\n" .
-                "Authorized By: {$request->authorized_person_name} ({$request->authorized_person_designation})"
-        );
+        try {
+            // Begin transaction
+            DB::beginTransaction();
 
-        $this->notifySalesHierarchy($application, 'Distributorship Confirmed');
-
-        // Commit transaction
-        DB::commit();
-        
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Distributor confirmed successfully!',
-                'redirect' => route('dashboard')
+            // Update application with distributor details
+            $application->update([
+                'status' => 'distributorship_created',
+                'distributor_code' => $request->distributor_code,
+                'date_of_appointment' => $request->date_of_appointment,
+                'authorized_person_name' => $request->authorized_person_name,
+                'authorized_person_designation' => $request->authorized_person_designation,
+                'distributorship_confirmed_at' => now(),
+                'final_approver_id' => $user->emp_id
             ]);
+
+            // Log the action
+            $this->createApprovalLog(
+                $application->id,
+                $user->emp_id,
+                $user->employee->emp_designation,
+                'distributor_confirmed',
+                $request->input('remarks', 'Distributor confirmed with code: ' . $request->distributor_code .
+                    ' and appointment date: ' . $request->date_of_appointment .
+                    ' by authorized person: ' . $request->authorized_person_name)
+            );
+
+            // Notify creator and sales hierarchy
+            $this->notifyCreator(
+                $application,
+                'Distributorship Confirmed',
+                "Your application has been confirmed as a distributor.\n" .
+                    "Distributor Code: {$request->distributor_code}\n" .
+                    "Appointment Date: {$request->date_of_appointment}\n" .
+                    "Authorized By: {$request->authorized_person_name} ({$request->authorized_person_designation})"
+            );
+
+            $this->notifySalesHierarchy($application, 'Distributorship Confirmed');
+
+            // Commit transaction
+            DB::commit();
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Distributor confirmed successfully!',
+                    'redirect' => route('dashboard')
+                ]);
+            }
+            return redirect()->route('dashboard')->with('success', 'Distributor confirmed successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An unexpected error occurred: ' . $e->getMessage()
+                ], 500);
+            }
+            return redirect()->back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
         }
-        return redirect()->route('dashboard')->with('success', 'Distributor confirmed successfully!');
-    } catch (\Exception $e) {
-        DB::rollBack();
-        if ($request->ajax()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'An unexpected error occurred: ' . $e->getMessage()
-            ], 500);
-        }
-        return redirect()->back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
     }
-}
 
 
 

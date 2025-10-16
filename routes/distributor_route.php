@@ -5,6 +5,7 @@ use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\CoreCropController;
+use App\Http\Controllers\DocumentChecklistController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -61,6 +62,7 @@ Route::middleware('auth')->group(function(){
     Route::get('/approvals/{application}/view-doc-verification', [ApprovalController::class, 'viewDocVerification'])->name('approvals.view-doc-verification');
     Route::get('/approvals/{application}/view-physical-doc-verification', [ApprovalController::class, 'viewPhysicalDocVerification'])->name('approvals.view-physical-doc-verification');
     Route::post('/approvals/{application}/confirm-distributor', [ApprovalController::class, 'confirmDistributor'])->name('approvals.confirm-distributor');
+    Route::get('/document-checklist/canvas-data', [DocumentChecklistController::class, 'canvasData'])->name('document-checklist.canvas-data');
     
 
     Route::get('/mis/applications', [ApprovalController::class, 'applications'])->name('mis.applications');

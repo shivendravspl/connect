@@ -112,7 +112,7 @@ use App\Models\Status;
                                 @endif
 
                                 {{-- Document Verified Actions --}}
-                                @if ($application->status == 'documents_verified' && $application->physicalDispatch)
+                                @if (($application->status == 'documents_verified' || $application->status == 'physical_docs_pending') && $application->physicalDispatch)
                                 <li>
                                     <a class="dropdown-item mis-action-btn"
                                         href="{{ route('approvals.physical-documents', $application->id) }}"

@@ -32,7 +32,7 @@ class HomeController extends Controller
         if ($request->ajax()) {
             return $this->dynamicData($request);
         }
-
+      
         $user = Auth::user();
         $filters = [
             'bu' => $request->input('bu', 'All'),

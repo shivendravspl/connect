@@ -424,7 +424,9 @@
                             Appoint Distributor Form
                         </a>
                         <a class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
-                        <a class="ms-3 me-2" href="">List of Required Documents <i class="ri-attachment-line"></i></a>
+                          <button type="button" class="btn btn-soft-info btn-sm ms-2" id="showDocumentChecklistBtn">
+                            <i class="ri-attachment-line me-1"></i> List of Required Documents
+                        </button>
                         <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
                             <i class="ri-filter-2-line"></i> Filters
                         </button>
@@ -1066,6 +1068,58 @@
     </div>
 @endif
 
+
+<!-- Document Checklist Canvas -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="documentChecklistCanvas" aria-labelledby="documentChecklistCanvasLabel">
+    <div class="offcanvas-header border-bottom">
+        <h5 class="offcanvas-title" id="documentChecklistCanvasLabel">
+            <i class="ri-file-list-check-line me-2"></i> Checklist of Required Documents
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div class="offcanvas-body p-0">
+        {{-- Loading Spinner --}}
+        <div id="checklistLoading" class="d-flex justify-content-center align-items-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        
+        {{-- Content Area --}}
+        <div id="checklistContent" class="d-none">
+            {{-- Filters --}}
+            <div class="p-3 border-bottom bg-light">
+                <div class="row g-2">
+                    <div class="col-12">
+                        <label for="canvas_entity_type" class="form-label small fw-semibold">Entity Type</label>
+                        <select name="entity_type" id="canvas_entity_type" class="form-select form-select-sm">
+                            <option value="sole_proprietorship">Sole Proprietorship</option>
+                            <option value="partnership">Partnership</option>
+                            <option value="llp">LLP</option>
+                            <option value="company" selected>Company</option>
+                            <option value="cooperative_society">Cooperative Society</option>
+                            <option value="trust">Trust</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Documents List --}}
+            <div id="canvasDocumentsContainer" class="p-3">
+                {{-- Documents will be loaded here via AJAX --}}
+            </div>
+        </div>
+        
+        {{-- Error State --}}
+        <div id="checklistError" class="d-none text-center py-5">
+            <i class="ri-error-warning-line display-4 text-muted"></i>
+            <p class="text-muted mt-3">Unable to load document checklist. Please try again.</p>
+            <button class="btn btn-sm btn-primary mt-2" onclick="loadDocumentChecklist()">Retry</button>
+        </div>
+    </div>
+</div>
+<!-- End Canvas -->
+
 <!-- Toast Container for Notifications -->
 <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
     <div id="actionToast" class="toast align-items-center text-bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
@@ -1163,8 +1217,10 @@
         initializeToast();
         initializeKpiClicks();
         initializeAllFeatures();
+        initializeDocumentChecklist();
     });
 
+    
     // Unified update function wrapper
     function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'approver' : (isSalesUser ? 'sales' : 'regular'))) {
         if (isUpdating) return;
@@ -2468,5 +2524,69 @@ $('#confirmDistributorModal').on('hidden.bs.modal', function() {
 
     window.initializeTimelineToggles = initializeTimelineToggles;
     window.initializeAllFeatures = initializeAllFeatures;
+
+
+    function initializeDocumentChecklist() {
+    // Show canvas button handler
+    $('#showDocumentChecklistBtn').on('click', function() {
+        const canvas = new bootstrap.Offcanvas('#documentChecklistCanvas');
+        canvas.show();
+        loadDocumentChecklist();
+    });
+
+    // Only entity type change handler now
+    $('#canvas_entity_type').on('change', function() {
+        loadDocumentChecklist();
+    });
+
+    // Canvas shown event - reload data when opened
+    $('#documentChecklistCanvas').on('shown.bs.offcanvas', function() {
+        loadDocumentChecklist();
+    });
+}
+
+function loadDocumentChecklist() {
+    const entityType = $('#canvas_entity_type').val();
+    
+    // Show loading, hide content and error
+    $('#checklistLoading').removeClass('d-none');
+    $('#checklistContent').addClass('d-none');
+    $('#checklistError').addClass('d-none');
+    
+    $.ajax({
+        url: "{{ route('document-checklist.canvas-data') }}",
+        type: 'GET',
+        data: {
+            entity_type: entityType
+        },
+        success: function(response) {
+            $('#checklistLoading').addClass('d-none');
+            
+            if (response.success && response.html) {
+                $('#canvasDocumentsContainer').html(response.html);
+                $('#checklistContent').removeClass('d-none');
+                // No need to initialize checkboxes anymore
+                initializeCanvasTooltips();
+            } else {
+                showChecklistError();
+            }
+        },
+        error: function(xhr) {
+            $('#checklistLoading').addClass('d-none');
+            showChecklistError();
+            console.error('Error loading document checklist:', xhr);
+        }
+    });
+}
+
+function showChecklistError() {
+    $('#checklistError').removeClass('d-none');
+    $('#checklistContent').addClass('d-none');
+}
+
+function initializeCanvasTooltips() {
+    // Initialize tooltips only
+    $('[data-bs-toggle="tooltip"]').tooltip();
+}
 </script>
 @endpush

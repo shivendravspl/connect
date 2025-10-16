@@ -82,7 +82,16 @@
                                 <tr>
                                     <td class="align-middle">{{ $label }}</td>
                                     <td class="align-middle">
-                                        <input type="checkbox" name="documents[{{ $type }}][received]" class="form-check-input received-checkbox" value="1" {{ old("documents.$type.received", $check->received) ? 'checked' : '' }}>
+                                        <div class="form-check form-check-inline">
+                                            <input type="radio" name="documents[{{ $type }}][received]" id="{{ $type }}_received_yes" class="form-check-input" value="1"
+                                                {{ old("documents.$type.received", $check->received) ? 'checked' : '' }}>
+                                            <label class="form-check-label small" for="{{ $type }}_received_yes">Received</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="radio" name="documents[{{ $type }}][received]" id="{{ $type }}_received_no" class="form-check-input" value="0"
+                                                {{ !old("documents.$type.received", $check->received) ? 'checked' : '' }}>
+                                            <label class="form-check-label small" for="{{ $type }}_received_no">Not Received</label>
+                                        </div>
                                         <div id="documents_{{ $type }}_received_error" class="text-danger small mt-1"></div>
                                     </td>
                                     <td class="align-middle">
@@ -132,51 +141,50 @@
                             <label class="small fw-bold">Cheque Details</label>
                             <div id="cheque-details-container">
                                 @foreach($checks as $loopIndex => $chqCheck)
-                                    @php $chequeDetails = $chqCheck->securityChequeDetails->first(); @endphp
-                                    <div class="cheque-detail-row mb-2 p-2 border rounded" data-index="{{ $loopIndex }}">
-                                        <div class="row g-1">
-                                            <div class="col-md-4">
-                                                <label class="small">Sr. No</label>
-                                                <input type="text" class="form-control form-control-sm" value="{{ $loopIndex + 1 }}" readonly>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="small">Date of obtained</label>
-                                                <input type="date" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][date_obtained]"        value="{{ old("security_cheques_details.{$loopIndex}.date_obtained", optional($chequeDetails->date_obtained)->format('Y-m-d')) }}"  max="{{ now()->toDateString() }}">
-                                                <div id="security_cheques_details_{{ $loopIndex }}_date_obtained_error" class="text-danger small mt-1"></div>
-                                            </div>
-                                            <div class="col-md-4">
-                                                <label class="small">Cheque No</label>
-                                                <input type="text" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][cheque_no]" value="{{ old("security_cheques_details.{$loopIndex}.cheque_no", $chequeDetails?->cheque_no ?? '') }}" maxlength="50">
-                                                <div id="security_cheques_details_{{ $loopIndex }}_cheque_no_error" class="text-danger small mt-1"></div>
-                                            </div>
-                                        </div>
-                                        <div class="row g-1 mt-1">
-                                            <div class="col-md-6">
-                                                <label class="small">Date of Use</label>
-                                                <input type="date" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][date_use]"         value="{{ old("security_cheques_details.{$loopIndex}.date_use", optional($chequeDetails->date_use)->format('Y-m-d')) }}" max="{{ now()->toDateString() }}">
-                                                <div id="security_cheques_details_{{ $loopIndex }}_date_use_error" class="text-danger small mt-1"></div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="small">Purpose of use</label>
-                                                <input type="text" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][purpose]" value="{{ old("security_cheques_details.{$loopIndex}.date_use", optional($chequeDetails->date_use)->format('Y-m-d')) }}"
- maxlength="200">
-                                                <div id="security_cheques_details_{{ $loopIndex }}_purpose_error" class="text-danger small mt-1"></div>
-                                            </div>
-                                        </div>
-                                        <div class="row g-1 mt-1">
-                                            <div class="col-md-6">
-                                                <label class="small">Date of Return</label>
-                                                <input type="date" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][date_return]" value="{{ old("security_cheques_details.{$loopIndex}.date_return", optional($chequeDetails->date_return)->format('Y-m-d')) }}" max="{{ now()->toDateString() }}">
-                                                <div id="security_cheques_details_{{ $loopIndex }}_date_return_error" class="text-danger small mt-1"></div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label class="small">Remark/reason of return</label>
-                                                <textarea class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][remark_return]" rows="1">{{ old("security_cheques_details.{$loopIndex}.remark_return", $chequeDetails?->remark_return ?? '') }}</textarea>
-                                                <div id="security_cheques_details_{{ $loopIndex }}_remark_return_error" class="text-danger small mt-1"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
+    @php $chequeDetails = $chqCheck->securityChequeDetails->first(); @endphp
+    <div class="cheque-detail-row mb-2 p-2 border rounded" data-index="{{ $loopIndex }}">
+        <div class="row g-1">
+            <div class="col-md-4">
+                <label class="small">Sr. No</label>
+                <input type="text" class="form-control form-control-sm" value="{{ $loopIndex + 1 }}" readonly>
+            </div>
+            <div class="col-md-4">
+                <label class="small">Date of obtained</label>
+                <input type="date" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][date_obtained]" value="{{ old("security_cheques_details.{$loopIndex}.date_obtained", $chequeDetails?->date_obtained?->format('Y-m-d') ?? '') }}" max="{{ now()->toDateString() }}">
+                <div id="security_cheques_details_{{ $loopIndex }}_date_obtained_error" class="text-danger small mt-1"></div>
+            </div>
+            <div class="col-md-4">
+                <label class="small">Cheque No</label>
+                <input type="text" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][cheque_no]" value="{{ old("security_cheques_details.{$loopIndex}.cheque_no", $chequeDetails?->cheque_no ?? '') }}" maxlength="50">
+                <div id="security_cheques_details_{{ $loopIndex }}_cheque_no_error" class="text-danger small mt-1"></div>
+            </div>
+        </div>
+        <div class="row g-1 mt-1">
+            <div class="col-md-6">
+                <label class="small">Date of Use</label>
+                <input type="date" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][date_use]" value="{{ old("security_cheques_details.{$loopIndex}.date_use", $chequeDetails?->date_use?->format('Y-m-d') ?? '') }}" max="{{ now()->toDateString() }}">
+                <div id="security_cheques_details_{{ $loopIndex }}_date_use_error" class="text-danger small mt-1"></div>
+            </div>
+            <div class="col-md-6">
+                <label class="small">Purpose of use</label>
+                <input type="text" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][purpose]" value="{{ old("security_cheques_details.{$loopIndex}.purpose", $chequeDetails?->purpose ?? '') }}" maxlength="200">
+                <div id="security_cheques_details_{{ $loopIndex }}_purpose_error" class="text-danger small mt-1"></div>
+            </div>
+        </div>
+        <div class="row g-1 mt-1">
+            <div class="col-md-6">
+                <label class="small">Date of Return</label>
+                <input type="date" class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][date_return]" value="{{ old("security_cheques_details.{$loopIndex}.date_return", $chequeDetails?->date_return?->format('Y-m-d') ?? '') }}" max="{{ now()->toDateString() }}">
+                <div id="security_cheques_details_{{ $loopIndex }}_date_return_error" class="text-danger small mt-1"></div>
+            </div>
+            <div class="col-md-6">
+                <label class="small">Remark/reason of return</label>
+                <textarea class="form-control form-control-sm" name="security_cheques_details[{{ $loopIndex }}][remark_return]" rows="1">{{ old("security_cheques_details.{$loopIndex}.remark_return", $chequeDetails?->remark_return ?? '') }}</textarea>
+                <div id="security_cheques_details_{{ $loopIndex }}_remark_return_error" class="text-danger small mt-1"></div>
+            </div>
+        </div>
+    </div>
+@endforeach
                             </div>
                         </div>
                         <div id="documents_security_cheques_files_error" class="text-danger small mt-1"></div>
@@ -208,8 +216,7 @@
                                                 <div class="row g-2">
                                                     <div class="col-md-3">
                                                         <label class="small">Date</label>
-                                                        <input type="date" name="deposit_date" id="deposit_date_field" class="form-control form-control-sm"         value="{{ old('deposit_date', optional($deposit_date)->format('Y-m-d')) }}" 
- max="{{ now()->toDateString() }}">
+                                                        <input type="date" name="deposit_date" id="deposit_date_field" class="form-control form-control-sm"         value="{{ old('deposit_date', optional($deposit_date)->format('Y-m-d')) }}" max="{{ now()->toDateString() }}">
                                                         <div id="deposit_date_error" class="text-danger small mt-1"></div>
                                                     </div>
                                                     <div class="col-md-3">
@@ -290,9 +297,21 @@
                                     <tr>
                                         <td class="align-middle">{{ $label }} <small class="text-muted">(Digital: {{ $doc['existing_file'] }})</small></td>
                                         <td class="align-middle">
-                                            <input type="checkbox" name="documents[{{ $type }}][received]" class="form-check-input" value="1" {{ old("documents.$type.received", $check->received) ? 'checked' : '' }}>
+                                            <div class="form-check form-check-inline">
+                                                <input type="radio" name="documents[{{ $type }}][received]" id="{{ $type }}_received_yes"
+                                                    class="form-check-input" value="1"
+                                                    {{ old("documents.$type.received", $check->received) ? 'checked' : '' }}>
+                                                <label class="form-check-label small" for="{{ $type }}_received_yes">Received</label>
+                                            </div>
+                                            <div class="form-check form-check-inline">
+                                                <input type="radio" name="documents[{{ $type }}][received]" id="{{ $type }}_received_no"
+                                                    class="form-check-input" value="0"
+                                                    {{ !old("documents.$type.received", $check->received) ? 'checked' : '' }}>
+                                                <label class="form-check-label small" for="{{ $type }}_received_no">Not Received</label>
+                                            </div>
                                             <div id="documents_{{ $type }}_received_error" class="text-danger small mt-1"></div>
                                         </td>
+
                                         <td class="align-middle">
                                             <div class="form-check form-check-inline">
                                                 <input type="radio" name="documents[{{ $type }}][status]" class="form-check-input" value="verified" id="{{ $type }}_verified_yes" {{ old("documents.$type.status", $check->status) === 'verified' ? 'checked' : '' }}>
@@ -332,9 +351,23 @@
                                 <tr>
                                     <td class="align-middle">{{ str_replace('_', ' ', ucfirst($checkpoint->checkpoint_name)) }}</td>
                                     <td class="align-middle">
-                                        <input type="checkbox" name="documents[{{ $checkpoint->checkpoint_name }}][received]" class="form-check-input" value="1" {{ old("documents.{$checkpoint->checkpoint_name}.received", $check->received) ? 'checked' : '' }}>
+                                        <div class="form-check form-check-inline">
+                                            <input type="radio" name="documents[{{ $checkpoint->checkpoint_name }}][received]" 
+                                                id="{{ $checkpoint->checkpoint_name }}_received_yes"
+                                                class="form-check-input" value="1"
+                                                {{ old("documents.{$checkpoint->checkpoint_name}.received", $check->received) ? 'checked' : '' }}>
+                                            <label class="form-check-label small" for="{{ $checkpoint->checkpoint_name }}_received_yes">Received</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input type="radio" name="documents[{{ $checkpoint->checkpoint_name }}][received]" 
+                                                id="{{ $checkpoint->checkpoint_name }}_received_no"
+                                                class="form-check-input" value="0"
+                                                {{ !old("documents.{$checkpoint->checkpoint_name}.received", $check->received) ? 'checked' : '' }}>
+                                            <label class="form-check-label small" for="{{ $checkpoint->checkpoint_name }}_received_no">Not Received</label>
+                                        </div>
                                         <div id="documents_{{ $checkpoint->checkpoint_name }}_received_error" class="text-danger small mt-1"></div>
                                     </td>
+
                                     <td class="align-middle">
                                         <div class="form-check form-check-inline">
                                             <input type="radio" name="documents[{{ $checkpoint->checkpoint_name }}][status]" class="form-check-input" value="verified" id="{{ $checkpoint->checkpoint_name }}_verified_yes" {{ old("documents.{$checkpoint->checkpoint_name}.status", $check->status) === 'verified' ? 'checked' : '' }}>
@@ -453,110 +486,126 @@
             return `https://s3.ap-south-1.amazonaws.com/developerinvnr.bkt/Connect/Distributor/${type}/${filename}`;
         }
 
-        // processDocument function - updated to handle ack uploads
-        async function processDocument(file, fileNameField, existingFile, config) {
-        try {
-            console.log('processDocument called with config:', config);
+          // processDocument function - updated to handle ack uploads
+    async function processDocument(file, fileNameField, existingFile, config) {
+    try {
+        console.log('processDocument called with config:', config);
 
-            let type = config?.type;
-            let displayType = config?.displayType || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-            const endpoint = config?.endpoint || '{{ route("process-document") }}';
+        let type = config?.type;
+        let displayType = config?.displayType || type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        const endpoint = config?.endpoint || '{{ route("process-document") }}';
 
-            if (!type || !displayType) {
-                console.error('Config missing type or displayType');
-                throw new Error('Invalid document configuration');
-            }
-
-            fileNameField.textContent = `Uploading ${displayType.toLowerCase()}...`;
-            fileNameField.classList.remove('d-none', 'text-danger');
-
-            const formData = new FormData();
-            formData.append(type, file);
-            if (existingFile) {
-                formData.append(`existing_${type}_file`, existingFile);
-            }
-            formData.append('doc_type', type);
-
-            console.log('Sending to endpoint:', endpoint);
-
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                },
-                body: formData,
-            });
-
-            console.log('Response status:', response.status);
-
-            const result = await response.json();
-
-            if (!response.ok || result.status !== 'SUCCESS') {
-                throw new Error(result.message || `${displayType} upload failed`);
-            }
-
-            const { filename, displayName, url } = result.data;
-            const viewUrl = url || getS3Url(type, filename);
-
-            fileNameField.innerHTML = `
-                <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="${viewUrl}" data-type="${displayType}">View</a> (${displayName})
-            `;
-
-            // Hide file input
-            const input = this;
-            const container = input.closest('.file-upload-row, .cheque-detail-row, td');
-            const fileInput = input;
-            fileInput.classList.add('d-none');
-            fileInput.disabled = true;
-
-            // Hidden inputs for filename
-            let hiddenContainer = container.querySelector('.hidden-file-container');
-            if (!hiddenContainer) {
-                hiddenContainer = document.createElement('div');
-                hiddenContainer.className = 'hidden-file-container d-none';
-                container.appendChild(hiddenContainer);
-            }
-
-            hiddenContainer.innerHTML = ''; // Clear existing
-
-            const fileFieldName = `existing_${type}_file${(type === 'security_cheques') ? '[]' : ''}`;
-            const originalFieldName = `${fileFieldName}_original`;
-
-            hiddenContainer.innerHTML = `
-                <input type="hidden" name="${fileFieldName}" value="${filename}">
-                <input type="hidden" name="${originalFieldName}" value="${displayName}">
-            `;
-
-            // Ensure replace button is visible or create it
-            let replaceBtn = container.querySelector('.replace-file-btn');
-            if (replaceBtn) {
-                replaceBtn.classList.remove('d-none');
-            } else {
-                replaceBtn = document.createElement('button');
-                replaceBtn.type = 'button';
-                replaceBtn.className = 'btn btn-sm btn-warning replace-file-btn me-2';
-                replaceBtn.innerHTML = 'Replace';
-                if (container.dataset.index) {
-                    replaceBtn.dataset.rowIndex = container.dataset.index;
-                }
-                const parent = fileNameField.parentNode;
-                parent.insertBefore(replaceBtn, fileNameField.nextSibling || parent.firstChild);
-            }
-
-            console.log('Upload success, filename stored:', filename);
-
-            return result;
-        } catch (error) {
-            console.error(`${displayType} upload error:`, error);
-            fileNameField.textContent = `Error uploading ${displayType.toLowerCase()} : ${error.message}`;
-            fileNameField.classList.add('text-danger');
-            throw error;
+        if (!type || !displayType) {
+            console.error('Config missing type or displayType');
+            throw new Error('Invalid document configuration');
         }
-    }
 
-        // Event Delegation for file changes - fixed for ack
-      document.addEventListener('change', function(e) {
+        fileNameField.textContent = `Uploading ${displayType.toLowerCase()}...`;
+        fileNameField.classList.remove('d-none', 'text-danger');
+
+        const formData = new FormData();
+        formData.append(type, file);
+        if (existingFile) {
+            formData.append(`existing_${type}_file`, existingFile);
+        }
+        formData.append('doc_type', type);
+
+        console.log('Sending to endpoint:', endpoint);
+
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+            },
+            body: formData,
+        });
+
+        console.log('Response status:', response.status);
+
+        const result = await response.json();
+
+        if (!response.ok || result.status !== 'SUCCESS') {
+            throw new Error(result.message || `${displayType} upload failed`);
+        }
+
+        const { filename, displayName, url } = result.data;
+        const viewUrl = url || getS3Url(type, filename);
+
+        fileNameField.innerHTML = `
+            <a href="#" data-bs-toggle="modal" data-bs-target="#documentModal" data-src="${viewUrl}" data-type="${displayType}">View</a> (${displayName})
+        `;
+
+        // Hide file input
+        const input = this;
+        const container = input.closest('.file-upload-row, .cheque-detail-row, td');
+        const fileInput = input;
+        fileInput.classList.add('d-none');
+        fileInput.disabled = true;
+
+        // Hidden inputs for filename - FIXED FOR ARRAY HANDLING
+        let hiddenContainer = container.querySelector('.hidden-file-container');
+        if (!hiddenContainer) {
+            hiddenContainer = document.createElement('div');
+            hiddenContainer.className = 'hidden-file-container d-none';
+            container.appendChild(hiddenContainer);
+        }
+
+        // Clear only current file inputs, not the entire container
+        const currentHiddenInputs = hiddenContainer.querySelectorAll(`input[name="existing_security_cheques_file[]"][data-index="${container.dataset.index}"], input[name="existing_security_cheques_file_original[]"][data-index="${container.dataset.index}"]`);
+        currentHiddenInputs.forEach(input => input.remove());
+
+        // Create new hidden inputs with proper array structure and index tracking
+        const fileFieldName = (type === 'security_cheques') ? 'existing_security_cheques_file[]' : `existing_${type}_file`;
+        const originalFieldName = (type === 'security_cheques') ? 'existing_security_cheques_file_original[]' : `existing_${type}_file_original`;
+
+        const fileInputElement = document.createElement('input');
+        fileInputElement.type = 'hidden';
+        fileInputElement.name = fileFieldName;
+        fileInputElement.value = filename;
+        if (type === 'security_cheques') {
+            fileInputElement.dataset.index = container.dataset.index;
+        }
+
+        const originalInputElement = document.createElement('input');
+        originalInputElement.type = 'hidden';
+        originalInputElement.name = originalFieldName;
+        originalInputElement.value = displayName;
+        if (type === 'security_cheques') {
+            originalInputElement.dataset.index = container.dataset.index;
+        }
+
+        hiddenContainer.appendChild(fileInputElement);
+        hiddenContainer.appendChild(originalInputElement);
+
+        // Ensure replace button is visible or create it
+        let replaceBtn = container.querySelector('.replace-file-btn');
+        if (replaceBtn) {
+            replaceBtn.classList.remove('d-none');
+        } else {
+            replaceBtn = document.createElement('button');
+            replaceBtn.type = 'button';
+            replaceBtn.className = 'btn btn-sm btn-warning replace-file-btn me-2';
+            replaceBtn.innerHTML = 'Replace';
+            if (container.dataset.index) {
+                replaceBtn.dataset.rowIndex = container.dataset.index;
+            }
+            const parent = fileNameField.parentNode;
+            parent.insertBefore(replaceBtn, fileNameField.nextSibling || parent.firstChild);
+        }
+
+        console.log('Upload success, filename stored:', filename, 'at index:', container.dataset.index);
+
+        return result;
+    } catch (error) {
+        console.error(`${displayType} upload error:`, error);
+        fileNameField.textContent = `Error uploading ${displayType.toLowerCase()} : ${error.message}`;
+        fileNameField.classList.add('text-danger');
+        throw error;
+    }
+}
+
+    document.addEventListener('change', function(e) {
     if (e.target.matches('.document-upload')) {
         const input = e.target;
         const file = input.files[0];
@@ -570,17 +619,19 @@
         const fileNameField = document.getElementById(fieldId);
         const container = input.closest('.file-upload-row, .cheque-detail-row, td');
         
-        // FIX: Clear any existing file data first to prevent duplicates
-        const hiddenContainer = container.querySelector('.hidden-file-container');
-        if (hiddenContainer) {
-            hiddenContainer.innerHTML = '';
+        // Get existing file for this specific index only
+        let existingFile = '';
+        if (container.dataset.index) {
+            const existingInput = container.querySelector(`input[name="existing_security_cheques_file[]"][data-index="${container.dataset.index}"]`);
+            if (existingInput) {
+                existingFile = existingInput.value;
+            }
+        } else {
+            const existingInput = container.querySelector(`input[name^="existing_"]`);
+            existingFile = existingInput ? existingInput.value : '';
         }
 
-        // FIX: Check if this is a new upload vs existing file replacement
-        const existingFileInput = container.querySelector(`input[name^="existing_"]`);
-        const existingFile = existingFileInput ? existingFileInput.value : '';
-
-        console.log('Processing file upload for:', type, 'Existing file:', existingFile);
+        console.log('Processing file upload for:', type, 'at index:', container.dataset.index, 'Existing file:', existingFile);
 
         processDocument.call(input, file, fileNameField, existingFile, {
             type: type,
@@ -592,8 +643,9 @@
     }
 });
 
+
         // Handle Replace buttons - updated for ack
-     document.addEventListener('click', function(e) {
+    document.addEventListener('click', function(e) {
     if (e.target.matches('.replace-file-btn')) {
         const container = e.target.closest('.file-upload-row') || e.target.closest('td');
         const fileInput = container.querySelector('.document-upload');
@@ -601,9 +653,14 @@
         const hiddenContainer = container.querySelector('.hidden-file-container');
         const replaceBtn = e.target;
 
-        // FIX: Clear ALL file data including hidden inputs
+        // Clear only the file data for this specific index
         if (fileNameField) fileNameField.innerHTML = '';
-        if (hiddenContainer) hiddenContainer.innerHTML = '';
+        
+        // Remove only the hidden inputs for this specific row/index
+        if (hiddenContainer && container.dataset.index) {
+            const inputsToRemove = hiddenContainer.querySelectorAll(`input[data-index="${container.dataset.index}"]`);
+            inputsToRemove.forEach(input => input.remove());
+        }
 
         // Show file input and hide replace btn
         if (fileInput) {
@@ -614,6 +671,7 @@
         if (replaceBtn) replaceBtn.classList.add('d-none');
     }
 });
+
 
         // Handle clicks on existing "View" links
         document.addEventListener('click', function(e) {
@@ -635,21 +693,32 @@
 
   document.addEventListener('click', function (e) {
     if (e.target.closest('.add-file-upload')) {
+        const fileError = document.getElementById('documents_security_cheques_files_error');
+        if (fileError) fileError.innerHTML = '';
         const uploadContainer = e.target.closest('.upload-row');
         const detailsContainer = document.getElementById('cheque-details-container');
-        const index = uploadContainer.querySelectorAll('.file-upload-row').length;
+        
+        // Get current rows and find the next available index
+        const existingRows = uploadContainer.querySelectorAll('.file-upload-row');
+        const existingDetailRows = detailsContainer.querySelectorAll('.cheque-detail-row');
+        
+        // Use the maximum index from both upload and detail rows
+        const uploadIndices = Array.from(existingRows).map(row => parseInt(row.dataset.index));
+        const detailIndices = Array.from(existingDetailRows).map(row => parseInt(row.dataset.index));
+        const allIndices = [...uploadIndices, ...detailIndices];
+        const nextIndex = allIndices.length > 0 ? Math.max(...allIndices) + 1 : 0;
 
         // Create upload row
         const newUploadRow = document.createElement('div');
         newUploadRow.className = 'file-upload-row mb-1 d-flex align-items-center';
-        newUploadRow.dataset.index = index;
+        newUploadRow.dataset.index = nextIndex;
         newUploadRow.innerHTML = `
             <input type="file" class="form-control form-control-sm me-2 document-upload"
                    data-type="security_cheques"
                    data-display-type="Security Cheque"
                    accept=".pdf,.doc,.docx,.jpg,.png"
-                   id="file-input-security_cheques-${index}">
-            <span class="file-name small me-2" id="file-name-security_cheques-${index}"></span>
+                   id="file-input-security_cheques-${nextIndex}">
+            <span class="file-name small me-2" id="file-name-security_cheques-${nextIndex}"></span>
             <button type="button" class="btn btn-sm btn-danger remove-file-upload">
                 <i class="ri-delete-bin-line"></i>
             </button>
@@ -663,64 +732,64 @@
         // Create corresponding detail row immediately
         const newDetailRow = document.createElement('div');
         newDetailRow.className = 'cheque-detail-row mb-2 p-2 border rounded';
-        newDetailRow.dataset.index = index;
+        newDetailRow.dataset.index = nextIndex;
 
         newDetailRow.innerHTML = `
             <div class="row g-1">
                 <div class="col-md-4">
                     <label class="small">Sr. No</label>
-                    <input type="text" class="form-control form-control-sm" value="${parseInt(index) + 1}" readonly>
+                    <input type="text" class="form-control form-control-sm" value="${nextIndex + 1}" readonly>
                 </div>
                 <div class="col-md-4">
                     <label class="small">Date of obtained</label>
                     <input type="date" class="form-control form-control-sm"
-                           name="security_cheques_details[${index}][date_obtained]"
+                           name="security_cheques_details[${nextIndex}][date_obtained]"
                            max="${new Date().toISOString().split('T')[0]}">
-                    <div id="security_cheques_details_${index}_date_obtained_error" class="text-danger small mt-1"></div>
+                    <div id="security_cheques_details_${nextIndex}_date_obtained_error" class="text-danger small mt-1"></div>
                 </div>
                 <div class="col-md-4">
                     <label class="small">Cheque No</label>
                     <input type="text" class="form-control form-control-sm"
-                           name="security_cheques_details[${index}][cheque_no]"
+                           name="security_cheques_details[${nextIndex}][cheque_no]"
                            maxlength="50">
-                    <div id="security_cheques_details_${index}_cheque_no_error" class="text-danger small mt-1"></div>
+                    <div id="security_cheques_details_${nextIndex}_cheque_no_error" class="text-danger small mt-1"></div>
                 </div>
             </div>
             <div class="row g-1 mt-1">
                 <div class="col-md-6">
                     <label class="small">Date of Use</label>
                     <input type="date" class="form-control form-control-sm"
-                           name="security_cheques_details[${index}][date_use]"
+                           name="security_cheques_details[${nextIndex}][date_use]"
                            max="${new Date().toISOString().split('T')[0]}">
-                    <div id="security_cheques_details_${index}_date_use_error" class="text-danger small mt-1"></div>
+                    <div id="security_cheques_details_${nextIndex}_date_use_error" class="text-danger small mt-1"></div>
                 </div>
                 <div class="col-md-6">
                     <label class="small">Purpose of use</label>
                     <input type="text" class="form-control form-control-sm"
-                           name="security_cheques_details[${index}][purpose]"
+                           name="security_cheques_details[${nextIndex}][purpose]"
                            maxlength="200">
-                    <div id="security_cheques_details_${index}_purpose_error" class="text-danger small mt-1"></div>
+                    <div id="security_cheques_details_${nextIndex}_purpose_error" class="text-danger small mt-1"></div>
                 </div>
             </div>
             <div class="row g-1 mt-1">
                 <div class="col-md-6">
                     <label class="small">Date of Return</label>
                     <input type="date" class="form-control form-control-sm"
-                           name="security_cheques_details[${index}][date_return]"
+                           name="security_cheques_details[${nextIndex}][date_return]"
                            max="${new Date().toISOString().split('T')[0]}">
-                    <div id="security_cheques_details_${index}_date_return_error" class="text-danger small mt-1"></div>
+                    <div id="security_cheques_details_${nextIndex}_date_return_error" class="text-danger small mt-1"></div>
                 </div>
                 <div class="col-md-6">
                     <label class="small">Remark/reason of return</label>
                     <textarea class="form-control form-control-sm"
-                              name="security_cheques_details[${index}][remark_return]" rows="1"></textarea>
-                    <div id="security_cheques_details_${index}_remark_return_error" class="text-danger small mt-1"></div>
+                              name="security_cheques_details[${nextIndex}][remark_return]" rows="1"></textarea>
+                    <div id="security_cheques_details_${nextIndex}_remark_return_error" class="text-danger small mt-1"></div>
                 </div>
             </div>
         `;
 
         detailsContainer.appendChild(newDetailRow);
-        console.log('Added new cheque row with details at index:', index);
+        console.log('Added new cheque row with details at index:', nextIndex);
     }
 });
 
@@ -804,7 +873,7 @@ document.addEventListener('change', function(e) {
 });
 
         // Remove file upload field - remove both upload and detail
-      document.addEventListener('click', function(e) {
+     document.addEventListener('click', function(e) {
     if (e.target.closest('.remove-file-upload')) {
         const uploadRow = e.target.closest('.file-upload-row');
         const index = uploadRow.dataset.index;
@@ -818,6 +887,13 @@ document.addEventListener('change', function(e) {
 
         // Renumber remaining rows
         renumberChequeRows();
+        
+        // Log the current state of hidden inputs for debugging
+        console.log('After removal, current security cheque files:');
+        const allHiddenFiles = document.querySelectorAll('input[name="existing_security_cheques_file[]"]');
+        allHiddenFiles.forEach((input, i) => {
+            console.log(`File ${i}: ${input.value} at index ${input.dataset.index}`);
+        });
     }
 });
 
@@ -863,7 +939,8 @@ function renumberChequeRows() {
     });
 }
         // Form submission - updated error handling for details
-        document.getElementById('physicalDocumentsForm').addEventListener('submit', function(e) {
+ document.getElementById('physicalDocumentsForm').addEventListener('submit', function(e)  
+     {
         e.preventDefault();
         const submitBtn = document.getElementById('submitPhysicalDocsBtn');
         const originalText = submitBtn.innerHTML;
@@ -965,46 +1042,57 @@ function renumberChequeRows() {
             submitBtn.innerHTML = originalText;
             submitBtn.disabled = false;
         });
-    });
+     });
 
         // Real-time validation for remarks when "Not Verified" is selected
-        document.addEventListener('change', function(e) {
-        if (e.target.matches('input[name*="status"]')) {
-            const match = e.target.name.match(/documents\[([^\]]+)\]\[status\]/);
-            if (match) {
-                const type = match[1];
-                const status = e.target.value;
-                const errorElement = document.getElementById(`documents_${type}_status_error`);
-                if (errorElement) errorElement.innerHTML = '';
+    document.addEventListener('change', function(e) {
+         if (e.target.matches('input[name*="status"]')) {
+        const match = e.target.name.match(/documents\[([^\]]+)\]\[status\]/);
+        if (match) {
+            const type = match[1];
+            const status = e.target.value;
 
-                if (type === 'security_deposit') {
-                    const depositDetails = document.getElementById('deposit_details');
-                    const depositReasonContainer = document.getElementById('deposit_reason_container');
-                    const reasonField = document.getElementById('security_deposit_reason');
-                    if (status === 'verified') {
-                        if (depositDetails) depositDetails.style.display = 'block';
-                        if (depositReasonContainer) depositReasonContainer.style.display = 'none';
-                        if (reasonField) reasonField.value = '';
-                    } else if (status === 'not_verified') {
-                        if (depositDetails) depositDetails.style.display = 'none';
-                        if (depositReasonContainer) depositReasonContainer.style.display = 'block';
-                    }
-                }
+            const errorElement = document.getElementById(`documents_${type}_status_error`);
+            if (errorElement) errorElement.innerHTML = '';
 
-                // Real-time validation for not_verified remarks
-                const remarkField = document.getElementById(`${type}_reason`);
-                const reasonError = document.getElementById(`documents_${type}_reason_error`);
-                if (status === 'not_verified' && remarkField && !remarkField.value.trim()) {
-                    if (reasonError) reasonError.innerHTML = 'Remarks are required when document is not verified';
-                } else if (reasonError) {
-                    reasonError.innerHTML = '';
+            // Handle security deposit show/hide logic
+            if (type === 'security_deposit') {
+                const depositDetails = document.getElementById('deposit_details');
+                const depositReasonContainer = document.getElementById('deposit_reason_container');
+                const reasonField = document.getElementById('security_deposit_reason');
+                if (status === 'verified') {
+                    if (depositDetails) depositDetails.style.display = 'block';
+                    if (depositReasonContainer) depositReasonContainer.style.display = 'none';
+                    if (reasonField) reasonField.value = '';
+                } else if (status === 'not_verified') {
+                    if (depositDetails) depositDetails.style.display = 'none';
+                    if (depositReasonContainer) depositReasonContainer.style.display = 'block';
                 }
             }
+
+            // Real-time validation for not_verified remarks
+            const remarkField = document.getElementById(`${type}_reason`);
+            const reasonError = document.getElementById(`documents_${type}_reason_error`);
+            if (status === 'not_verified' && remarkField && !remarkField.value.trim()) {
+                if (reasonError) reasonError.innerHTML = 'Remarks are required when document is not verified';
+            } else if (reasonError) {
+                reasonError.innerHTML = '';
+            }
+
+            // ✅ New logic: For security_cheques verified => check file uploaded
+            if (type === 'security_cheques' && status === 'verified') {
+                const fileInput = document.getElementById(`documents_${type}_files`);
+                const fileError = document.getElementById(`documents_${type}_files_error`);
+                if (fileError) fileError.innerHTML = ''; // reset previous
+                if (fileError) fileError.innerHTML = 'Please upload security cheque files before marking as verified';
+            }
+        }
         }
     });
 
+
         // Validate remarks on input
-       document.addEventListener('input', function(e) {
+    document.addEventListener('input', function(e) {
         if (e.target.matches('textarea[name*="reason"]')) {
             const match = e.target.name.match(/documents\[([^\]]+)\]\[reason\]/);
             if (match) {
@@ -1019,7 +1107,7 @@ function renumberChequeRows() {
                 }
             }
         }
-    });
+        });
 
         // Deposit mode change for reference visibility
        document.addEventListener('change', function(e) {
@@ -1039,7 +1127,7 @@ function renumberChequeRows() {
         }
     });
         // Initialize on load
-       document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function() {
         const securityDepositStatus = document.querySelector('input[name="documents[security_deposit][status]"]:checked');
         if (securityDepositStatus) {
             securityDepositStatus.dispatchEvent(new Event('change'));
@@ -1048,7 +1136,7 @@ function renumberChequeRows() {
         if (depositMode) {
             depositMode.dispatchEvent(new Event('change'));
         }
-    });
+     });
 
         // Modal document viewer
        document.getElementById('documentModal').addEventListener('show.bs.modal', function(event) {

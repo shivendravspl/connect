@@ -1624,13 +1624,27 @@ class ApprovalController extends Controller
             $application->physicalDocumentChecks()->delete();
 
             // Update or create physical_dispatch record
-            PhysicalDispatch::updateOrCreate(
-                ['application_id' => $application->id],
-                [
+            $latestDispatch = PhysicalDispatch::where('application_id', $application->id)
+                ->latest('created_at')
+                ->first();
+
+            // Update only the latest dispatch record
+            if ($latestDispatch) {
+                $latestDispatch->update([
                     'receive_date' => $anyReceived ? $request->input('receive_date') : null,
                     'updated_by' => Auth::id(),
-                ]
-            );
+                ]);
+            } else {
+                // Fallback: create new dispatch record if none exists
+                PhysicalDispatch::create([
+                    'application_id' => $application->id,
+                    'receive_date' => $anyReceived ? $request->input('receive_date') : null,
+                    'updated_by' => Auth::id(),
+                    'created_by' => Auth::id(),
+                    'dispatch_date' => now(),
+                ]);
+            }
+
             // Track documents that need notification and overall status
             $documentsNeedingNotification = [];
             $hasUnreceivedDocuments = false;
@@ -1798,7 +1812,16 @@ class ApprovalController extends Controller
             } else {
                 // Some documents are not received or not verified
                 $application->physical_docs_status = 'pending';
-                if ($hasUnreceivedDocuments) {
+
+                // Check if this is for redispatched documents
+                $hasPreviousDispatch = PhysicalDispatch::where('application_id', $application->id)
+                    ->where('id', '!=', $latestDispatch?->id)
+                    ->exists();
+
+                if ($hasPreviousDispatch && $latestDispatch && !$latestDispatch->receive_date) {
+                    // This is redispatched documents that haven't been received yet
+                    $application->status = 'physical_docs_redispatched';
+                } else if ($hasUnreceivedDocuments) {
                     $application->status = 'physical_docs_pending';
                 } else if ($hasUnverifiedDocuments) {
                     $application->status = 'physical_docs_pending';
@@ -1837,29 +1860,32 @@ class ApprovalController extends Controller
     private function sendDocumentNotification(Onboarding $application, array $documentsNeedingAttention, bool $allVerified = false)
     {
         try {
-            // Get the creator of the application
             $creatorId = $application->created_by;
             $establishmentName = $application->entityDetails->establishment_name ?? 'Unknown Establishment';
             $applicationId = $application->id;
 
-            if (!$creatorId) {
-                Log::warning('No creator found for application', ['application_id' => $applicationId]);
-                return;
-            }
+            $isRedispatched = $application->isRedispatched();
 
             if ($allVerified) {
-                // Success notification - all documents verified
                 $title = "All Physical Documents Verified - {$establishmentName}";
                 $description = "All physical documents for {$establishmentName} have been successfully verified.\n\n";
+
+                if ($isRedispatched) {
+                    $description .= "📦 Redispatched documents verified successfully.\n";
+                }
+
                 $description .= "Application ID: {$applicationId}\n";
                 $description .= "Status: Ready for next steps.";
             } else {
-                // Documents need attention
                 $title = "Physical Documents Need Attention - {$establishmentName}";
 
-                // Build detailed description
                 $description = "Physical document verification completed for {$establishmentName}.\n\n";
-                $description .= "The following documents require your attention:\n\n";
+
+                if ($isRedispatched) {
+                    $description .= "📦 Redispatched Documents Review:\n\n";
+                } else {
+                    $description .= "The following documents require your attention:\n\n";
+                }
 
                 foreach ($documentsNeedingAttention as $doc) {
                     $documentLabel = $this->getDocumentLabel($doc['type']);
@@ -1880,7 +1906,12 @@ class ApprovalController extends Controller
                 }
 
                 $description .= "Application ID: {$applicationId}\n";
-                $description .= "Please review and take appropriate action.";
+
+                if ($isRedispatched) {
+                    $description .= "Please review the redispatched documents and take appropriate action.";
+                } else {
+                    $description .= "Please review and take appropriate action.";
+                }
             }
 
             // Create notification
@@ -1896,6 +1927,7 @@ class ApprovalController extends Controller
                 'application_id' => $applicationId,
                 'creator_id' => Auth::user()->id,
                 'all_verified' => $allVerified,
+                'is_redispatched' => $isRedispatched,
                 'documents_count' => count($documentsNeedingAttention)
             ]);
         } catch (\Exception $e) {
@@ -2261,9 +2293,19 @@ class ApprovalController extends Controller
     {
         $application = Onboarding::with(['entityDetails', 'createdBy'])->findOrFail($id);
 
-        // Check if application is in correct status
-        if ($application->status != 'documents_verified') {
-            abort(403, 'Draft agreement is only available for verified documents.');
+        // Define allowed statuses for draft agreement
+        $allowedStatuses = [
+            'documents_resubmitted', 
+            'documents_verified',
+            'physical_docs_pending', 
+            'physical_docs_redispatched', 
+            'physical_docs_verified', 
+            'agreement_created',      
+        ];
+
+        // Check if application is in allowed status
+        if (!in_array($application->status, $allowedStatuses)) {
+            abort(403, 'Draft agreement is not available for the current application status.');
         }
 
         return view('approvals.draft-agreement', compact('application'));

@@ -112,7 +112,10 @@ use App\Models\Status;
                                 @endif
 
                                 {{-- Document Verified Actions --}}
-                                @if (($application->status == 'documents_verified' || $application->status == 'physical_docs_pending') && $application->physicalDispatch)
+                                @if (($application->status == 'documents_verified' || 
+                                    $application->status == 'physical_docs_pending' || 
+                                    $application->status == 'physical_docs_redispatched') && 
+                                    $application->physicalDispatch)
                                 <li>
                                     <a class="dropdown-item mis-action-btn"
                                         href="{{ route('approvals.physical-documents', $application->id) }}"
@@ -121,13 +124,18 @@ use App\Models\Status;
                                         data-submission-date="{{ $application->created_at->format('Y-m-d') }}"
                                         data-initiator="{{ $application->createdBy->emp_name ?? 'N/A' }}"
                                         data-status="{{ $application->status }}">
-                                        <i class="ri-file-text-line align-bottom me-2 text-muted"></i> Manage Physical Documents
+                                        <i class="ri-file-text-line align-bottom me-2 text-muted"></i> 
+                                        @if($application->status == 'physical_docs_redispatched')
+                                            Manage Redispatched Documents
+                                        @else
+                                            Manage Physical Documents
+                                        @endif
                                     </a>
                                 </li>
                                 @endif
 
                                {{-- Draft Agreement Button --}}
-                                @if ($application->status == 'documents_verified')
+                                @if ($application->status == 'documents_verified' || $application->status == 'physical_docs_verified' || $application->status == 'physical_docs_pending' || $application->status == 'physical_docs_redispatched')
                                 <li>
                                     <a class="dropdown-item"
                                     href="{{ route('approvals.draft-agreement', $application->id) }}"

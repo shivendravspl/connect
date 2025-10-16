@@ -35,7 +35,7 @@ class Onboarding extends Model
         'final_status',
         'distributor_code',
         'date_of_appointment',
-        'authorized_person_name', 
+        'authorized_person_name',
         'authorized_person_designation',
         'distributorship_confirmed_at'
     ];
@@ -344,5 +344,25 @@ class Onboarding extends Model
             default:
                 return null;
         }
+    }
+
+    public function isRedispatched()
+    {
+        return PhysicalDispatch::where('application_id', $this->id)->count() > 1;
+    }
+
+    public function getLatestDispatch()
+    {
+        return PhysicalDispatch::where('application_id', $this->id)
+            ->latest('created_at')
+            ->first();
+    }
+
+    public function getPreviousDispatch()
+    {
+        return PhysicalDispatch::where('application_id', $this->id)
+            ->orderBy('created_at', 'desc')
+            ->skip(1)
+            ->first();
     }
 }

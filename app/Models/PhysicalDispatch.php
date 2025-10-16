@@ -19,6 +19,13 @@ class PhysicalDispatch extends Model
         'receive_date',
     ];
 
+    protected $casts = [
+        'dispatch_date' => 'date',
+        'receive_date' => 'date',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     public function onboarding()
     {
         return $this->belongsTo(Onboarding::class);

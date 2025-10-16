@@ -11,6 +11,16 @@
         </a>
     </div>
 
+    {{-- In your physical-documents.blade.php --}}
+@if($application->isRedispatched())
+<div class="alert alert-info alert-dismissible fade show mb-3">
+    <i class="ri-information-line me-2"></i>
+    <strong>Redispatched Documents:</strong> These documents were resent on 
+    {{ $application->getLatestDispatch()->dispatch_date->format('M d, Y') }}. 
+    Please verify the newly submitted documents.
+</div>
+@endif
+
     <div class="card shadow-sm rounded-3">
         <div class="card-header bg-light py-2">
             <h6 class="mb-0"><i class="ri-file-list-line me-2"></i> Physical Document Tracking</h6>

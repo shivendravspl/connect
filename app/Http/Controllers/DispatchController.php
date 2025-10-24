@@ -99,7 +99,9 @@ class DispatchController extends Controller
                 // First time dispatch
                 // $application->status = 'documents_pending';
                 // $application->physical_docs_status = 'pending';
-                // $application->save();                
+                // $application->save();    
+                 $application->physical_docs_status = 'dispatched';
+                 $application->save();            
                 // Send initial dispatch notification
                 $this->sendDispatchNotification($application, $dispatch);
             }
@@ -122,7 +124,10 @@ class DispatchController extends Controller
     {
         // Allow dispatch in these statuses - updated to include the new status
         $allowedStatuses = [
-            'physical_docs_pending'
+            'documents_verified',      // First time dispatch after verification
+            'mis_processing',          // During MIS processing
+            'physical_docs_pending',   // Redispatch after issues
+            'physical_docs_redispatched' // Allow multiple redispatches if needed
         ];
 
         return in_array($application->status, $allowedStatuses);

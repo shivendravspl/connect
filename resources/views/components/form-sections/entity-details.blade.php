@@ -1151,27 +1151,28 @@ if ($trustees->isEmpty()) $trustees = collect([['name' => '', 'designation' => '
         </div>
         <div class="col-md-4">
             <label for="seed_license" class="form-label small">License Number *</label>
-            <div class="input-group input-group-sm">
-                <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license" 
-                    value="{{ old('seed_license', $application->entityDetails->seed_license ?? '') }}" 
-                    pattern="[A-Z0-9]{6,15}" maxlength="15" 
-                    title="Seed License must be 6-15 alphanumeric characters" required 
-                    oninput="validateSeedLicense(this)">
-                <div class="input-group-text">
-                    <input class="form-check-input mt-0" type="checkbox" id="seed_license_verified" name="seed_license_verified" 
-                           {{ old('seed_license_verified', $application->entityDetails->seed_license_verified ?? false) ? 'checked' : '' }}>
-                    <label for="seed_license_verified" class="ms-1 small mb-0">Verified</label>
-                </div>
+                <div class="input-group input-group-sm">
+            <input type="text" class="form-control form-control-sm" id="seed_license" name="seed_license" 
+                value="{{ old('seed_license', $application->entityDetails->seed_license ?? '') }}" 
+                maxlength="30" 
+                title="Seed License (6-30 characters, allows letters, numbers, / - . spaces)" 
+                required 
+                oninput="validateSeedLicense(this)">
+            <div class="input-group-text">
+                <input class="form-check-input mt-0" type="checkbox" id="seed_license_verified" name="seed_license_verified" 
+                    {{ old('seed_license_verified', $application->entityDetails->seed_license_verified ?? false) ? 'checked' : '' }}>
+                <label for="seed_license_verified" class="ms-1 small mb-0">Verified</label>
             </div>
-            <div class="invalid-feedback license-error">Please enter a valid Seed License number (6-15 alphanumeric characters).</div>
         </div>
-        <div class="col-md-4">
-    <label for="seed_license_validity" class="form-label small">Validity Date *</label>
-    <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity"
-        min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}"
-        value="{{ old('seed_license_validity', isset($application->entityDetails->seed_license_validity) ? \Carbon\Carbon::parse($application->entityDetails->seed_license_validity)->format('Y-m-d') : '') }}"
-        required>
-</div>
+                    <div class="invalid-feedback license-error">Please enter a valid Seed License number (6-15 alphanumeric characters).</div>
+                </div>
+                <div class="col-md-4">
+            <label for="seed_license_validity" class="form-label small">Validity Date *</label>
+            <input type="date" class="form-control form-control-sm" id="seed_license_validity" name="seed_license_validity"
+                min="{{ \Carbon\Carbon::today()->format('Y-m-d') }}"
+                value="{{ old('seed_license_validity', isset($application->entityDetails->seed_license_validity) ? \Carbon\Carbon::parse($application->entityDetails->seed_license_validity)->format('Y-m-d') : '') }}"
+                required>
+        </div>
 
     </div>
 
@@ -3237,7 +3238,9 @@ function removeSignatory(button) {
     }
 
     function validateSeedLicense(input) {
-        const seedLicenseRegex = /^[A-Z0-9]{6,15}$/;
+        // Allow letters, numbers, slashes, hyphens, dots, spaces, and parentheses
+        const seedLicenseRegex = /^[A-Za-z0-9\/\-\.\s\(\)]{6,30}$/;
+        
         if (!seedLicenseRegex.test(input.value)) {
             input.classList.add('is-invalid');
         } else {

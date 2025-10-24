@@ -287,79 +287,82 @@
             </li>
             
             <!-- Reports Section -->
-            <li class="nav-item">
-                <a href="#sidebarReports" 
-                   class="nav-link collapsed {{ $isReportRoute ? 'active' : '' }}" 
-                   data-bs-toggle="collapse" 
-                   role="button" 
-                   aria-expanded="{{ $isReportRoute ? 'true' : 'false' }}" 
-                   aria-controls="sidebarReports" 
-                   data-key="t-calender">
-                    Reports
-                </a>
-              
-                <div class="menu-dropdown collapse {{ $isReportRoute ? 'show' : '' }}" 
-                     id="sidebarReports">
-                    <ul class="nav nav-sm flex-column">
-                        <li class="nav-item">
-                            <a href="{{ route('applications.distributor-summary') }}" 
-                               class="nav-link {{ request()->routeIs('applications.distributor-summary') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                Distributor Summary
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('applications.approval-status') }}" 
-                               class="nav-link {{ request()->routeIs('applications.approval-status') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                Approval Status
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('applications.verification-status') }}" 
-                               class="nav-link {{ request()->routeIs('applications.verification-status') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                Verification Status
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('applications.dispatch-status') }}" 
-                               class="nav-link {{ request()->routeIs('applications.dispatch-status') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                Dispatch / Physical Verification
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('applications.lifecycle') }}" 
-                               class="nav-link {{ request()->routeIs('applications.lifecycle') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                Lifecycle Report
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('applications.pending') }}" 
-                               class="nav-link {{ request()->routeIs('applications.pending') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                Pending Work
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('applications.rejected') }}" 
-                               class="nav-link {{ request()->routeIs('applications.rejected') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                Rejected / Rework
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="{{ route('applications.reports.tat') }}" 
-                               class="nav-link {{ request()->routeIs('applications.reports.tat') ? 'active' : '' }}" 
-                               data-key="t-analytics">
-                                TAT
-                            </a>
-                        </li>
-                    </ul>
-                </div>
-            </li>
+             @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'Mis Admin', 'Mis User', 'Management']))
+                <li class="nav-item">
+                    <a href="#sidebarReports" 
+                    class="nav-link collapsed {{ $isReportRoute ? 'active' : '' }}" 
+                    data-bs-toggle="collapse" 
+                    role="button" 
+                    aria-expanded="{{ $isReportRoute ? 'true' : 'false' }}" 
+                    aria-controls="sidebarReports" 
+                    data-key="t-calender">
+                        Reports
+                    </a>
+                
+                    <div class="menu-dropdown collapse {{ $isReportRoute ? 'show' : '' }}" 
+                        id="sidebarReports">
+                        <ul class="nav nav-sm flex-column">
+                            <li class="nav-item">
+                                <a href="{{ route('applications.distributor-summary') }}" 
+                                class="nav-link {{ request()->routeIs('applications.distributor-summary') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    Distributor Summary
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('applications.approval-status') }}" 
+                                class="nav-link {{ request()->routeIs('applications.approval-status') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    Approval Status
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('applications.verification-status') }}" 
+                                class="nav-link {{ request()->routeIs('applications.verification-status') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    Verification Status
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('applications.dispatch-status') }}" 
+                                class="nav-link {{ request()->routeIs('applications.dispatch-status') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    Dispatch / Physical Verification
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('applications.lifecycle') }}" 
+                                class="nav-link {{ request()->routeIs('applications.lifecycle') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    Lifecycle Report
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('applications.pending') }}" 
+                                class="nav-link {{ request()->routeIs('applications.pending') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    Pending Work
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('applications.rejected') }}" 
+                                class="nav-link {{ request()->routeIs('applications.rejected') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    Rejected / Rework
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('applications.reports.tat') }}" 
+                                class="nav-link {{ request()->routeIs('applications.reports.tat') ? 'active' : '' }}" 
+                                data-key="t-analytics">
+                                    TAT
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </li>
+            @endif
+
             <!-- End Reports Section -->
             
             @php

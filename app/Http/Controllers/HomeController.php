@@ -596,7 +596,15 @@ class HomeController extends Controller
 
         $approverPendingQuery = Onboarding::query()
             ->with(['entityDetails', 'createdBy', 'territoryDetail', 'regionDetail', 'zoneDetail'])
-            ->where('onboardings.current_approver_id', $user->emp_id);
+            ->where('onboardings.current_approver_id', $user->emp_id)
+            ->selectRaw('
+            onboardings.*,
+            CASE 
+                WHEN onboardings.status IN (' . implode(',', array_fill(0, count($pendingSlugs), '?')) . ') THEN 1 
+                ELSE 2 
+            END as priority_sort', $pendingSlugs) 
+            ->orderBy('priority_sort', 'ASC')
+            ->orderBy('onboardings.created_at', 'DESC');
 
         // Apply access level and filters
         $employee_details = $user->employee;

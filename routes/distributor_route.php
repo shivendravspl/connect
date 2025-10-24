@@ -6,6 +6,7 @@ use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\DispatchController;
 use App\Http\Controllers\CoreCropController;
 use App\Http\Controllers\DocumentChecklistController;
+use App\Http\Controllers\DistributorReportController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -69,4 +70,36 @@ Route::middleware('auth')->group(function(){
     // For Approver/Admin users  
     Route::get('/approver/applications', [ApprovalController::class, 'applications'])->name('approver.applications');
     Route::get('/approvals/{id}/draft-agreement', [ApprovalController::class, 'showDraftAgreement'])->name('approvals.draft-agreement');
+    
+    
+});
+
+
+Route::middleware('auth')->group(function() {
+        Route::get('/distributor-summary', [DistributorReportController::class, 'distributorSummary'])
+            ->name('applications.distributor-summary');
+
+        Route::get('/approval-status', [DistributorReportController::class, 'approvalStatus'])
+            ->name('applications.approval-status');
+
+        Route::get('/verification-status', [DistributorReportController::class, 'verificationStatus'])
+            ->name('applications.verification-status');
+
+        Route::get('/dispatch-status', [DistributorReportController::class, 'dispatchStatus'])
+            ->name('applications.dispatch-status');
+
+        Route::get('/lifecycle', [DistributorReportController::class, 'lifecycle'])
+            ->name('applications.lifecycle');
+
+        Route::get('/pending', [DistributorReportController::class, 'pending'])
+            ->name('applications.pending');
+
+        Route::get('/rejected', [DistributorReportController::class, 'rejected'])
+            ->name('applications.rejected');
+
+        Route::get('/pending-documents', [DistributorReportController::class, 'pendingDocuments'])
+            ->name('pending-documents');
+        
+        Route::get('/reports/tat', [DistributorReportController::class, 'tatReport'])->name('applications.reports.tat');
+
 });

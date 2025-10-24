@@ -32,7 +32,7 @@ class HomeController extends Controller
         if ($request->ajax()) {
             return $this->dynamicData($request);
         }
-      
+
         $user = Auth::user();
         $filters = [
             'bu' => $request->input('bu', 'All'),
@@ -61,7 +61,7 @@ class HomeController extends Controller
 
         $isAdminUser = $user->hasAnyRole(['Super Admin', 'Admin']) || $user->hasPermissionTo('distributor_approval');
         $isMisUser = $user->hasAnyRole(['Mis Admin', 'Mis User']);
-        $approverDesignations = ['Regional Business Manager', 'Zonal Business Manager', 'General Manager']; // Add more as needed
+        $approverDesignations = ['Regional Business Manager', 'Zonal Business Manager', 'General Manager'];
 
         $isApprover = !$isAdminUser && !$isMisUser && in_array($employee_details->emp_designation ?? '', $approverDesignations);
         $showAdminDashboard = $isAdminUser;
@@ -72,7 +72,7 @@ class HomeController extends Controller
         // Fetch all active statuses dynamically
         $allStatuses = Status::where('is_active', 1)->orderBy('sort_order', 'asc')->get();
 
-        // Define dynamic status groups for KPIs (tailored for dashboard)
+        // Define dynamic status groups for KPIs
         $statusGroups = [
             'pending' => [
                 'label' => 'Pending',
@@ -108,27 +108,37 @@ class HomeController extends Controller
             ]
         ];
 
-        // Specific KPI status mappings (using groups where possible)
         $kpiStatusMappings = [
             'document_verified' => $allStatuses->where('name', 'documents_verified')->first()->name ?? 'documents_verified',
             'agreement_created' => $allStatuses->where('name', 'agreement_created')->first()->name ?? 'agreement_created',
             'physical_docs_verified' => $allStatuses->where('name', 'physical_docs_verified')->first()->name ?? 'physical_docs_verified',
             'distributorship_created' => $allStatuses->where('name', 'distributorship_created')->first()->name ?? 'distributorship_created',
-            'mis_rejected' => $statusGroups['rejected']['slugs'],  // Use group
-            'in_process' => $statusGroups['mis']['slugs'],  // Use group
-            // Add more as needed
+            'rejected' => $statusGroups['rejected']['slugs'],
+            'in_process' => $statusGroups['mis']['slugs'],
         ];
 
+        // Determine user type for chart data
+        $userType = $showAdminDashboard ? 'admin' : ($showMisDashboard ? 'mis' : ($showApproverDashboard ? 'approver' : 'sales'));
+
+        // Get the appropriate data based on user type
         if ($showSalesDashboard) {
             $data = $this->getSalesData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
         } elseif ($showApproverDashboard) {
             $data = $this->getApproverData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
         } elseif ($showMisDashboard) {
             $data = $this->getMISData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
-            // dd($data);
         } else {
             $data = $this->getDashboardData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
         }
+
+        // ✅ FIX: Use the chart_data that's already in the data array from the specific methods
+        $chartData = $data['chart_data'] ?? [];
+
+        // Add recent applications and other common data
+        $data['recentApplications'] = $this->getRecentApplications($filters, $user, $access_level, $userType);
+        $data['statusApplications'] = $this->getStatusApplications($filters, $user, $access_level, $statusGroups, $userType);
+        $data['zonePerformance'] = $chartData['zone_data'] ?? [];
+
         extract($data);
 
         $pendingApplications = $pendingApplications ?? new LengthAwarePaginator([], 0, 10);
@@ -143,6 +153,7 @@ class HomeController extends Controller
         $territory_list = $territory_list ?? [];
         $actionSummary = $actionSummary ?? [];
         $statuses = $statuses ?? collect();
+
         return view('dashboard.dashboard', compact(
             'pendingApplications',
             'approverPendingApplications',
@@ -164,10 +175,13 @@ class HomeController extends Controller
             'showMisDashboard',
             'statusGroups',
             'kpiStatusMappings',
-            'statuses'
+            'statuses',
+            'chartData',
+            'recentApplications',
+            'statusApplications',
+            'zonePerformance'
         ));
     }
-
     public function dynamicData(Request $request)
     {
         try {
@@ -252,44 +266,36 @@ class HomeController extends Controller
                 'agreement_created' => $allStatuses->where('name', 'agreement_created')->first()->name ?? 'agreement_created',
                 'physical_docs_verified' => $allStatuses->where('name', 'physical_docs_verified')->first()->name ?? 'physical_docs_verified',
                 'distributorship_created' => $allStatuses->where('name', 'distributorship_created')->first()->name ?? 'distributorship_created',
-                'mis_rejected' => $statusGroups['rejected']['slugs'],
+                'rejected' => $statusGroups['rejected']['slugs'],
                 'in_process' => $statusGroups['mis']['slugs'],
+                'reverted' => $statusGroups['reverted']['slugs'],
             ];
 
+            $data = [];
+            $userType = $dashboardType === 'approver' ? 'approver' : ($dashboardType === 'mis' ? 'mis' : ($dashboardType === 'sales' ? 'sales' : 'admin'));
+            $chartData = $this->getChartData($filters, $user, $access_level, $statusGroups, $userType);
             if ($dashboardType === 'approver') {
-                $data = $this->getApproverData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
-
+                $data = $this->getApproverData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings, $chartData);
                 $data['approver_pending_table_html'] = view('dashboard._approver-pending-table', [
                     'approverPendingApplications' => $data['approverPendingApplications'] ?? new LengthAwarePaginator([], 0, 10)
                 ])->render();
-                $data['statusGroups'] = $statusGroups;
-                $data['kpiStatusMappings'] = $kpiStatusMappings;
-
-                return response()->json($data);
             } elseif ($dashboardType === 'mis') {
-                $data = $this->getMISData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
-                // dd($data);
+                $data = $this->getMISData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings, $chartData);
                 $data['mis_table_html'] = view('dashboard._mis-table', [
                     'misApplications' => $data['misApplications'] ?? new LengthAwarePaginator([], 0, 10),
                     'statuses' => $data['statuses'] ?? []
                 ])->render();
-                $data['statusGroups'] = $statusGroups;
-                $data['kpiStatusMappings'] = $kpiStatusMappings;
-                return response()->json($data);
             } elseif ($dashboardType === 'sales') {
-                $data = $this->getSalesData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
+                $data = $this->getSalesData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings, $chartData);
                 $data['my_table_html'] = view('dashboard._sales-table', [
                     'myApplications' => $data['myApplications'] ?? new LengthAwarePaginator([], 0, 10),
                     'territories' => $data['territories'] ?? collect(),
                     'statuses' => $data['statuses'] ?? []
                 ])->render();
-                $data['statusGroups'] = $statusGroups;
-                $data['kpiStatusMappings'] = $kpiStatusMappings;
-
-                return response()->json($data);
             } else {
                 // Admin dashboard
-                $data = $this->getDashboardData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings);
+                $data = $this->getDashboardData($filters, $user, $access_level, $request, $statusGroups, $kpiStatusMappings, $chartData);
+
                 $data['counts'] = $data['counts'] ?? $this->getDefaultCounts();
                 $data['tat'] = $data['tat'] ?? $this->getDefaultTatData();
                 $data['kpi_trends'] = $data['kpi_trends'] ?? $this->getDefaultKpiTrends();
@@ -303,12 +309,14 @@ class HomeController extends Controller
                 $data['pending_table_html'] = view('dashboard._approver-table', [
                     'pendingApplications' => $data['pendingApplications'] ?? new LengthAwarePaginator([], 0, 10)
                 ])->render();
-
-                $data['statusGroups'] = $statusGroups;
-                $data['kpiStatusMappings'] = $kpiStatusMappings;
-
-                return response()->json($data);
             }
+
+            // ✅ FIX: Add status groups and mappings to ALL responses
+            $data['statusGroups'] = $statusGroups;
+            $data['kpiStatusMappings'] = $kpiStatusMappings;
+            $data['zonePerformance'] = $data['chart_data']['zone_data'] ?? [];
+
+            return response()->json($data);
         } catch (\Exception $e) {
             Log::error('Error in dynamicData: ' . $e->getMessage() . ' on line ' . $e->getLine() . ' in file ' . $e->getFile());
             return response()->json(['error' => 'Server error: Unable to fetch dashboard data. Please try again later.'], 500);
@@ -325,7 +333,7 @@ class HomeController extends Controller
         return $query->pluck('name')->toArray();
     }
 
-    protected function getMISData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings)
+    protected function getMISData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings, $chartData = null)
     {
         $bu_list = $this->helper->getAssociatedBusinessUnitList($user->emp_id);
         $zone_list = $this->helper->getAssociatedZoneList($user->emp_id);
@@ -405,7 +413,7 @@ class HomeController extends Controller
             'agreement_created' => (clone $allMISApplicationsQuery)->where('onboardings.status', $kpiStatusMappings['agreement_created'])->count(),
             'physical_docs_verified' => (clone $allMISApplicationsQuery)->where('onboardings.status', $kpiStatusMappings['physical_docs_verified'])->count(),
             'distributorship_created' => (clone $allMISApplicationsQuery)->where('onboardings.status', $kpiStatusMappings['distributorship_created'])->count(),
-            'mis_rejected' => (clone $allMISApplicationsQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
+            'rejected' => (clone $allMISApplicationsQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
             'in_process' => (clone $allMISApplicationsQuery)->whereIn('onboardings.status', $misStatuses)->count(),
         ];
         $counts = array_merge($this->getDefaultCounts(), $counts);
@@ -422,7 +430,7 @@ class HomeController extends Controller
             'agreement_created' => (clone $lastMonthQuery)->where('onboardings.status', $kpiStatusMappings['agreement_created'])->count(),
             'physical_docs_verified' => (clone $lastMonthQuery)->where('onboardings.status', $kpiStatusMappings['physical_docs_verified'])->count(),
             'distributorship_created' => (clone $lastMonthQuery)->where('onboardings.status', $kpiStatusMappings['distributorship_created'])->count(),
-            'mis_rejected' => (clone $lastMonthQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
+            'rejected' => (clone $lastMonthQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
             'in_process' => (clone $lastMonthQuery)->whereIn('onboardings.status', $misStatuses)->count(),
         ];
 
@@ -432,7 +440,7 @@ class HomeController extends Controller
             'agreement_created' => $this->calculatePercentageChange($lastMonthCounts['agreement_created'], $counts['agreement_created']),
             'physical_docs_verified' => $this->calculatePercentageChange($lastMonthCounts['physical_docs_verified'], $counts['physical_docs_verified']),
             'distributorship_created' => $this->calculatePercentageChange($lastMonthCounts['distributorship_created'], $counts['distributorship_created']),
-            'mis_rejected' => $this->calculatePercentageChange($lastMonthCounts['mis_rejected'], $counts['mis_rejected']),
+            'rejected' => $this->calculatePercentageChange($lastMonthCounts['rejected'], $counts['rejected']),
             'in_process' => $this->calculatePercentageChange($lastMonthCounts['in_process'], $counts['in_process']),
         ];
         $kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
@@ -440,8 +448,9 @@ class HomeController extends Controller
 
         // Add statuses to the data
         $statuses = Status::where('is_active', 1)->orderBy('sort_order')->get();
+        $chartData = $this->getChartData($filters, $user, $access_level, $statusGroups, 'mis');
 
-        return compact(
+        return array_merge(compact(
             'misApplications',
             'bu_list',
             'zone_list',
@@ -451,11 +460,12 @@ class HomeController extends Controller
             'tatData',
             'kpi_trends',
             'statuses'
-        );
+        ), ['chart_data' => $chartData]);
     }
 
-    protected function getSalesData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings)
+    protected function getSalesData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings, $chartData = null)
     {
+
         $bu_list = $this->helper->getAssociatedBusinessUnitList($user->emp_id);
         $zone_list = $this->helper->getAssociatedZoneList($user->emp_id);
         $region_list = $this->helper->getAssociatedRegionList($user->emp_id);
@@ -466,6 +476,7 @@ class HomeController extends Controller
         $misSlugs = explode(',', $statusGroups['mis']['slugs']);
         $completionSlugs = explode(',', $statusGroups['completed']['slugs']);
         $rejectionSlugs = explode(',', $statusGroups['rejected']['slugs']);
+        $revertedSlugs = explode(',', $statusGroups['reverted']['slugs']);
 
         $myApplicationsQuery = Onboarding::query()
             ->with(['entityDetails', 'createdBy', 'territoryDetail', 'regionDetail', 'zoneDetail', 'approvalLogs'])
@@ -515,18 +526,20 @@ class HomeController extends Controller
         $myApplications = $myApplicationsQuery->orderBy('created_at', 'desc')->paginate(10);
 
         // Fetch territories and statuses for the table
-        $territories = \App\Models\CoreTerritory::orderBy('territory_name')->get(); // Adjust model if needed
+        $territories = \App\Models\CoreTerritory::orderBy('territory_name')->get();
         $statuses = Status::where('is_active', 1)->orderBy('sort_order')->pluck('name')->toArray();
 
-        // Dynamic counts
+        // Dynamic counts - NO array_merge
         $sales_counts = [
             'total_created' => (clone $myApplicationsQuery)->count(),
             'in_approval' => (clone $myApplicationsQuery)->whereIn('onboardings.status', $approvalSlugs)->count(),
             'to_mis' => (clone $myApplicationsQuery)->whereIn('onboardings.status', $misSlugs)->count(),
             'completed' => (clone $myApplicationsQuery)->whereIn('onboardings.status', $completionSlugs)->count(),
             'rejected' => (clone $myApplicationsQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
+            'reverted' => (clone $myApplicationsQuery)->whereIn('onboardings.status', $revertedSlugs)->count(),
         ];
-$sales_counts = array_merge($this->getDefaultCounts(), $sales_counts);
+        //dd($sales_counts);
+
         // Last month trends
         $lastMonthFilters = $filters;
         $lastMonthFilters['date_from'] = Carbon::now()->subMonth()->startOfMonth()->toDateString();
@@ -540,6 +553,7 @@ $sales_counts = array_merge($this->getDefaultCounts(), $sales_counts);
             'to_mis' => (clone $lastMonthMyQuery)->whereIn('onboardings.status', $misSlugs)->count(),
             'completed' => (clone $lastMonthMyQuery)->whereIn('onboardings.status', $completionSlugs)->count(),
             'rejected' => (clone $lastMonthMyQuery)->whereIn('onboardings.status', $rejectionSlugs)->count(),
+            'reverted' => (clone $lastMonthMyQuery)->whereIn('onboardings.status', $revertedSlugs)->count(),
         ];
 
         $sales_kpi_trends = [
@@ -548,12 +562,27 @@ $sales_counts = array_merge($this->getDefaultCounts(), $sales_counts);
             'to_mis' => $this->calculatePercentageChange($lastMonthSalesCounts['to_mis'], $sales_counts['to_mis']),
             'completed' => $this->calculatePercentageChange($lastMonthSalesCounts['completed'], $sales_counts['completed']),
             'rejected' => $this->calculatePercentageChange($lastMonthSalesCounts['rejected'], $sales_counts['rejected']),
+            'reverted' => $this->calculatePercentageChange($lastMonthSalesCounts['reverted'], $sales_counts['reverted']),
         ];
-$sales_kpi_trends = array_merge($this->getDefaultSalesKpiTrends(), $sales_kpi_trends);
-        return compact('bu_list', 'zone_list', 'region_list', 'territory_list', 'sales_counts', 'sales_kpi_trends', 'myApplications', 'territories', 'statuses');
+        // Fix the chart data call
+        $localChartData = $chartData ?? $this->getChartData($filters, $user, $access_level, $statusGroups, 'sales');
+
+
+
+        return array_merge(compact(
+            'bu_list',
+            'zone_list',
+            'region_list',
+            'territory_list',
+            'sales_counts',
+            'sales_kpi_trends',
+            'myApplications',
+            'territories',
+            'statuses'
+        ), ['chart_data' => $localChartData]);
     }
 
-    protected function getApproverData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings)
+    protected function getApproverData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings, $chartData = null)
     {
         $bu_list = $this->helper->getAssociatedBusinessUnitList($user->emp_id);
         $zone_list = $this->helper->getAssociatedZoneList($user->emp_id);
@@ -666,9 +695,11 @@ $sales_kpi_trends = array_merge($this->getDefaultSalesKpiTrends(), $sales_kpi_tr
             'rejected_by_you' => $this->calculatePercentageChange($lastMonthCounts['rejected_by_you'], $counts['rejected_by_you']),
             'reverted_by_you' => $this->calculatePercentageChange($lastMonthCounts['reverted_by_you'], $counts['reverted_by_you']),
         ];
-$kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
+        $kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
         $statuses = Status::where('is_active', 1)->orderBy('sort_order')->get();
-        return compact(
+        $localChartData = $chartData ?? $this->getChartData($filters, $user, $access_level, $statusGroups, 'mis');
+
+        return array_merge(compact(
             'approverPendingApplications',
             'bu_list',
             'zone_list',
@@ -677,10 +708,10 @@ $kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
             'counts',
             'kpi_trends',
             'statuses'
-        );
+        ), ['chart_data' => $localChartData]);
     }
 
-    protected function getDashboardData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings)
+    protected function getDashboardData(array $filters, $user, $access_level, Request $request, $statusGroups, $kpiStatusMappings, $chartData = null)
     {
         $bu_list = $this->helper->getAssociatedBusinessUnitList($user->emp_id);
         $zone_list = $this->helper->getAssociatedZoneList($user->emp_id);
@@ -979,7 +1010,9 @@ $kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
         }
         $actionSummary = array_values($userActions);
         $statuses = Status::where('is_active', 1)->orderBy('sort_order')->get();
-        return compact(
+        $localChartData = $chartData ?? $this->getChartData($filters, $user, $access_level, $statusGroups, 'mis');
+
+        return array_merge(compact(
             'pendingApplications',
             'myApplications',
             'misApplications',
@@ -995,7 +1028,7 @@ $kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
             'access_level',
             'filters',
             'statuses'
-        );
+        ), ['chart_data' => $localChartData]);
     }
 
     protected function calculatePercentageChange($oldValue, $newValue)
@@ -1267,6 +1300,580 @@ $kpi_trends = array_merge($this->getDefaultKpiTrends(), $kpi_trends);
             'to_mis' => 0,
             'completed' => 0,
             'rejected' => 0,
+        ];
+    }
+    /**
+     * Get chart data for dashboard visualization - SIMPLIFIED
+     */
+    protected function getChartData(array $filters, $user, $access_level, $statusGroups = [], $userType = 'admin')
+    {
+
+
+        try {
+            $baseQuery = Onboarding::query()
+                ->with(['entityDetails', 'createdBy', 'territoryDetail', 'regionDetail', 'zoneDetail']);
+
+            // Apply access level filters
+            $employee_details = $user->employee;
+            if ($employee_details) {
+                if ($access_level === 'territory' && $employee_details->territory > 0) {
+                    $baseQuery->where('onboardings.territory', $employee_details->territory);
+                } elseif ($access_level === 'region' && $employee_details->region > 0) {
+                    $baseQuery->where('onboardings.region', $employee_details->region);
+                } elseif ($access_level === 'zone' && $employee_details->zone > 0) {
+                    $baseQuery->where('onboardings.zone', $employee_details->zone);
+                } elseif ($access_level === 'bu' && $employee_details->bu > 0) {
+                    $baseQuery->where('onboardings.business_unit', $employee_details->bu);
+                }
+            }
+
+            // Apply user filters
+            if ($filters['territory'] && $filters['territory'] !== 'All') {
+                $baseQuery->where('onboardings.territory', $filters['territory']);
+            }
+            if ($filters['region'] && $filters['region'] !== 'All') {
+                $baseQuery->where('onboardings.region', $filters['region']);
+            }
+            if ($filters['zone'] && $filters['zone'] !== 'All') {
+                $baseQuery->where('onboardings.zone', $filters['zone']);
+            }
+            if ($filters['bu'] && $filters['bu'] !== 'All') {
+                $baseQuery->where('onboardings.business_unit', $filters['bu']);
+            }
+            if ($filters['date_from'] && $filters['date_to']) {
+                $baseQuery->whereBetween('onboardings.created_at', [$filters['date_from'], $filters['date_to']]);
+            }
+            // User-specific base query modifications
+            switch ($userType) {
+                case 'approver':
+                    $baseQuery->where(function ($q) use ($user) {
+                        $q->where('onboardings.current_approver_id', $user->emp_id)
+                            ->orWhereHas('approvalLogs', function ($logQuery) use ($user) {
+                                $logQuery->where('user_id', $user->emp_id);
+                            });
+                    });
+                    break;
+                case 'sales':
+                    $baseQuery->where(function ($q) use ($user) {
+                        $q->where('onboardings.created_by', $user->emp_id)
+                            ->orWhere('onboardings.final_approver_id', $user->emp_id)
+                            ->orWhereHas('approvalLogs', function ($subQ) use ($user) {
+                                $subQ->where('user_id', $user->emp_id);
+                            });
+                    });
+                    break;
+                case 'mis':
+                    $misStatuses = array_merge(
+                        explode(',', $statusGroups['mis']['slugs'] ?? ''),
+                        explode(',', $statusGroups['completed']['slugs'] ?? ''),
+                        explode(',', $statusGroups['rejected']['slugs'] ?? '')
+                    );
+                    $baseQuery->whereIn('onboardings.status', $misStatuses);
+                    break;
+            }
+            //dd($misStatuses);
+            // 1. Forms Status Data - Type-specific
+            $formsStatusData = $this->getUserSpecificFormsStatus($baseQuery, $userType, $user, $statusGroups);
+
+            // 2. Forms Received from Sales - Type-specific count/title
+            $formsReceivedFromSales = $this->getFormsReceivedCount($baseQuery, $userType, $user, $statusGroups);
+
+            // 3. Monthly Forms Data
+            $monthlyData = $this->getMonthlyFormsData($baseQuery, $userType, $user, $statusGroups);
+
+            // 4. Approval Status Data - Type-specific
+            $approvalStatusData = $this->getApprovalStatusData($baseQuery, $userType, $user, $statusGroups);
+
+            // 5. Initiator Status
+            $initiatorData = $this->getInitiatorData($baseQuery, $userType, $user);
+
+            // 6. Zone Data
+            $zoneData = $this->getZoneData($baseQuery, $userType);
+            //dd($monthlyData);
+            return [
+                'total_forms_submitted' => $baseQuery->count(),
+                'forms_received_from_sales' => $formsReceivedFromSales,
+                'forms_status' => $formsStatusData,
+                'forms_received' => $monthlyData,
+                'approval_status' => $approvalStatusData,
+                'initiator_status' => $initiatorData,
+                'zone_data' => $zoneData,
+                'user_type' => $userType
+            ];
+        } catch (\Exception $e) {
+            Log::error('Error generating chart data: ' . $e->getMessage());
+            return $this->getDefaultChartData();
+        }
+    }
+
+    // Helper methods for better organization
+    protected function getUserSpecificFormsStatus($baseQuery, $userType, $user, $statusGroups)
+    {
+        switch ($userType) {
+            case 'approver':
+                return [
+                    'Pending Your Review' => (clone $baseQuery)->where('current_approver_id', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['actionable']['slugs']))->count(),
+                    'Approved by You' => ApprovalLog::where('user_id', $user->emp_id)
+                        ->where('action', 'approved')->count(),
+                    'Rejected by You' => ApprovalLog::where('user_id', $user->emp_id)
+                        ->where('action', 'rejected')->count(),
+                    'On Hold by You' => ApprovalLog::where('user_id', $user->emp_id)
+                        ->where('action', 'hold')->count(),
+                    'Reverted by You' => ApprovalLog::where('user_id', $user->emp_id)
+                        ->where('action', 'reverted')->count(),
+                ];
+
+            case 'sales':
+                return [
+                    'Total Created by You' => (clone $baseQuery)->where('created_by', $user->emp_id)->count(),
+                    'In Approval' => (clone $baseQuery)->where('created_by', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['pending']['slugs']))->count(),
+                    'In MIS' => (clone $baseQuery)->where('created_by', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['mis']['slugs']))->count(),
+                    'Completed' => (clone $baseQuery)->where('created_by', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['completed']['slugs']))->count(),
+                    'Rejected' => (clone $baseQuery)->where('created_by', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['rejected']['slugs']))->count(),
+                ];
+
+            case 'mis':
+                return [
+                    'Documents Verified' => (clone $baseQuery)->where('status', 'documents_verified')->count(),
+                    'Agreements Created' => (clone $baseQuery)->where('status', 'agreement_created')->count(),
+                    'Physical Docs Verified' => (clone $baseQuery)->where('status', 'physical_docs_verified')->count(),
+                    'Distributorship Created' => (clone $baseQuery)->where('status', 'distributorship_created')->count(),
+                    'Rejected in MIS' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['rejected']['slugs']))->count(),
+                    'In Process' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['mis']['slugs']))->count(),
+                ];
+
+            default: // admin
+                return [
+                    'Draft' => (clone $baseQuery)->where('status', 'draft')->count(),
+                    'RBM Review' => (clone $baseQuery)->where('status', 'under_level1_review')->count(),
+                    'ZBM Review' => (clone $baseQuery)->where('status', 'under_level2_review')->count(),
+                    'GM Review' => (clone $baseQuery)->where('status', 'under_level3_review')->count(),
+                    'On Hold' => (clone $baseQuery)->where('status', 'on_hold')->count(),
+                    'Reverted' => (clone $baseQuery)->where('status', 'reverted')->count(),
+                    'MIS Processing' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['mis']['slugs']))->count(),
+                    'Documents Verified' => (clone $baseQuery)->where('status', 'documents_verified')->count(),
+                    'Agreement Created' => (clone $baseQuery)->where('status', 'agreement_created')->count(),
+                    'Distributorship Created' => (clone $baseQuery)->where('status', 'distributorship_created')->count(),
+                    'Rejected' => (clone $baseQuery)->where('status', 'rejected')->count(),
+                ];
+        }
+    }
+
+    protected function getFormsReceivedCount($baseQuery, $userType, $user, $statusGroups)
+    {
+        switch ($userType) {
+            case 'approver':
+                return ApprovalLog::where('user_id', $user->emp_id)
+                    ->whereIn('action', ['approved', 'rejected', 'reverted', 'hold'])->count();
+
+            case 'sales':
+                return (clone $baseQuery)->where('created_by', $user->emp_id)->count();
+
+            case 'mis':
+                return (clone $baseQuery)
+                    ->whereIn('status', [
+                        'mis_processing',
+                        'documents_pending',
+                        'documents_resubmitted',
+                        'documents_verified',
+                        'physical_docs_pending',
+                        'physical_docs_redispatched',
+                        'physical_docs_verified',
+                        'agreement_created'
+                    ])->count();
+
+            default:
+                return (clone $baseQuery)
+                    ->whereIn('status', [
+                        'mis_processing',
+                        'documents_pending',
+                        'documents_resubmitted',
+                        'documents_verified',
+                        'physical_docs_pending',
+                        'physical_docs_redispatched',
+                        'physical_docs_verified',
+                        'agreement_created'
+                    ])->count();
+        }
+    }
+
+    protected function getMonthlyFormsData($baseQuery, $userType, $user, $statusGroups)
+    {
+        $currentYear = Carbon::now()->year;
+        $monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        $approvalData = [];
+        $pendingData = [];
+
+        // Debug: Check what status groups we have
+        $completedStatuses = explode(',', $statusGroups['completed']['slugs'] ?? '');
+        $misStatuses = $userType === 'mis' ? explode(',', $statusGroups['mis']['slugs'] ?? '') : [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $monthStart = Carbon::create($currentYear, $month, 1)->startOfMonth();
+            $monthEnd = Carbon::create($currentYear, $month, 1)->endOfMonth();
+
+            // Create fresh queries for each count to avoid modification issues
+            $approvalQuery = (clone $baseQuery)->whereBetween('onboardings.created_at', [$monthStart, $monthEnd]);
+            $pendingQuery = (clone $baseQuery)->whereBetween('onboardings.created_at', [$monthStart, $monthEnd]);
+
+            // Apply user-specific filters for monthly data
+            if ($userType === 'sales') {
+                $approvalQuery->where('onboardings.created_by', $user->emp_id);
+                $pendingQuery->where('onboardings.created_by', $user->emp_id);
+            } elseif ($userType === 'approver') {
+                $approvalQuery->where('onboardings.current_approver_id', $user->emp_id);
+                $pendingQuery->where('onboardings.current_approver_id', $user->emp_id);
+            } elseif ($userType === 'mis') {
+                // For MIS, we want to see all MIS-related applications
+                $approvalQuery->whereIn('onboardings.status', $completedStatuses);
+                $pendingQuery->whereIn('onboardings.status', $misStatuses);
+            } else {
+                // For admin, use completed statuses for approval count
+                $approvalQuery->whereIn('onboardings.status', $completedStatuses);
+                // For pending, exclude completed statuses
+                $pendingQuery->whereNotIn('onboardings.status', $completedStatuses);
+            }
+
+            $approvalCount = $approvalQuery->count();
+            $pendingCount = $pendingQuery->count();
+
+            \Log::info("Month {$month}: Approval={$approvalCount}, Pending={$pendingCount}");
+
+            $approvalData[] = $approvalCount;
+            $pendingData[] = $pendingCount;
+        }
+
+        $result = [
+            'labels' => $monthLabels,
+            'approval' => $approvalData,
+            'pending' => $pendingData
+        ];
+
+        \Log::info('Monthly Forms Data Result:', $result);
+        return $result;
+    }
+
+    protected function getApprovalStatusData($baseQuery, $userType, $user, $statusGroups)
+    {
+        switch ($userType) {
+            case 'approver':
+                return [
+                    'Your Approved' => ApprovalLog::where('user_id', $user->emp_id)->where('action', 'approved')->count(),
+                    'Your Rejected' => ApprovalLog::where('user_id', $user->emp_id)->where('action', 'rejected')->count(),
+                    'Your Pending' => (clone $baseQuery)->where('current_approver_id', $user->emp_id)->count(),
+                    'Your On Hold' => ApprovalLog::where('user_id', $user->emp_id)->where('action', 'hold')->count(),
+                ];
+
+            case 'sales':
+                return [
+                    'Your Completed' => (clone $baseQuery)->where('created_by', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['completed']['slugs']))->count(),
+                    'Your Pending' => (clone $baseQuery)->where('created_by', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['pending']['slugs']))->count(),
+                    'Your Rejected' => (clone $baseQuery)->where('created_by', $user->emp_id)
+                        ->whereIn('status', explode(',', $statusGroups['rejected']['slugs']))->count(),
+                ];
+
+            case 'mis':
+                return [
+                    'Docs Verified' => (clone $baseQuery)->where('status', 'documents_verified')->count(),
+                    'Physical Verified' => (clone $baseQuery)->where('status', 'physical_docs_verified')->count(),
+                    'Agreements Done' => (clone $baseQuery)->where('status', 'agreement_created')->count(),
+                    'Completed' => (clone $baseQuery)->where('status', 'distributorship_created')->count(),
+                    'Rejected' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['rejected']['slugs']))->count(),
+                ];
+
+            default:
+                return [
+                    'Approved' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['completed']['slugs']))->count(),
+                    'In Review' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['pending']['slugs']))->count(),
+                    'MIS Processing' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['mis']['slugs']))->count(),
+                    'Draft' => (clone $baseQuery)->where('status', 'draft')->count(),
+                    'Reverted' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['reverted']['slugs']))->count(),
+                    'On Hold' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['hold']['slugs']))->count(),
+                    'Rejected' => (clone $baseQuery)->whereIn('status', explode(',', $statusGroups['rejected']['slugs']))->count(),
+                ];
+        }
+    }
+    /**
+     * Get recent applications for dashboard display with proper user filtering
+     */
+    protected function getRecentApplications(array $filters, $user, $access_level, $userType = 'admin')
+    {
+        $query = Onboarding::query()
+            ->with(['entityDetails', 'createdBy'])
+            ->latest();
+
+        // Apply user-specific filtering
+        switch ($userType) {
+            case 'sales':
+                $query->where('onboardings.created_by', $user->emp_id);
+                break;
+
+            case 'approver':
+                $query->where(function ($q) use ($user) {
+                    $q->where('onboardings.current_approver_id', $user->emp_id)
+                        ->orWhereHas('approvalLogs', function ($logQuery) use ($user) {
+                            $logQuery->where('user_id', $user->emp_id);
+                        });
+                });
+                break;
+
+            case 'mis':
+                $misStatuses = ['mis_processing', 'documents_verified', 'agreement_created', 'physical_docs_verified'];
+                $query->whereIn('onboardings.status', $misStatuses);
+                break;
+
+            default: // admin
+                // No additional status filtering for admin
+                break;
+        }
+
+        // Apply access level filters
+        $employee_details = $user->employee;
+        if ($employee_details) {
+            if ($access_level === 'territory' && $employee_details->territory > 0) {
+                $query->where('onboardings.territory', $employee_details->territory);
+            } elseif ($access_level === 'region' && $employee_details->region > 0) {
+                $query->where('onboardings.region', $employee_details->region);
+            } elseif ($access_level === 'zone' && $employee_details->zone > 0) {
+                $query->where('onboardings.zone', $employee_details->zone);
+            } elseif ($access_level === 'bu' && $employee_details->bu > 0) {
+                $query->where('onboardings.business_unit', $employee_details->bu);
+            }
+        }
+
+        // Apply additional filters
+        if ($filters['territory'] && $filters['territory'] !== 'All') {
+            $query->where('onboardings.territory', $filters['territory']);
+        }
+        if ($filters['region'] && $filters['region'] !== 'All') {
+            $query->where('onboardings.region', $filters['region']);
+        }
+        if ($filters['zone'] && $filters['zone'] !== 'All') {
+            $query->where('onboardings.zone', $filters['zone']);
+        }
+        if ($filters['bu'] && $filters['bu'] !== 'All') {
+            $query->where('onboardings.business_unit', $filters['bu']);
+        }
+        if ($filters['date_from'] && $filters['date_to']) {
+            $query->whereBetween('onboardings.created_at', [$filters['date_from'], $filters['date_to']]);
+        }
+
+        return $query->limit(6)->get();
+    }
+
+    /**
+     * Get status applications for dashboard display with proper status groups
+     */
+    protected function getStatusApplications(array $filters, $user, $access_level, $statusGroups = [], $userType = 'admin')
+    {
+        $query = Onboarding::query()
+            ->with(['entityDetails', 'createdBy'])
+            ->latest();
+
+        // Define statuses based on user type
+        $statusesToShow = [];
+        switch ($userType) {
+            case 'sales':
+                $statusesToShow = explode(',', $statusGroups['actionable']['slugs']); // Show actionable items
+                $query->where('onboardings.created_by', $user->emp_id);
+                break;
+
+            case 'approver':
+                $statusesToShow = explode(',', $statusGroups['actionable']['slugs']); // Show pending approvals
+                $query->where('onboardings.current_approver_id', $user->emp_id);
+                break;
+
+            case 'mis':
+                $statusesToShow = explode(',', $statusGroups['mis']['slugs']); // Show MIS processing
+                break;
+
+            default: // admin
+                $statusesToShow = array_merge(
+                    explode(',', $statusGroups['actionable']['slugs']),
+                    explode(',', $statusGroups['mis']['slugs'])
+                );
+                break;
+        }
+
+        if (!empty($statusesToShow)) {
+            $query->whereIn('onboardings.status', $statusesToShow);
+        }
+
+        // Apply access level filters
+        $employee_details = $user->employee;
+        if ($employee_details) {
+            if ($access_level === 'territory' && $employee_details->territory > 0) {
+                $query->where('onboardings.territory', $employee_details->territory);
+            } elseif ($access_level === 'region' && $employee_details->region > 0) {
+                $query->where('onboardings.region', $employee_details->region);
+            } elseif ($access_level === 'zone' && $employee_details->zone > 0) {
+                $query->where('onboardings.zone', $employee_details->zone);
+            } elseif ($access_level === 'bu' && $employee_details->bu > 0) {
+                $query->where('onboardings.business_unit', $employee_details->bu);
+            }
+        }
+
+        // Apply additional filters
+        if ($filters['territory'] && $filters['territory'] !== 'All') {
+            $query->where('onboardings.territory', $filters['territory']);
+        }
+        if ($filters['region'] && $filters['region'] !== 'All') {
+            $query->where('onboardings.region', $filters['region']);
+        }
+        if ($filters['zone'] && $filters['zone'] !== 'All') {
+            $query->where('onboardings.zone', $filters['zone']);
+        }
+        if ($filters['bu'] && $filters['bu'] !== 'All') {
+            $query->where('onboardings.business_unit', $filters['bu']);
+        }
+        if ($filters['date_from'] && $filters['date_to']) {
+            $query->whereBetween('onboardings.created_at', [$filters['date_from'], $filters['date_to']]);
+        }
+
+        return $query->limit(6)->get();
+    }
+    protected function getInitiatorData($baseQuery, $userType, $user)
+    {
+        $initiatorQuery = (clone $baseQuery)
+            ->join('core_employee', 'onboardings.created_by', '=', 'core_employee.employee_id')
+            ->select(
+                'core_employee.emp_designation as designation',
+                DB::raw('COUNT(*) as total'),
+                DB::raw('SUM(CASE WHEN onboardings.status IN ("distributorship_created") THEN 1 ELSE 0 END) as approved'),
+                DB::raw('SUM(CASE WHEN onboardings.status NOT IN ("distributorship_created") THEN 1 ELSE 0 END) as pending')
+            )
+            ->groupBy('core_employee.emp_designation')
+            ->orderBy('total', 'desc')
+            ->limit(10);
+
+        // For personal views (sales/approver), filter by user's created_by before grouping
+        if ($userType === 'sales' || $userType === 'approver') {
+            $initiatorQuery->where('onboardings.created_by', $user->emp_id);
+        }
+
+        $initiatorRawData = $initiatorQuery->get();
+
+        $initiatorData = [];
+        foreach ($initiatorRawData as $item) {
+            $initiatorData[$item->designation ?: 'Unknown'] = [
+                'approval' => (int) $item->approved,
+                'pending' => (int) $item->pending
+            ];
+        }
+
+        return $initiatorData;
+    }
+
+    protected function getZoneData($baseQuery, $userType = 'admin', $statusGroups = [])
+    {
+        // For MIS users, create a fresh query without status filters to show all zones
+        if ($userType === 'mis') {
+            $zoneQuery = Onboarding::query()
+                ->join('core_zone', 'onboardings.zone', '=', 'core_zone.id');
+
+            // Reapply all other filters except MIS status filter
+            $filters = request()->only(['bu', 'zone', 'region', 'territory', 'date_from', 'date_to']);
+
+            if ($filters['territory'] && $filters['territory'] !== 'All') {
+                $zoneQuery->where('onboardings.territory', $filters['territory']);
+            }
+            if ($filters['region'] && $filters['region'] !== 'All') {
+                $zoneQuery->where('onboardings.region', $filters['region']);
+            }
+            if ($filters['zone'] && $filters['zone'] !== 'All') {
+                $zoneQuery->where('onboardings.zone', $filters['zone']);
+            }
+            if ($filters['bu'] && $filters['bu'] !== 'All') {
+                $zoneQuery->where('onboardings.business_unit', $filters['bu']);
+            }
+            if ($filters['date_from'] && $filters['date_to']) {
+                $zoneQuery->whereBetween('onboardings.created_at', [$filters['date_from'], $filters['date_to']]);
+            }
+
+            // Apply access level filters if any
+            $employee_details = auth()->user()->employee;
+            if ($employee_details) {
+                if ($employee_details->territory > 0) {
+                    $zoneQuery->where('onboardings.territory', $employee_details->territory);
+                } elseif ($employee_details->region > 0) {
+                    $zoneQuery->where('onboardings.region', $employee_details->region);
+                } elseif ($employee_details->zone > 0) {
+                    $zoneQuery->where('onboardings.zone', $employee_details->zone);
+                } elseif ($employee_details->bu > 0) {
+                    $zoneQuery->where('onboardings.business_unit', $employee_details->bu);
+                }
+            }
+        } else {
+            // For other user types, use the original baseQuery
+            $zoneQuery = (clone $baseQuery)
+                ->join('core_zone', 'onboardings.zone', '=', 'core_zone.id');
+        }
+
+        $zoneQuery = $zoneQuery->select(
+            'core_zone.zone_name',
+            DB::raw('COUNT(*) as total'),
+            DB::raw('SUM(CASE WHEN onboardings.status = "distributorship_created" THEN 1 ELSE 0 END) as completed'),
+            DB::raw('SUM(CASE WHEN onboardings.status != "distributorship_created" THEN 1 ELSE 0 END) as pending')
+        )
+            ->groupBy('core_zone.zone_name')
+            ->orderBy('total', 'desc');
+
+        $zoneRawData = $zoneQuery->get();
+
+        $zoneData = [];
+        foreach ($zoneRawData as $item) {
+            $zoneData[$item->zone_name ?: 'Unknown'] = [
+                'total' => (int) $item->total,
+                'completed' => (int) $item->completed,
+                'pending' => (int) $item->pending,
+                'verify' => (int) $item->completed // Alias for view consistency
+            ];
+        }
+
+        return $zoneData;
+    }
+    /**
+     * Default chart data in case of errors
+     */
+    protected function getDefaultChartData($statusGroups = [], $userType = 'admin')
+    {
+        $defaultStatus = [
+            'Pending' => 0,
+            'Completed' => 0,
+            'Rejected' => 0,
+            'Reverted' => 0,
+            'On Hold' => 0
+        ];
+
+        if ($userType === 'approver') {
+            $defaultStatus = ['Pending Your Review' => 0, 'Approved by You' => 0, 'Rejected by You' => 0];
+        } elseif ($userType === 'sales') {
+            $defaultStatus = ['Total Created by You' => 0, 'In Approval' => 0, 'Completed' => 0];
+        } elseif ($userType === 'mis') {
+            $defaultStatus = ['Documents Verified' => 0, 'Completed' => 0, 'Rejected in MIS' => 0];
+        }
+
+        return [
+            'total_forms_submitted' => 0,
+            'forms_received_from_sales' => 0,
+            'forms_status' => $defaultStatus,
+            'forms_received' => [
+                'labels' => ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                'approval' => array_fill(0, 12, 0),
+                'pending' => array_fill(0, 12, 0)
+            ],
+            'approval_status' => $defaultStatus,  // Reuse for consistency
+            'initiator_status' => ['Unknown' => ['approval' => 0, 'pending' => 0]],
+            'zone_data' => ['Unknown' => ['total' => 0, 'verify' => 0, 'pending' => 0]],
+            'user_type' => $userType
         ];
     }
 

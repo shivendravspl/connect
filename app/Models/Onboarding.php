@@ -47,6 +47,7 @@ class Onboarding extends Model
         'mis_rejected_at' => 'datetime',
         'resubmitted_at' => 'datetime',
         'mis_verified_at' => 'datetime',
+         'date_of_appointment' => 'datetime',
     ];
 
 

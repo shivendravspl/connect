@@ -46,6 +46,7 @@ class OnboardingController extends Controller
     private $documentPaths = [];
     public function index()
     {
+        //dd(1);
         $user = Auth::user();
         if ($user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin'])) {
             $applications = Onboarding::orderBy('created_at', 'desc')
@@ -643,7 +644,6 @@ class OnboardingController extends Controller
             'approvalLogs.user',
         ]);
         //dd($application->entityDetails->documents_data);
-
         // Load filled by (created_by user)
         $createdBy = Employee::where('employee_id', $application->created_by)->first();
 
@@ -2815,6 +2815,13 @@ class OnboardingController extends Controller
                     'updated_at' => now()
                 ]);
 
+                $this->createNotification(
+                    $user->emp_id, // userid
+                    'Application Auto-Approved', // title
+                    "Application {$application_id} has been auto-approved by MIS user.", // description
+                    false // notification_read
+                );
+
                 DB::commit();
 
                 return [
@@ -2842,6 +2849,12 @@ class OnboardingController extends Controller
 
                 $application->update(['mis_feedback' => null, 'mis_rejected_at' => null]);
 
+                $this->createNotification(
+                    $user->emp_id,
+                    'Application Resubmitted',
+                    "Your application {$application_id} has been resubmitted to MIS team for verification.",
+                    false
+                );
                 // Notify MIS team about resubmission
                 $this->notifyMisTeamOfResubmission($application, $user);
 
@@ -2880,6 +2893,13 @@ class OnboardingController extends Controller
 
             try {
                 Mail::to($firstApprover->emp_email)->send(new ApplicationSubmitted($application, $user, $firstApprover));
+
+                $this->createNotification(
+                    $firstApprover->employee_id, // approver's userid
+                    'New Application for Approval',
+                    "Application {$application_id} requires your approval.",
+                    false
+                );
             } catch (\Exception $e) {
             }
 
@@ -2913,9 +2933,16 @@ class OnboardingController extends Controller
             foreach ($misTeam as $misMember) {
                 if ($misMember->emp_email) {
                     Mail::to($misMember->emp_email)->send(new DocumentResubmission($application, $user));
+                    $this->createNotification(
+                        $misMember->employee_id,
+                        'Document Resubmission',
+                        "Application {$application->application_code} has been resubmitted for document verification.",
+                        false
+                    );
                 }
             }
         } catch (\Exception $e) {
+            Log::error('MIS team notification failed: ' . $e->getMessage());
         }
     }
 
@@ -3748,6 +3775,76 @@ class OnboardingController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to load crop vertical'
+            ], 500);
+        }
+    }
+
+    private function createNotification($userid, $title, $description, $notification_read = false)
+    {
+        try {
+            DB::table('notifications')->insert([
+                'userid' => $userid,
+                'title' => $title,
+                'description' => $description,
+                'notification_read' => $notification_read,
+                'created_at' => now()
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create notification: ' . $e->getMessage());
+        }
+    }
+
+
+    public function getOnboardingDetails(Request $request)
+    {
+        try {
+            $onboardings = Onboarding::select([
+                'entity_details.establishment_name as name',
+                'entity_details.state_id as state',
+                'entity_details.district_id as district',
+                'entity_details.house_no',
+                'entity_details.business_address',
+                'entity_details.landmark',
+                'entity_details.city',
+                'entity_details.pincode as pin_code',
+                'entity_details.email',
+                'entity_details.mobile as phone',
+                'onboardings.territory',
+                'onboardings.crop_vertical as vertical',
+                'onboardings.created_by'
+            ])
+                ->join('entity_details', 'onboardings.id', '=', 'entity_details.application_id')
+                ->where('onboardings.status', 'distributorship_created')
+                ->whereNull('onboardings.deleted_at')
+                ->get();
+
+            $formattedData = $onboardings->map(function ($item) {
+                return [
+                    'name' => $item->name,
+                    'state' => $item->state,
+                    'district' => $item->district,
+                    'address' => trim(implode(', ', array_filter([
+                        $item->house_no,
+                        $item->business_address,
+                        $item->landmark,
+                        $item->city
+                    ]))),
+                    'city' => $item->city,
+                    'pin_code' => $item->pin_code,
+                    //'contact_person' => $item->name,
+                    'email' => $item->email,
+                    'phone' => $item->phone,
+                    'territory' => $item->territory,
+                    'vertical' => $item->vertical,                  
+                    'created_by' => $item->created_by,
+                ];
+            });
+
+            return response()->json($formattedData);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to fetch onboarding details',
+                'message' => $e->getMessage()
             ], 500);
         }
     }

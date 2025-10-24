@@ -35,6 +35,7 @@
 <!-- App JS -->
 <script src="{{ asset('assets/js/app.js') }}"></script>
 <script src="https://unpkg.com/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+<script src="{{ asset('assets/libs/apexcharts/apexcharts.min.js') }}"></script>
 <script>
     // Define readNotification in global scope
     function readNotification(id) {

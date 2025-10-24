@@ -2,6 +2,21 @@
 
 @push('styles')
 <style>
+    /* General site-wide responsive adjustments */
+    body {
+        font-size: 0.85rem;
+    }
+
+    /* Card padding and margin for compactness */
+    .card {
+        margin-bottom: 0.5rem;
+        border-radius: 0.2rem;
+    }
+
+    .card-body {
+        padding: 0.5rem;
+    }
+
     /* Filter section adjustments */
     .form-label {
         font-size: 0.65rem;
@@ -23,15 +38,14 @@
 
     /* KPI Cards - Made clickable with hover effects */
     .kpi-card {
-        border-left: 3px solid #408076;
+        border-left: 2px solid #007bff;
         transition: transform 0.2s;
         background-color: #ffffff;
         box-shadow: 0 0.1rem 0.2rem rgba(0, 0, 0, 0.05);
+        height: 100%;
         display: flex;
         flex-direction: column;
         cursor: pointer; /* Default cursor for non-clickable */
-        border-bottom: 1px solid #8cbfb7;
-        border-top: 1px solid #ddd
     }
 
     .kpi-card.clickable {
@@ -46,7 +60,7 @@
 
     .kpi-card .card-body {
         padding: 0.4rem;
-        /*display: flex;*/
+        display: flex;
         flex-direction: column;
         justify-content: space-between;
         flex-grow: 1;
@@ -60,14 +74,13 @@
     }
 
     .kpi-value {
-        font-size: 20px;
+        font-size: 1rem;
         font-weight: 700;
-        /*line-height: 1.1;
+        line-height: 1.1;
         margin-bottom: 0.1rem;
         flex-grow: 1;
-        display: flex;*/
+        display: flex;
         align-items: center;
-        margin-top: 15px;
     }
 
     .kpi-trend-up,
@@ -240,8 +253,8 @@
     /* Ensure filters fit in one line on large screens */
     @media (min-width: 992px) {
         .filter-col {
-            flex: 0 0 13%;
-            max-width: 13%;
+            flex: 0 0 10%;
+            max-width: 10%;
         }
     }
 
@@ -330,7 +343,6 @@
         padding: 0.3rem 0.75rem;
     }
 
-  
     /* Responsive adjustments */
     @media (max-width: 576px) {
         .compact-table th, .compact-table td {
@@ -351,6 +363,28 @@
             font-size: 0.75rem;
         }
     }
+     .chart-card {
+      border: 1px solid #dce3f0;
+      border-radius: 10px;
+      padding: 15px;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      width: 100%;
+      max-width: 500px;
+      margin: 30px auto;
+    }
+    .chart-title {
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+       #formsChart1 {
+  height: 320px !important; /* or 200px */
+}
+ #formsChart4 {
+  height: 320px !important; /* or 200px */
+}
 </style>
 @endpush
 
@@ -364,7 +398,7 @@
 @php
     $isAdminUser = Auth::check() && (Auth::user()->hasAnyRole(['Super Admin', 'Admin']) || Auth::user()->hasPermissionTo('distributor_approval'));
     $isMisUser = Auth::check() && Auth::user()->hasAnyRole(['Mis Admin', 'Mis User']);
-    $approverDesignations = ['Area Coordinator', 'Regional Business Manager', 'Zonal Business Manager', 'General Manager'];
+    $approverDesignations = ['Area Coordinator', 'Regional Business Manager', 'Zonal Business Manager', 'General Manager']; // Adjust as needed
     $employee = Auth::user()->employee;
     $isApprover = !$isAdminUser && !$isMisUser && $employee && in_array($employee->emp_designation ?? '', $approverDesignations);
     $showAdminDashboard = $isAdminUser;
@@ -376,38 +410,35 @@
 @endphp
 
 @if($showAdminDashboard || $showMisDashboard || $showApproverDashboard || $showSalesDashboard)
-    <!-- 1. HEADER SECTION -->
-    <div class="row mb-2">
-        <div class="col-12">
-             <div class="card-header align-items-center d-flex" style="background-color:transparent;">
-                <h4 class="card-title mb-0 flex-grow-1 header-title">
-                    @if($showMisDashboard) MIS @elseif($showAdminDashboard) Approval @elseif($showApproverDashboard) Approver's @elseif($showSalesDashboard) My @endif Dashboard
-                </h4>
-
-                <div class="flex-shrink-0">
-                    <a href="{{ url('applications/create') }}" class="btn btn-sm bg-primary text-white">Appoint Distributor Form</a>
-                    <a style="color: #408076;font-weight: 600;" class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
-                    <a style="color: #408076;font-weight: 600;" class="ms-3 me-2" href="javascript:void(0);" id="showDocumentChecklistBtn">List of Required Documents <i class="ri-attachment-line"></i></a>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. FILTERS SECTION -->{{-- Filters Section --}}
-    <div class="row">
+    {{-- Unified Filters Section --}}
+    <div class="row mb-1">
         <div class="col-12">
             <div class="card">
-                <div class="card-body">
-                  
-                    <form style="position:relative;" id="{{ $showMisDashboard ? 'mis-filter-form' : ($showApproverDashboard ? 'approver-filter-form' : ($showSalesDashboard ? 'sales-filter-form' : 'filter-form')) }}" method="GET">
-                        <button style="position: absolute;right:0px;top:0px;z-index:1;" type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
+                <div class="card-header align-items-center d-flex">
+                    <h4 class="card-title mb-0 flex-grow-1 header-title">
+                        @if($showMisDashboard) MIS @elseif($showAdminDashboard) Approval @elseif($showApproverDashboard) Approver’s @elseif($showSalesDashboard) My @endif Dashboard Management
+                    </h4>
+
+                    <div class="flex-shrink-0">
+                        <a href="{{ url('applications/create') }}" class="btn btn-sm bg-primary text-white">
+                            Appoint Distributor Form
+                        </a>
+                        <a class="ms-3" href="">Guidance Manual <i class="ri-file-unknow-line"></i></a>
+                          <button type="button" class="btn btn-soft-info btn-sm ms-2" id="showDocumentChecklistBtn">
+                            <i class="ri-attachment-line me-1"></i> List of Required Documents
+                        </button>
+                        <button type="button" class="btn btn-soft-primary material-shadow-none btn-sm" data-bs-toggle="collapse" data-bs-target="#filterCollapse">
                             <i class="ri-filter-2-line"></i> Filters
-                        </button>           
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-1">
+                    <form id="{{ $showMisDashboard ? 'mis-filter-form' : ($showApproverDashboard ? 'approver-filter-form' : ($showSalesDashboard ? 'sales-filter-form' : 'filter-form')) }}" method="GET">
                         <div class="collapse show" id="filterCollapse">
-                            <div class="row g-2">
+                            <div class="row g-1">
                                 {{-- Common filters: BU, Zone, Region, Territory - Always show --}}
-                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col" style="width:15%;">
-                                    <label for="bu" class="form-label"><b>BU</b></label>
+                                <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                                    <label for="bu" class="form-label">BU</label>
                                     <select name="bu" id="bu" class="form-select form-select-sm">
                                         <option value="All">All BU</option>
                                         @foreach ($bu_list as $key => $value)
@@ -416,7 +447,7 @@
                                     </select>
                                 </div>
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label for="zone" class="form-label"><b>Zone</b></label>
+                                    <label for="zone" class="form-label">Zone</label>
                                     <select name="zone" id="zone" class="form-select form-select-sm">
                                         <option value="All">All Zone</option>
                                         @foreach ($zone_list as $key => $value)
@@ -425,7 +456,7 @@
                                     </select>
                                 </div>
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label for="region" class="form-label"><b>Region</b></label>
+                                    <label for="region" class="form-label">Region</label>
                                     <select name="region" id="region" class="form-select form-select-sm">
                                         <option value="All">All Region</option>
                                         @foreach ($region_list as $key => $value)
@@ -434,7 +465,7 @@
                                     </select>
                                 </div>
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label for="territory" class="form-label"><b>Territory</b></label>
+                                    <label for="territory" class="form-label">Territory</label>
                                     <select name="territory" id="territory" class="form-select form-select-sm">
                                         <option value="All">All Territory</option>
                                         @foreach ($territory_list as $key => $value)
@@ -445,11 +476,11 @@
 
                                 {{-- Date Range - Common --}}
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label class="form-label"><b>From</b></label>
+                                    <label class="form-label">From</label>
                                     <input type="date" name="date_from" id="date_from" class="form-control form-control-sm" value="{{ $filters['date_from'] }}">
                                 </div>
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                                    <label class="form-label"><b>To</b></label>
+                                    <label class="form-label">To</label>
                                     <input type="date" name="date_to" id="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] }}">
                                 </div>
 
@@ -457,8 +488,8 @@
                                     <input type="hidden" name="view_mode" id="view_mode" value="{{ $viewMode }}">
                                 @endif
                                 <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col mt-1 d-flex gap-1 mt-lg-4">
-                                    <button type="submit" class="btn btn-sm btn-primary mt-1">Apply</button>
-                                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-dark mt-1"><i class="ri-refresh-line"></i></a>
+                                    <button type="submit" class="btn btn-sm btn-primary">Apply</button>
+                                    <a href="{{ route('dashboard') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
                                 </div>
                             </div>
                         </div>
@@ -468,169 +499,258 @@
         </div>
     </div>
 
-    <!-- 3. KPI CARDS SECTION -->
+    {{-- KPI Cards Section --}}
     @if($showKpiCards)
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="crm-widget">
-                   
-                    <div class="card-body p-0">
-                        <div class="row g-2" id="kpi-container">
-                            @if (isset($data['counts']['total']) && $data['counts']['total'] == 0 && !$showSalesDashboard)
-                                <div class="col-12 no-data-message">No applications found based on current filters.</div>
-                            @else
+        @if($showAdminDashboard || $showMisDashboard || $showSalesDashboard)
+            {{-- Existing KPI Cards for Admin/MIS/Sales --}}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="crm-widget">
+                        <div class="card-header align-items-center d-flex">
+                            <h4 class="card-title mb-0 flex-grow-1 header-title">Key Indicators</h4>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row g-1" id="kpi-container">
+                                @if (isset($data['counts']['total']) && $data['counts']['total'] == 0 && !$showSalesDashboard)
+                                    <div class="col-12 no-data-message">No applications found based on current filters.</div>
+                                @else
+                                    @php
+                                        $queryString = http_build_query($filters);
+                                        $applicationsUrl = route('applications.index') . ($queryString ? '?' . $queryString : '');
+                                    @endphp
+                                    @if($showAdminDashboard)
+                                        {{-- Admin KPIs --}}
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
+                                                <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Total Forms</h6>
+                                                        <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="appointments">
+                                                <div class="card kpi-card clickable" data-kpi="appointments" data-count="{{ $data['counts']['distributorship_created'] }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Appointments</h6>
+                                                        <div class="kpi-value" id="kpi-appointments-completed">{{ $data['counts']['distributorship_created'] ?? 0 }}%</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-appointments-completed">🔼 {{ $data['kpi_trends']['appointments_completed'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process_admin">
+                                                <div class="card kpi-card clickable" data-kpi="in_process_admin" data-count="{{ $data['counts']['in_process'] }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">In Process</h6>
+                                                        <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="reverted">
+                                                <div class="card kpi-card clickable" data-kpi="reverted" data-count="{{ $data['counts']['reverted'] }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Reverted</h6>
+                                                        <div class="kpi-value" id="kpi-reverted">{{ $data['counts']['reverted'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-reverted">🔼 {{ $data['kpi_trends']['reverted'] ?? 0 }}</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected_admin">
+                                                <div class="card kpi-card clickable" data-kpi="rejected_admin" data-count="{{ $data['counts']['rejected'] }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Rejected</h6>
+                                                        <div class="kpi-value" id="kpi-rejected">{{ $data['counts']['rejected'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 {{ $data['kpi_trends']['rejected'] ?? 0 }}</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis_admin">
+                                                <div class="card kpi-card clickable" data-kpi="to_mis_admin" data-count="{{ $data['counts']['forwarded_to_mis'] }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">To MIS</h6>
+                                                        <div class="kpi-value" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-forwarded-to-mis">🔼 {{ $data['kpi_trends']['forwarded_to_mis'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @elseif($showSalesDashboard)
+                                        {{-- Sales KPIs --}}
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="total_created">
+                                                <div class="card kpi-card clickable" data-kpi="total_created" data-count="{{ $data['sales_counts']['total_created'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Total Created</h6>
+                                                        <div class="kpi-value" id="kpi-total-created">{{ $data['sales_counts']['total_created'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-total-created">🔼 {{ $data['sales_kpi_trends']['total_created'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="in_approval">
+                                                <div class="card kpi-card clickable" data-kpi="in_approval" data-count="{{ $data['sales_counts']['in_approval'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">In Approval</h6>
+                                                        <div class="kpi-value" id="kpi-in-approval">{{ $data['sales_counts']['in_approval'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-neutral" id="kpi-trend-in-approval">—</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis">
+                                                <div class="card kpi-card clickable" data-kpi="to_mis" data-count="{{ $data['sales_counts']['to_mis'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">In MIS</h6>
+                                                        <div class="kpi-value" id="kpi-to-mis">{{ $data['sales_counts']['to_mis'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-to-mis">🔼 {{ $data['sales_kpi_trends']['to_mis'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="completed">
+                                                <div class="card kpi-card clickable" data-kpi="completed" data-count="{{ $data['sales_counts']['completed'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Completed</h6>
+                                                        <div class="kpi-value" id="kpi-completed">{{ $data['sales_counts']['completed'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-completed">🔼 {{ $data['sales_kpi_trends']['completed'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected">
+                                                <div class="card kpi-card clickable" data-kpi="rejected" data-count="{{ $data['sales_counts']['rejected'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Rejected</h6>
+                                                        <div class="kpi-value" id="kpi-rejected">{{ $data['sales_counts']['rejected'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 {{ $data['sales_kpi_trends']['rejected'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @else
+                                        {{-- MIS KPIs --}}
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
+                                                <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Total Forms</h6>
+                                                        <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        {{--<div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="document_verified">
+                                                <div class="card kpi-card clickable" data-kpi="document_verified" data-count="{{ $data['counts']['document_verified'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Docs Verified</h6>
+                                                        <div class="kpi-value" id="kpi-document-verified">{{ $data['counts']['document_verified'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-document-verified">🔼 {{ $data['kpi_trends']['document_verified'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>--}}
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="agreement_created">
+                                                <div class="card kpi-card clickable" data-kpi="agreement_created" data-count="{{ $data['counts']['agreement_created'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Agreements</h6>
+                                                        <div class="kpi-value" id="kpi-agreement-created">{{ $data['counts']['agreement_created'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-agreement-created">🔼 {{ $data['kpi_trends']['agreement_created'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="physical_docs_verified">
+                                                <div class="card kpi-card clickable" data-kpi="physical_docs_verified" data-count="{{ $data['counts']['physical_docs_verified'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Physical Docs</h6>
+                                                        <div class="kpi-value" id="kpi-physical-docs-verified">{{ $data['counts']['physical_docs_verified'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-physical-docs-verified">🔼 {{ $data['kpi_trends']['physical_docs_verified'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="distributorship_created">
+                                                <div class="card kpi-card clickable" data-kpi="distributorship_created" data-count="{{ $data['counts']['distributorship_created'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Completed</h6>
+                                                        <div class="kpi-value" id="kpi-distributors-created">{{ $data['counts']['distributorship_created'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-up" id="kpi-trend-distributors-created">🔼 {{ $data['kpi_trends']['distributorship_created'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="mis_rejected">
+                                                <div class="card kpi-card clickable" data-kpi="mis_rejected" data-count="{{ $data['counts']['mis_rejected'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">Rejected</h6>
+                                                        <div class="kpi-value" id="kpi-mis-rejected">{{ $data['counts']['mis_rejected'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-down" id="kpi-trend-mis-rejected">🔽 {{ $data['kpi_trends']['mis_rejected'] ?? 0 }}%</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                        <div class="col-6 col-md-3 col-lg-2">
+                                            <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process">
+                                                <div class="card kpi-card clickable" data-kpi="in_process" data-count="{{ $data['counts']['in_process'] ?? 0 }}">
+                                                    <div class="card-body">
+                                                        <h6 class="small">In Process</h6>
+                                                        <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] ?? 0 }}</div>
+                                                        <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
+                                                    </div>
+                                                </div>
+                                            </a>
+                                        </div>
+                                    @endif
+                                @endif {{-- end of data check --}}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if($showApproverDashboard)
+            {{-- Approver KPI Cards --}}
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="crm-widget">
+                        <div class="card-header align-items-center d-flex">
+                            <h4 class="card-title mb-0 flex-grow-1 header-title">Key Indicators</h4>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="row g-1" id="approver-kpi-container">
                                 @php
                                     $queryString = http_build_query($filters);
-                                    $applicationsUrl = route('applications.index') . ($queryString ? '?' . $queryString : '');
+                                    $approverUrl = route('approver.applications') . ($queryString ? '?' . $queryString : '');
                                 @endphp
-                                @if($showAdminDashboard)
-                                    {{-- Admin KPIs --}}
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
-                                            <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
-                                                    <h6 class="text-success"><b>Total Forms</b></h6>
-                                                    <span id="kpi-trend-total-submitted" class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2"><i class="ri-arrow-up-line"></i>  {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="appointments">
-                                            <div class="card kpi-card clickable" data-kpi="appointments" data-count="{{ $data['counts']['distributorship_created'] }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-appointments-completed">{{ $data['counts']['distributorship_created'] }}</div>
-                                                    <h6 class="text-success"><b>Appointments</b></h6>
-                                                    <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-appointments-completed"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['appointments_completed'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process_admin">
-                                            <div class="card kpi-card clickable" data-kpi="in_process_admin" data-count="{{ $data['counts']['in_process'] }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] }}</div>
-                                                    <h6 class="text-warning"><b>In Process</b></h6>
-                                                    <span class="kpi-trend-neutral badge bg-warning-subtle text-warning float-end mt-2" id="kpi-trend-in-process">—</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="reverted">
-                                            <div class="card kpi-card clickable" data-kpi="reverted" data-count="{{ $data['counts']['reverted'] }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-reverted">{{ $data['counts']['reverted'] }}</div>
-                                                    <h6 class="text-danger"><b>Reverted</b></h6>
-                                                    <span class="kpi-trend-up badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['reverted'] ?? 0 }}</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected_admin">
-                                            <div class="card kpi-card clickable" data-kpi="rejected_admin" data-count="{{ $data['counts']['rejected'] }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-rejected">{{ $data['counts']['rejected'] }}</div>
-                                                    <h6 class="text-danger"><b>Rejected</b></h6>
-                                                    <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['rejected'] ?? 0 }}</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis_admin">
-                                            <div class="card kpi-card clickable" data-kpi="to_mis_admin" data-count="{{ $data['counts']['forwarded_to_mis'] }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-forwarded-to-mis">{{ $data['counts']['forwarded_to_mis'] }}</div>
-                                                    <h6 class="text-success"><b>To MIS</b></h6>
-                                                    <span class="kpi-trend-up badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-forwarded-to-mis"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['forwarded_to_mis'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                @elseif($showSalesDashboard)
-                                    {{-- Sales KPIs --}}
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="total_created">
-                                            <div class="card kpi-card clickable" data-kpi="total_created" data-count="{{ $data['sales_counts']['total_created'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-total-created">{{ $data['sales_counts']['total_created'] ?? 0 }}</div>
-                                                    <h6 class="text-success"><b>Total Created</b></h6>
-                                                    <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-total-created"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['total_created'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="in_approval">
-                                            <div class="card kpi-card clickable" data-kpi="in_approval" data-count="{{ $data['sales_counts']['in_approval'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-in-approval">{{ $data['sales_counts']['in_approval'] ?? 0 }}</div>
-                                                    <h6 class="text-success"><b>In Approval</b></h6>
-                                                    <span class="kpi-trend-neutral badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-in-approval">—</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="to_mis">
-                                            <div class="card kpi-card clickable" data-kpi="to_mis" data-count="{{ $data['sales_counts']['to_mis'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-to-mis">{{ $data['sales_counts']['to_mis'] ?? 0 }}</div>
-                                                    <h6 class="text-success"><b>In MIS</b></h6>
-                                                    <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-to-mis"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['to_mis'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="completed">
-                                            <div class="card kpi-card clickable" data-kpi="completed" data-count="{{ $data['sales_counts']['completed'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-completed">{{ $data['sales_counts']['completed'] ?? 0 }}</div>
-                                                    <h6 class="text-success"><b>Completed</b></h6>
-                                                    <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-completed"><i class="ri-arrow-up-line"></i> {{ $data['sales_kpi_trends']['completed'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected">
-                                            <div class="card kpi-card clickable" data-kpi="rejected" data-count="{{ $data['sales_counts']['rejected'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-rejected">{{ $data['sales_counts']['rejected'] ?? 0 }}</div>
-                                                    <h6 class="text-danger"><b>Rejected</b></h6>
-                                                    <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> {{ $data['sales_kpi_trends']['rejected'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                     <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected">
-                                            <div class="card kpi-card clickable" data-kpi="rejected" data-count="{{ $data['sales_counts']['rejected'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-rejected">{{ $data['sales_counts']['rejected'] ?? 0 }}</div>
-                                                    <h6 class="text-danger"><b>Rejected</b></h6>
-                                                    <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-reverted"><i class="ri-arrow-down-line"></i> {{ $data['sales_kpi_trends']['reverted'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                @elseif($showApproverDashboard)
                                 <div class="col-6 col-md-3 col-lg-2">
                                     <a href="#" class="text-decoration-none kpi-link" data-kpi="pending_your_approval">
                                         <div class="card kpi-card clickable" data-kpi="pending_your_approval" data-count="{{ $data['counts']['pending_your_approval'] }}">
-                                            <div class="card-body text-center">
+                                            <div class="card-body">
+                                                <h6 class="small">🔍 Forms Pending Your Approval</h6>
                                                 <div class="kpi-value">{{ $data['counts']['pending_your_approval'] ?? 0 }}</div>
-                                                <h6 class="text-warning">Forms Pending Your Approval</h6>
                                                 <span class="kpi-trend-neutral">—</span>
                                             </div>
                                         </div>
@@ -639,12 +759,10 @@
                                 <div class="col-6 col-md-3 col-lg-2">
                                     <a href="#" class="text-decoration-none kpi-link" data-kpi="on_hold_by_you">
                                         <div class="card kpi-card clickable" data-kpi="on_hold_by_you" data-count="{{ $data['counts']['on_hold_by_you'] }}">
-                                            <div class="card-body text-center">
-                                                
+                                            <div class="card-body">
+                                                <h6 class="small">🕓 On Hold by You</h6>
                                                 <div class="kpi-value">{{ $data['counts']['on_hold_by_you'] ?? 0  }}</div>
-                                                <h6 class="text-warning">On Hold by You</h6>
-                                                <span class="badge bg-warning-subtle text-warning mt-2 float-end kpi-trend-neutral">—</span>                            
-
+                                                <span class="kpi-trend-neutral">—</span>
                                             </div>
                                         </div>
                                     </a>
@@ -652,12 +770,10 @@
                                 <div class="col-6 col-md-3 col-lg-2">
                                     <a href="#" class="text-decoration-none kpi-link" data-kpi="approved_by_you">
                                         <div class="card kpi-card clickable" data-kpi="approved_by_you" data-count="{{ $data['counts']['approved_by_you'] }}">
-                                            <div class="card-body text-center">
-                                               
+                                            <div class="card-body">
+                                                <h6 class="small">✅ Approved by You</h6>
                                                 <div class="kpi-value">{{ $data['counts']['approved_by_you'] ?? 0 }}</div>
-                                                 <h6 class="small">Approved by You</h6>
-                                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['approved_by_you'] ?? 0 }}%</span>
-
+                                                <span class="kpi-trend-up">🔼 {{ $data['kpi_trends']['approved_by_you'] ?? 0 }}%</span>
                                             </div>
                                         </div>
                                     </a>
@@ -665,10 +781,10 @@
                                 <div class="col-6 col-md-3 col-lg-2">
                                     <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected_by_you">
                                         <div class="card kpi-card clickable" data-kpi="rejected_by_you" data-count="{{ $data['counts']['rejected_by_you'] }}">
-                                        <div class="card-body text-center">
-                                        <div class="kpi-value" id="kpi-total-submitted">{{ $data['kpi_trends']['rejected_by_you'] }}</div>                                                 <h6 class="text-danger"><b>Rejected by You</b></h6>
-                                        <span class="kpi-trend-down badge bg-danger-subtle text-danger  mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['rejected_by_you'] ?? 0 }}%</span>
-                        
+                                            <div class="card-body">
+                                                <h6 class="small">❌ Rejected by You</h6>
+                                                <div class="kpi-value">{{ $data['counts']['rejected_by_you'] ?? 0 }}</div>
+                                                <span class="kpi-trend-down">🔽 {{ $data['kpi_trends']['rejected_by_you'] ?? 0 }}%</span>
                                             </div>
                                         </div>
                                     </a>
@@ -676,371 +792,30 @@
                                 <div class="col-6 col-md-3 col-lg-2">
                                     <a href="#" class="text-decoration-none kpi-link" data-kpi="reverted_by_you">
                                         <div class="card kpi-card clickable" data-kpi="reverted_by_you" data-count="{{ $data['counts']['reverted_by_you'] }}">
-                                            <div class="card-body text-center">
-                                                
+                                            <div class="card-body">
+                                                <h6 class="small">🔁 Reverted by You</h6>
                                                 <div class="kpi-value">{{ $data['counts']['reverted_by_you'] ?? 0 }}</div>
-                                                <h6 class="text-danger">Reverted by You</h6>
-                                                <span class="kpi-trend-up badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['reverted_by_you'] ?? 0 }}%</span>
-
+                                                <span class="kpi-trend-up">🔼 {{ $data['kpi_trends']['reverted_by_you'] ?? 0 }}%</span>
                                             </div>
                                         </div>
                                     </a>
                                 </div>
-                                @else
-                                    {{-- MIS KPIs --}}
-                                                                    
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="total">
-                                            <div class="card kpi-card clickable" data-kpi="total" data-count="{{ $data['counts']['total'] }}">
-                                                <div class="card-body text-center">
-                                                   <div class="kpi-value" id="kpi-total-submitted">{{ $data['counts']['total'] }}</div>
-                                                    <h6 class="text-success "><b>Total Forms</b></h6>
-                                                    <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success float-end mt-2"><i class="ri-arrow-up-line"></i>  {{ $data['kpi_trends']['total_submitted'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    {{--<div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="document_verified">
-                                            <div class="card kpi-card clickable" data-kpi="document_verified" data-count="{{ $data['counts']['document_verified'] ?? 0 }}">
-                                                <div class="card-body">
-                                                    <h6 class="small">Docs Verified</h6>
-                                                    <div class="kpi-value" id="kpi-document-verified">{{ $data['counts']['document_verified'] ?? 0 }}</div>
-                                                    <span class="kpi-trend-up" id="kpi-trend-document-verified">🔼 {{ $data['kpi_trends']['document_verified'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>--}}
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="agreement_created">
-                                            <div class="card kpi-card clickable" data-kpi="agreement_created" data-count="{{ $data['counts']['agreement_created'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-agreement-created">{{ $data['counts']['agreement_created'] ?? 0 }}</div>
-                                                    <h6 class="text-success"><b>Agreements</b></h6>
-                                                    <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-agreement-created"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['agreement_created'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="physical_docs_verified">
-                                            <div class="card kpi-card clickable" data-kpi="physical_docs_verified" data-count="{{ $data['counts']['physical_docs_verified'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    <div class="kpi-value" id="kpi-physical-docs-verified">{{ $data['counts']['physical_docs_verified'] ?? 0 }}</div>
-                                                    <h6 class="text-success"><b>Physical Docs</b></h6>
-                                                    <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-physical-docs-verified"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['physical_docs_verified'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="distributorship_created">
-                                            <div class="card kpi-card clickable" data-kpi="distributorship_created" data-count="{{ $data['counts']['distributorship_created'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-distributors-created">{{ $data['counts']['distributorship_created'] ?? 0 }}</div>
-                                                    <h6 class="text-success"><b>Completed</b></h6>
-                                                    <span class="kpi-trend-up badge bg-success-subtle text-success float-end mt-2" id="kpi-trend-distributors-created"><i class="ri-arrow-up-line"></i> {{ $data['kpi_trends']['distributorship_created'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="rejected">
-                                            <div class="card kpi-card clickable" data-kpi="rejected" data-count="{{ $data['counts']['rejected'] ?? 0 }}">
-                                                <div class="card-body text-center">
-                                                    
-                                                    <div class="kpi-value" id="kpi-mis-rejected">{{ $data['counts']['rejected'] ?? 0 }}</div>
-                                                    <h6 class="text-danger"><b>Rejected</b></h6>
-                                                    <span class="kpi-trend-down badge bg-danger-subtle text-danger float-end mt-2" id="kpi-trend-mis-rejected"><i class="ri-arrow-down-line"></i> {{ $data['kpi_trends']['rejected'] ?? 0 }}%</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                    <div class="col-6 col-md-3 col-lg-2">
-                                        <a href="#" class="text-decoration-none kpi-link" data-kpi="in_process">
-                                            <div class="card kpi-card clickable" data-kpi="in_process" data-count="{{ $data['counts']['in_process'] ?? 0 }}">
-                                                <div class="card-body">
-                                                    <div class="kpi-value" id="kpi-in-process">{{ $data['counts']['in_process'] ?? 0 }}</div>
-                                                    <h6 class="text-warning"><b>In Process</b></h6>
-                                                    <span class="kpi-trend-neutral badge bg-warning-subtle text-warning float-end mt-2" id="kpi-trend-in-process">—</span>
-                                                </div>
-                                            </div>
-                                        </a>
-                                    </div>
-                                @endif
-                            @endif {{-- end of data check --}}
+                            </div>
                         </div>
                     </div>
                 </div>
-        </div>
-    </div>
+            </div>
+        @endif
     @endif
 
-    <!-- 4. DASHBOARD CHARTS & WIDGETS -->
-    @if($showKpiCards)
-    <div class="row mb-3">
-        <div class="col-md-6"> 
-            <div class="card h-100">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">
-                        @if($showApproverDashboard)
-                            Your Pending Reviews
-                        @elseif($showSalesDashboard)
-                            Your Creations
-                        @elseif($showMisDashboard)
-                            MIS Verification
-                        @else
-                            Total Forms Submitted
-                        @endif
-                    </span>
-                    <span class="badge bg-primary">{{ $chartData['total_forms_submitted'] ?? 0 }}</span>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <div id="formsChart" style="height: 330px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <span class="fw-bold">
-                        @if($showApproverDashboard)
-                            Your Actions This Month
-                        @elseif($showSalesDashboard)
-                            Your Monthly Pipeline
-                        @elseif($showMisDashboard)
-                            Forms in Verification
-                        @else
-                            Forms Received from Sales
-                        @endif
-                    </span>
-                    <span class="badge bg-primary">{{ $chartData['forms_received_from_sales'] ?? 0 }}</span>
-                </div>
-                <div class="card-body">
-                    <div class="chart-container">
-                        <div id="formsChart1" style="height: 330px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-      
-
-    <div class="row">
-        <!-- Approval Breakdown Chart -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h6 class="card-title mb-0 fw-bold">
-                        @if($showApproverDashboard)
-                            Your Approval Breakdown
-                        @elseif($showSalesDashboard)
-                            Your Status Breakdown
-                        @elseif($showMisDashboard)
-                            Verification Status
-                        @else
-                            Approval Status Overview
-                        @endif
-                    </h6>
-                </div>
-                <div class="card-body d-flex align-items-center justify-content-center">
-                    <div class="w-100">
-                        <div id="formsChart3" style="height: 330px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-         <!-- Performance Chart -->
-        <div class="col-md-6">
-            <div class="card h-100">
-                <div class="card-header bg-light">
-                    <h6 class="card-title mb-0 fw-bold">
-                        @if($showApproverDashboard)
-                            Your Performance by Action
-                        @elseif($showSalesDashboard)
-                            Your Performance by Status
-                        @elseif($showMisDashboard)
-                            Performance by Stage
-                        @else
-                            Initiator Performance
-                        @endif
-                    </h6>
-                </div>
-                <div class="card-body d-flex align-items-center justify-content-center">
-                    <div class="w-100">
-                        <div id="formsChart4" style="height: 330px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="row mt-3">
-          
-        <!-- All Forms Status -->
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 fw-bold">All Forms Status</h5>
-                    <a class="btn btn-sm btn-outline-primary" href="{{ route('applications.index') }}">View All</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="application-list" style="height: 440px; overflow-y: auto;">
-                        @forelse($recentApplications as $application)
-                            <div class="application-item border-bottom p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 class="mb-0 text-truncate" style="max-width: 200px;">
-                                        {{ $application->entityDetails->establishment_name ?? 'N/A' }}
-                                    </h6>
-                                    <span class="badge bg-warning-subtle text-warning">
-                                        {{ ucwords(str_replace('_', ' ', $application->status)) }}
-                                    </span>
-                                </div>
-                                
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <small class="text-muted">
-                                        <i class="ri-calendar-line me-1"></i>
-                                        {{ $application->created_at->format('d M Y') }}
-                                    </small>
-                                    <small class="text-success">
-                                        <i class="ri-time-line me-1"></i>
-                                        {{ $application->created_at->diffInDays(now()) }} days
-                                    </small>
-                                </div>
-                                
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted">
-                                        <i class="ri-user-line me-1"></i>
-                                        {{ $application->createdBy->emp_name ?? 'N/A' }}
-                                    </small>
-                                    <a class="btn btn-sm btn-outline-success" href="{{ route('approvals.show', $application->id) }}">
-                                        <i class="ri-eye-line"></i> View
-                                    </a>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center text-muted py-5">
-                                <i class="ri-inbox-line display-4 opacity-50"></i>
-                                <p class="mt-2 mb-0">No applications found</p>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Zone Performance -->
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0 fw-bold">Zone Performance</h5>
-                    <a class="btn btn-sm btn-outline-primary" href="{{ route('applications.index') }}">View All</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="zone-performance-list" style="height: 440px; overflow-y: auto;">
-                        @foreach($zonePerformance ?? $chartData['zone_data'] ?? [] as $zoneName => $zone)
-                            <div class="zone-item border-bottom p-3">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        <div class="zone-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" 
-                                            style="width: 45px; height: 45px;">
-                                            <i class="ri-map-pin-line text-primary fs-5"></i>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0 text-success">{{ $zoneName }}</h6>
-                                            <small class="text-muted">Total: {{ $zone['total'] ?? 0 }}</small>
-                                        </div>
-                                    </div>
-                                    <div class="text-end">
-                                        <div class="fw-bold text-primary">{{ $zone['verify'] ?? 0 }}</div>
-                                        <small class="text-muted">To Verify</small>
-                                    </div>
-                                </div>
-                                <div class="mt-2 d-flex justify-content-between">
-                                    <small class="text-warning">
-                                        <i class="ri-time-line me-1"></i>
-                                        Pending: {{ $zone['pending'] ?? 0 }}
-                                    </small>
-                                    <small class="text-success">
-                                        <i class="ri-check-line me-1"></i>
-                                        Completed: {{ $zone['completed'] ?? 0 }}
-                                    </small>
-                                </div>
-                            </div>
-                        @endforeach
-                        @if(empty($zonePerformance ?? $chartData['zone_data'] ?? []))
-                            <div class="text-center text-muted py-5">
-                                <i class="ri-map-pin-line display-4 opacity-50"></i>
-                                <p class="mt-2 mb-0">No zone data available</p>
-                            </div>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-         <!-- Recent Forms List -->
-        <div class="col-md-4">
-            <div class="card h-100">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center">
-                    <h6 class="card-title mb-0 fw-bold">
-                        @if($showApproverDashboard || $showSalesDashboard)
-                            Your Recent Forms
-                        @else
-                            Recent Forms Submitted
-                        @endif
-                    </h6>
-                    <a class="btn btn-sm btn-outline-primary" href="{{ route('applications.index') }}">View All</a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="attendance-request-box p-3" style="height: 440px; overflow-y: auto;">
-                        @forelse($recentApplications as $application)
-                            <div class="form-sub-section mb-3 p-3 border rounded">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6 class="mb-1">{{ $application->entityDetails->establishment_name ?? 'N/A' }}</h6>
-                                        <small class="text-muted">Submitted: {{ $application->created_at->format('d M Y') }}</small>
-                                    </div>
-                                    <span class="badge bg-warning-subtle text-warning">
-                                        {{ ucwords(str_replace('_', ' ', $application->status)) }}
-                                    </span>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="text-center text-muted py-5">
-                                <i class="ri-inbox-line display-4 opacity-50"></i>
-                                <p class="mt-2">No recent applications</p>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-
-
-
-
-   
-    @endif
-
-    <!-- 5. MAIN DATA TABLES -->
-    <div class="row mt-3">
+    {{-- Main Content --}}
+    <div class="row mb-1">
         <div class="col-12">
             <div class="card">
-                <div>
+                <div class="card-body">
                     @if($showAdminDashboard)
                         {{-- Admin Table --}}
-                        <div class="card-header d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
                             <h5 class="header-title mb-0" id="table-title">
                                 @if($viewMode == 'all')
                                     All Applications (<span id="table-count">{{ $data['counts']['total'] ?? 0 }}</span>)
@@ -1049,7 +824,7 @@
                                 @endif
                             </h5>
                         </div>
-                        <div class="card-body" id="main-container">
+                        <div id="main-container">
                             @if($viewMode == 'all')
                                 @if (isset($masterReportApplications) && $masterReportApplications->isEmpty())
                                     <div class="no-data-message">No applications found.</div>
@@ -1116,9 +891,110 @@
                                                 </tr>
                                                 <tr class="timeline-row" id="timeline-{{ $application->id }}">
                                                     <td colspan="12" class="p-3">
-                                                        {{-- Timeline content --}}
+                                                        @php
+                                                            $approvalLevels = [
+                                                                'Draft/Initiated' => null,
+                                                                'Area Coordinator' => null,
+                                                                'Regional Business Manager' => null,
+                                                                'Zonal Business Manager' => null,
+                                                                'General Manager' => null,
+                                                                'MIS' => null,
+                                                            ];
+
+                                                            foreach ($application->approvalLogs as $log) {
+                                                                if ($log->role == 'Executive' && is_null($approvalLevels['Area Coordinator'])) {
+                                                                    $approvalLevels['Area Coordinator'] = $log;
+                                                                } elseif ($log->role == 'Assistant Manager' && is_null($approvalLevels['Regional Business Manager'])) {
+                                                                    $approvalLevels['Regional Business Manager'] = $log;
+                                                                } elseif ($log->role == 'Manager' && is_null($approvalLevels['Zonal Business Manager'])) {
+                                                                    $approvalLevels['Zonal Business Manager'] = $log;
+                                                                } elseif ($log->role == 'General Manager' && is_null($approvalLevels['General Manager'])) {
+                                                                    $approvalLevels['General Manager'] = $log;
+                                                                } elseif ($log->role == 'MIS' && is_null($approvalLevels['MIS'])) {
+                                                                    $approvalLevels['MIS'] = $log;
+                                                                }
+                                                            }
+
+                                                            $stages = [
+                                                                [
+                                                                    'label' => 'Draft/Initiated',
+                                                                    'log' => $approvalLevels['Draft/Initiated'],
+                                                                    'status' => in_array($application->status, ['draft', 'initiated']) ? 'pending' : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) ? 'approved' : 'not-started'),
+                                                                    'date' => in_array($application->status, ['draft', 'initiated']) ? $application->created_at->format('d M Y') : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) ? $application->created_at->format('d M Y') : '-'),
+                                                                    'remarks' => $approvalLevels['Draft/Initiated'] ? $approvalLevels['Draft/Initiated']->remarks : '-',
+                                                                    'icon' => 'ri-draft-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'ABM',
+                                                                    'log' => $approvalLevels['Area Coordinator'],
+                                                                    'status' => $approvalLevels['Area Coordinator'] ? $approvalLevels['Area Coordinator']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) || in_array($application->approval_level, ['Regional Business Manager', 'Zonal Business Manager', 'General Manager']) ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['Area Coordinator'] ? $approvalLevels['Area Coordinator']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['Area Coordinator'] ? $approvalLevels['Area Coordinator']->remarks : '-',
+                                                                    'icon' => 'ri-user-2-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'RBM',
+                                                                    'log' => $approvalLevels['Regional Business Manager'],
+                                                                    'status' => $approvalLevels['Regional Business Manager'] ? $approvalLevels['Regional Business Manager']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) || in_array($application->approval_level, ['Zonal Business Manager', 'General Manager']) ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['Regional Business Manager'] ? $approvalLevels['Regional Business Manager']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['Regional Business Manager'] ? $approvalLevels['Regional Business Manager']->remarks : '-',
+                                                                    'icon' => 'ri-user-3-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'ZBM',
+                                                                    'log' => $approvalLevels['Zonal Business Manager'],
+                                                                    'status' => $approvalLevels['Zonal Business Manager'] ? $approvalLevels['Zonal Business Manager']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) || $application->approval_level == 'General Manager' ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['Zonal Business Manager'] ? $approvalLevels['Zonal Business Manager']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['Zonal Business Manager'] ? $approvalLevels['Zonal Business Manager']->remarks : '-',
+                                                                    'icon' => 'ri-user-4-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'GM',
+                                                                    'log' => $approvalLevels['General Manager'],
+                                                                    'status' => $approvalLevels['General Manager'] ? $approvalLevels['General Manager']->action : (in_array($application->status, explode(',', $statusGroups['mis']['slugs'] ?? '')) ? 'approved' : 'not-started'),
+                                                                    'date' => $approvalLevels['General Manager'] ? $approvalLevels['General Manager']->created_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['General Manager'] ? $approvalLevels['General Manager']->remarks : '-',
+                                                                    'icon' => 'ri-user-5-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'MIS',
+                                                                    'log' => $approvalLevels['MIS'],
+                                                                    'status' => in_array($application->status, $misSlugs) ? 'pending' : (in_array($application->status, $completionSlugs) ? 'approved' : (in_array($application->status, $rejectionSlugs) ? 'rejected' : 'not-started')),
+                                                                    'date' => in_array($application->status, array_merge($misSlugs, $completionSlugs, $rejectionSlugs)) ? $application->updated_at->format('d M Y') : '-',
+                                                                    'remarks' => $approvalLevels['MIS'] ? $approvalLevels['MIS']->remarks : '-',
+                                                                    'icon' => 'ri-file-text-fill'
+                                                                ],
+                                                                [
+                                                                    'label' => 'Final',
+                                                                    'log' => null,
+                                                                    'status' => in_array($application->status, $completionSlugs) ? 'approved' : 'not-started',
+                                                                    'date' => in_array($application->status, $completionSlugs) ? $application->updated_at->format('d M Y') : '-',
+                                                                    'remarks' => '-',
+                                                                    'icon' => 'ri-checkbox-circle-fill'
+                                                                ]
+                                                            ];
+                                                        @endphp
                                                         <div class="timeline-container d-flex flex-row align-items-center justify-content-start p-3 overflow-x-auto overflow-y-hidden bg-light rounded">
-                                                            {{-- Timeline stages would go here --}}
+                                                            @foreach($stages as $stage)
+                                                            <div class="timeline-item text-center px-2">
+                                                                <i class="{{ $stage['icon'] }} mb-2 {{ $stage['status'] == 'approved' ? 'text-success' : ($stage['status'] == 'rejected' ? 'text-danger' : ($stage['status'] == 'pending' ? 'text-warning' : 'text-muted')) }}"
+                                                                    title="{{ $stage['label'] }} - {{ ucfirst($stage['status']) }}"
+                                                                    style="font-size: 1.2rem;"></i>
+                                                                <div class="timeline-stage-info">
+                                                                    <strong class="small">{{ $stage['label'] }}</strong><br>
+                                                                    <span class="badge bg-{{ $stage['status'] == 'approved' ? 'success' : ($stage['status'] == 'rejected' ? 'danger' : ($stage['status'] == 'pending' ? 'warning' : 'secondary')) }}">
+                                                                        {{ ucfirst($stage['status']) }}
+                                                                    </span><br>
+                                                                    <small class="text-muted"><strong>Date:</strong> {{ $stage['date'] }}</small><br>
+                                                                    <small class="text-muted"><strong>Remarks:</strong> {{ $stage['remarks'] }}</small>
+                                                                </div>
+                                                            </div>
+                                                            @if(!$loop->last)
+                                                            <div class="arrow px-2 d-flex align-items-center">
+                                                                <span style="font-size: 1.2rem; color: #6c757d;">→</span>
+                                                            </div>
+                                                            @endif
+                                                            @endforeach
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -1165,7 +1041,7 @@
                         </div>
                     @elseif($showSalesDashboard)
                         {{-- Sales Table --}}
-                        <div class="card-body" id="sales-table-container">
+                        <div id="sales-table-container">
                             @if (isset($myApplications) && $myApplications->isEmpty())
                                 <div class="no-data-message">No applications created by you.</div>
                             @else
@@ -1178,9 +1054,8 @@
         </div>
     </div>
 @else
-    <!-- Fallback for users without dashboard access -->
     <div class="container">
-         <div class="row justify-content-center">
+        <div class="row justify-content-center">
             <div class="col-md-8">
                 <div class="card">
                     <div class="card-header">Welcome Home</div>
@@ -1192,6 +1067,7 @@
         </div>
     </div>
 @endif
+
 
 <!-- Document Checklist Canvas -->
 <div class="offcanvas offcanvas-end" tabindex="-1" id="documentChecklistCanvas" aria-labelledby="documentChecklistCanvasLabel">
@@ -1260,359 +1136,6 @@
 
 @push('scripts')
 <script>
-
-let chartInstances = {};
-
-// Initial chart data from server
-const chartData = {!! json_encode($chartData ?? []) !!};
-
-console.log('Initial chart data:', chartData);
-
-// Initialize charts on page load
-document.addEventListener('DOMContentLoaded', function() {
-    initializeCharts();
-    initializeDashboardFeatures();
-});
-
-// Enhanced updateCharts() with dynamic titles for Bootstrap card structure
-function updateCharts(newChartData) {
-    if (!newChartData) return;
-    const userType = newChartData.user_type || 'admin';
-
-    try {
-        // Forms Status Chart - Dynamic title
-        if (chartInstances.formsChart && newChartData.forms_status) {
-            chartInstances.formsChart.updateOptions({
-                series: [{ data: Object.values(newChartData.forms_status) }],
-                xaxis: { categories: Object.keys(newChartData.forms_status) }
-            });
-            
-            const title = userType === 'approver' ? `Your Pending Reviews` :
-                          userType === 'sales' ? `Your Creations` :
-                          userType === 'mis' ? `MIS Verification` :
-                          `Total Forms Submitted`;
-            
-            // Update the card header title and badge
-            const cardHeader = $('#formsChart').closest('.card').find('.card-header');
-            cardHeader.find('.fw-bold').text(title);
-            cardHeader.find('.badge').text(newChartData.total_forms_submitted || 0);
-        }
-
-        // Forms Received Chart - Dynamic title
-        if (chartInstances.formsChart1 && newChartData.forms_received) {
-            chartInstances.formsChart1.updateSeries([
-                { name: 'Completed', data: newChartData.forms_received.approval || [] },
-                { name: 'Pending', data: newChartData.forms_received.pending || [] }
-            ]);
-            chartInstances.formsChart1.updateOptions({
-                xaxis: { categories: newChartData.forms_received.labels || [] }
-            });
-            
-            const title = userType === 'approver' ? `Your Actions This Month` :
-                          userType === 'sales' ? `Your Monthly Pipeline` :
-                          userType === 'mis' ? `Forms in Verification` :
-                          `Forms Received from Sales`;
-            
-            // Update the card header title and badge
-            const cardHeader = $('#formsChart1').closest('.card').find('.card-header');
-            cardHeader.find('.fw-bold').text(title);
-            cardHeader.find('.badge').text(newChartData.forms_received_from_sales || 0);
-        }
-
-        // Approval Status Chart - Dynamic title
-        if (chartInstances.formsChart3 && newChartData.approval_status) {
-            chartInstances.formsChart3.updateSeries([{ data: Object.values(newChartData.approval_status) }]);
-            chartInstances.formsChart3.updateOptions({
-                xaxis: { categories: Object.keys(newChartData.approval_status) }
-            });
-            
-            const title = userType === 'approver' ? 'Your Approval Breakdown' :
-                          userType === 'sales' ? 'Your Status Breakdown' :
-                          userType === 'mis' ? 'Verification Status' :
-                          'Approval Status Overview';
-            
-            // Update the card header title
-            const cardHeader = $('#formsChart3').closest('.card').find('.card-header');
-            cardHeader.find('.fw-bold').text(title);
-        }
-
-        // Initiator Status Chart - Dynamic title
-        if (chartInstances.formsChart4 && newChartData.initiator_status) {
-            chartInstances.formsChart4.updateSeries([
-                { name: 'Completed', data: Object.values(newChartData.initiator_status).map(item => item.approval || 0) },
-                { name: 'Pending', data: Object.values(newChartData.initiator_status).map(item => item.pending || 0) }
-            ]);
-            chartInstances.formsChart4.updateOptions({
-                xaxis: { categories: Object.keys(newChartData.initiator_status) }
-            });
-            
-            const title = userType === 'approver' ? 'Your Performance by Action' :
-                          userType === 'sales' ? 'Your Performance by Status' :
-                          userType === 'mis' ? 'Performance by Stage' :
-                          'Initiator Performance';
-            
-            // Update the card header title
-            const cardHeader = $('#formsChart4').closest('.card').find('.card-header');
-            cardHeader.find('.fw-bold').text(title);
-        }
-
-        console.log('Charts updated successfully for', userType);
-    } catch (error) {
-        console.error('Error updating charts:', error);
-    }
-}
-
-
-
-// Function to update zone list dynamically
-function updateZoneData(zoneData) {
-    const zoneContainer = $('.zone-performance-list');
-    if (zoneContainer.length === 0) return;
-
-    zoneContainer.empty();
-    
-    if (Object.keys(zoneData).length === 0) {
-        zoneContainer.html(`
-            <div class="text-center text-muted py-5">
-                <i class="ri-map-pin-line display-4 opacity-50"></i>
-                <p class="mt-2 mb-0">No zone data available</p>
-            </div>
-        `);
-        return;
-    }
-
-    Object.entries(zoneData).forEach(([zoneName, zoneInfo]) => {
-        const zoneHtml = `
-            <div class="zone-item border-bottom p-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <div class="zone-icon bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" 
-                            style="width: 45px; height: 45px;">
-                            <i class="ri-map-pin-line text-primary fs-5"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0 text-success">${zoneName}</h6>
-                            <small class="text-muted">Total: ${zoneInfo.total || 0}</small>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-bold text-primary">${zoneInfo.verify || 0}</div>
-                        <small class="text-muted">To Verify</small>
-                    </div>
-                </div>
-                <div class="mt-2 d-flex justify-content-between">
-                    <small class="text-warning">
-                        <i class="ri-time-line me-1"></i>
-                        Pending: ${zoneInfo.pending || 0}
-                    </small>
-                    <small class="text-success">
-                        <i class="ri-check-line me-1"></i>
-                        Completed: ${zoneInfo.completed || 0}
-                    </small>
-                </div>
-            </div>
-        `;
-        zoneContainer.append(zoneHtml);
-    });
-}
-
-// Initialize ApexCharts on page load
-function initializeCharts() {
-    console.log('Initializing ApexCharts...');
-    
-    // Destroy existing charts before reinitializing
-    if (Object.keys(chartInstances).length > 0) {
-        Object.keys(chartInstances).forEach(key => {
-            if (chartInstances[key]) {
-                try {
-                    chartInstances[key].destroy();
-                } catch (e) {
-                    console.warn(`Error destroying chart ${key}:`, e);
-                }
-                chartInstances[key] = null;
-            }
-        });
-    }
-
-    const commonOptions = {
-        chart: {
-            height: 330,
-            type: 'bar',
-            toolbar: {
-                show: false
-            },
-            animations: {
-                enabled: true,
-                easing: 'easeinout',
-                speed: 800
-            }
-        },
-        plotOptions: {
-            bar: {
-                horizontal: false,
-                columnWidth: '55%',
-                borderRadius: 5,
-                borderRadiusApplication: 'end',
-                dataLabels: {
-                    position: 'top'
-                }
-            }
-        },
-        dataLabels: {
-            enabled: false
-        },
-        stroke: {
-            show: true,
-            width: 2,
-            colors: ['transparent']
-        },
-        colors: ['#408076', '#ffc107', '#dc3545', '#6c757d'],
-        xaxis: {
-            categories: [],
-            labels: {
-                style: {
-                    fontSize: '11px'
-                }
-            }
-        },
-        yaxis: {
-            title: {
-                text: 'Count'
-            },
-            labels: {
-                formatter: function(val) {
-                    return Math.round(val);
-                }
-            }
-        },
-        fill: {
-            opacity: 1
-        },
-        tooltip: {
-            y: {
-                formatter: function(val) {
-                    return val + " forms";
-                }
-            }
-        },
-        grid: {
-            borderColor: '#f1f1f1',
-        }
-    };
-
-    // Forms Status Chart
-    const formsChartEl = document.getElementById('formsChart');
-    if (formsChartEl) {
-        const formsStatusData = chartData.forms_status || {};
-        chartInstances.formsChart = new ApexCharts(formsChartEl, {
-            ...commonOptions,
-            series: [{
-                name: 'Forms Count',
-                data: Object.values(formsStatusData)
-            }],
-            xaxis: {
-                ...commonOptions.xaxis,
-                categories: Object.keys(formsStatusData),
-                labels: {
-                    ...commonOptions.xaxis.labels,
-                    rotate: -45
-                }
-        
-            }
-        });
-        chartInstances.formsChart.render();
-    }
-
-    // Forms Received Chart
-    const formsChart1El = document.getElementById('formsChart1');
-    if (formsChart1El) {
-        const formsReceived = chartData.forms_received || { labels: [], approval: [], pending: [] };
-        console.log('Forms Received Chart Data:', formsReceived);
-        console.log('Labels:', formsReceived.labels);
-        console.log('Approval Data:', formsReceived.approval);
-        console.log('Pending Data:', formsReceived.pending);
-        chartInstances.formsChart1 = new ApexCharts(formsChart1El, {
-            ...commonOptions,
-            series: [
-                {
-                    name: 'Completed',
-                    data: formsReceived.approval || []
-                },
-                {
-                    name: 'Pending',
-                    data: formsReceived.pending || []
-                }
-            ],
-            xaxis: {
-                ...commonOptions.xaxis,
-                categories: formsReceived.labels || []
-            }
-        });
-        chartInstances.formsChart1.render();
-    }
-
-    // Approval Status Chart
-    const formsChart3El = document.getElementById('formsChart3');
-    if (formsChart3El) {
-        const approvalStatusData = chartData.approval_status || {};
-        chartInstances.formsChart3 = new ApexCharts(formsChart3El, {
-            ...commonOptions,
-            series: [{
-                name: 'Count',
-                data: Object.values(approvalStatusData)
-            }],
-            xaxis: {
-                ...commonOptions.xaxis,
-                categories: Object.keys(approvalStatusData),
-                labels: {
-                    ...commonOptions.xaxis.labels,
-                    rotate: -45
-                }
-            }
-        });
-        chartInstances.formsChart3.render();
-    }
-
-    // Initiator Status Chart
-    const formsChart4El = document.getElementById('formsChart4');
-    if (formsChart4El) {
-        const initiatorData = chartData.initiator_status || {};
-        chartInstances.formsChart4 = new ApexCharts(formsChart4El, {
-            ...commonOptions,
-            series: [
-                {
-                    name: 'Completed',
-                    data: Object.values(initiatorData).map(item => item.approval || 0)
-                },
-                {
-                    name: 'Pending',
-                    data: Object.values(initiatorData).map(item => item.pending || 0)
-                }
-            ],
-            xaxis: {
-                ...commonOptions.xaxis,
-                categories: Object.keys(initiatorData),
-                labels: {
-                    ...commonOptions.xaxis.labels,
-                    rotate: -45
-                }
-            }
-        });
-        chartInstances.formsChart4.render();
-    }
-
-    console.log('ApexCharts initialization completed');
-}
-    
- 
-     function initializeDashboardFeatures() {
-        // Initialize all the dynamic features from your existing script
-        initializeModalListeners();
-        initializeToast();
-        initializeKpiClicks();
-        initializeAllFeatures();
-     }
-
     const loader = $("#elmLoader");
     let isUpdating = false;
     const isMisUser = {{ $showMisDashboard ? 'true' : 'false' }};
@@ -1698,113 +1221,96 @@ function initializeCharts() {
     });
 
     
- // MODIFIED unifiedUpdate function - Add chart updates
-function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'approver' : (isSalesUser ? 'sales' : 'regular'))) {
-    if (isUpdating) return;
-    isUpdating = true;
-    
-    let formData = $(formId).serialize();
-    if (!isSalesUser && !isMisUser && !isApproverUser) {
-        const viewMode = $('#view_mode').val() || 'pending';
-        formData += '&view_mode=' + viewMode;
-    }
-    
-    $.ajax({
-        url: "{{ route('dashboard.dynamic-data') }}",
-        type: 'GET',
-        data: formData + (dashboardType === 'approver' ? '&dashboard_type=approver' : (dashboardType === 'mis' ? '&dashboard_type=mis' : (dashboardType === 'sales' ? '&dashboard_type=sales' : ''))),
-        dataType: 'json',
-        beforeSend: function() {
-            loader.removeClass('d-none');
-        },
-        success: function(data) {
-            console.log('Full chart data received:', data.chart_data);
-            console.log('Forms Status:', data.chart_data?.forms_status);
-            console.log('Forms Received:', data.chart_data?.forms_received);
-            console.log('Approval Status:', data.chart_data?.approval_status);
-            console.log('Initiator Status:', data.chart_data?.initiator_status);
-            loader.addClass('d-none');
-            console.log(`Received ${dashboardType} data:`, data);
-
-            if (!data) {
-                console.error('Invalid response structure:', data);
-                const containerId = isApproverUser ? '#approver-pending-container' : (isMisUser ? '#mis-table-container' : (isSalesUser ? '#sales-table-container' : '#main-container'));
-                $(containerId).html('<div class="col-12 no-data-message">Error: Incomplete data structure from server.</div>');
-                isUpdating = false;
-                return;
-            }
-
-            // Update charts if chart data is available (for all types now)
-             if (data.chart_data) {
-                console.log('Updating charts with new data for', dashboardType);
-                updateCharts(data.chart_data);
-
-                if (data.chart_data.zone_data) {
-                    console.log('Updating zone data:', data.chart_data.zone_data);
-                    updateZoneData(data.chart_data.zone_data);
-                }
-            }
-
-            // Update dynamic status data if available
-            if (data.statusGroups) {
-                statusGroups = data.statusGroups;
-            }
-            if (data.kpiStatusMappings) {
-                kpiStatusMappings = data.kpiStatusMappings;
-            }
-
-            // Update KPIs if applicable
-            updateKpiContainer(data, dashboardType);
-
-            // Update tables based on user type
-            if (isApproverUser) {
-                // Approver-specific update
-                if (data.approver_pending_table_html) {
-                    $('#approver-pending-container').html(data.approver_pending_table_html);
-                    setTimeout(initializeAllFeatures, 100);
-                }
-                $('#approver-table-count').text(data.counts.pending_your_approval || 0);
-                setTimeout(() => {
-                    initializeTimelineToggles();
-                }, 100);
-            } else if (isMisUser) {
-                // MIS-specific update
-                if (data.mis_table_html) {
-                    $('#mis-table-container').html(data.mis_table_html);
-                }
-            } else if (isSalesUser) {
-                // Sales update
-                let tableHtml = data.my_table_html || '<div class="no-data-message">No applications created by you.</div>';
-                const salesTotalCreated = data.sales_counts ? data.sales_counts.total_created || 0 : 0;
-                $('#sales-table-container').html('<h5 class="header-title mb-0">My Applications (<span id="sales-table-count">' + salesTotalCreated + '</span>)</h5>' + tableHtml);
-                $('#sales-table-count').text(salesTotalCreated);
-            } else {
-                // Admin updates
-                let tableHtml;
-                const viewMode = $('#view_mode').val() || 'pending';
-                tableHtml = viewMode === 'all' ? (data.master_table_html || '<div class="no-data-message">No applications found.</div>') : (data.pending_table_html || '<div class="no-data-message">No applications pending your approval.</div>');
-                $('#main-container').html(tableHtml);
-                updateTableTitle($('#view_mode').val() || 'pending', data.counts);
-            }
-
-            // Re-initialize features
-            $('[data-bs-toggle="tooltip"]').tooltip('dispose');
-            $('[data-bs-toggle="tooltip"]').tooltip();
-            initializeModalListeners();
-            initializeKpiClicks();
-            initializeAllFeatures();
-            
-            isUpdating = false;
-        },
-        error: function(xhr) {
-            loader.addClass('d-none');
-            console.error(`Error fetching ${dashboardType} data:`, xhr.responseText);
-            const containerId = isApproverUser ? '#approver-pending-container' : (isMisUser ? '#mis-table-container' : (isSalesUser ? '#sales-table-container' : '#main-container'));
-            $(containerId).html('<div class="col-12 no-data-message">Error loading data. Please try again.</div>');
-            isUpdating = false;
+    // Unified update function wrapper
+    function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'approver' : (isSalesUser ? 'sales' : 'regular'))) {
+        if (isUpdating) return;
+        isUpdating = true;
+        let formData = $(formId).serialize();
+        if (!isSalesUser && !isMisUser && !isApproverUser) {
+            const viewMode = $('#view_mode').val() || 'pending';
+            formData += '&view_mode=' + viewMode;
         }
-    });
-}
+        $.ajax({
+            url: "{{ route('dashboard.dynamic-data') }}",
+            type: 'GET',
+            data: formData + (dashboardType === 'approver' ? '&dashboard_type=approver' : (dashboardType === 'mis' ? '&dashboard_type=mis' : (dashboardType === 'sales' ? '&dashboard_type=sales' : ''))),
+            dataType: 'json',
+            beforeSend: function() {
+                loader.removeClass('d-none');
+            },
+            success: function(data) {
+                loader.addClass('d-none');
+                console.log(`Received ${dashboardType} data:`, data);
+
+                if (!data) {
+                    console.error('Invalid response structure:', data);
+                    const containerId = isApproverUser ? '#approver-pending-container' : (isMisUser ? '#mis-table-container' : (isSalesUser ? '#sales-table-container' : '#main-container'));
+                    $(containerId).html('<div class="col-12 no-data-message">Error: Incomplete data structure from server.</div>');
+                    isUpdating = false;
+                    return;
+                }
+
+                // Update dynamic status data if available
+                if (data.statusGroups) {
+                    statusGroups = data.statusGroups;
+                }
+                if (data.kpiStatusMappings) {
+                    kpiStatusMappings = data.kpiStatusMappings;
+                }
+
+                // Update KPIs if applicable
+                updateKpiContainer(data, dashboardType);
+
+                if (isApproverUser) {
+                    // Approver-specific update
+                    if (data.approver_pending_table_html) {
+                        $('#approver-pending-container').html(data.approver_pending_table_html);
+                        setTimeout(initializeAllFeatures, 100);
+                    }
+                    // Update table count
+                    $('#approver-table-count').text(data.counts.pending_your_approval || 0);
+                    setTimeout(() => {
+                        initializeTimelineToggles();
+                    }, 100);
+                } else if (isMisUser) {
+                    // MIS-specific update
+                    if (data.mis_table_html) {
+                        $('#mis-table-container').html(data.mis_table_html);
+                    }
+                } else if (isSalesUser) {
+                    // Sales update
+                    let tableHtml = data.my_table_html || '<div class="no-data-message">No applications created by you.</div>';
+                    const salesTotalCreated = data.sales_counts ? data.sales_counts.total_created || 0 : 0;
+                    $('#sales-table-container').html('<h5 class="header-title mb-0">My Applications (<span id="sales-table-count">' + salesTotalCreated + '</span>)</h5>' + tableHtml);
+                    // Update sales table count
+                    $('#sales-table-count').text(salesTotalCreated);
+                } else {
+                    // Admin updates
+                    let tableHtml;
+                    const viewMode = $('#view_mode').val() || 'pending';
+                    tableHtml = viewMode === 'all' ? (data.master_table_html || '<div class="no-data-message">No applications found.</div>') : (data.pending_table_html || '<div class="no-data-message">No applications pending your approval.</div>');
+                    $('#main-container').html(tableHtml);
+                    // Update table title and count
+                    updateTableTitle($('#view_mode').val() || 'pending', data.counts);
+                }
+
+                // Re-initialize
+                $('[data-bs-toggle="tooltip"]').tooltip('dispose');
+                $('[data-bs-toggle="tooltip"]').tooltip();
+                initializeModalListeners();
+                initializeKpiClicks(); // Re-bind KPI clicks after update
+                initializeAllFeatures();
+                isUpdating = false;
+            },
+            error: function(xhr) {
+                loader.addClass('d-none');
+                console.error(`Error fetching ${dashboardType} data:`, xhr.responseText);
+                const containerId = isApproverUser ? '#approver-pending-container' : (isMisUser ? '#mis-table-container' : (isSalesUser ? '#sales-table-container' : '#main-container'));
+                $(containerId).html('<div class="col-12 no-data-message">Error loading data. Please try again.</div>');
+                isUpdating = false;
+            }
+        });
+    }
 
     function updateDashboard() {
         unifiedUpdate('regular');
@@ -1839,15 +1345,15 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
     // Update KPI container
     function updateKpiContainer(data, dashboardType) {
         let kpiContainerId = 'kpi-container';
-        if (dashboardType === 'approver') {
-            kpiContainerId = 'approver-kpi-container';
-        }
-        const kpiContainer = $('#' + kpiContainerId);
-        let counts = {};
-        let trends = {};
+    if (dashboardType === 'approver') {
+        kpiContainerId = 'approver-kpi-container';
+    }
+    const kpiContainer = $('#' + kpiContainerId);
+    let counts = {};
+    let trends = {};
 
-        if (dashboardType === 'approver') {
-            counts = data.counts || {};
+    if (dashboardType === 'approver') {
+        counts = data.counts || {};
         trends = data.kpi_trends || {};
         
         // FIX: Don't return early for approver - check if ALL counts are zero
@@ -1856,28 +1362,28 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
             return;
         }
-      } else if (dashboardType === 'regular') {
+    } else if (dashboardType === 'regular') {
         counts = data.counts || {};
         trends = data.kpi_trends || {};
         if (counts.total === 0) {
             kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
             return;
         }
-     } else if (dashboardType === 'mis') {
+    } else if (dashboardType === 'mis') {
         counts = data.counts || {};
         trends = data.kpi_trends || {};
         if (counts.total === 0) {
             kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
             return;
         }
-        } else if (dashboardType === 'sales') {
+    } else if (dashboardType === 'sales') {
         counts = data.sales_counts || data.counts || {};
         trends = data.sales_kpi_trends || data.kpi_trends || {};
         if (counts.total_created === 0) {
             kpiContainer.html('<div class="col-12 no-data-message">No applications found based on current filters.</div>');
             return;
         }
-      }
+    }
 
         let kpiHtml = '';
         if (dashboardType === 'approver') {
@@ -1887,9 +1393,9 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="pending_your_approval" data-count="${counts.pending_your_approval || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">🔍 Forms Pending Your Approval</h6>
                             <div class="kpi-value">${counts.pending_your_approval || 0}</div>
-                            <h6 class="text-warning">Forms Pending Your Approval</h6>
                             <span class="kpi-trend-neutral">—</span>
                         </div>
                     </div>
@@ -1898,10 +1404,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="on_hold_by_you" data-count="${counts.on_hold_by_you || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">🕓 On Hold by You</h6>
                             <div class="kpi-value">${counts.on_hold_by_you || 0}</div>
-                            <h6 class="text-warning">On Hold by You</h6>
-                            <span class="badge bg-warning-subtle text-warning mt-2 float-end kpi-trend-neutral">—</span>                            
+                            <span class="kpi-trend-neutral">—</span>
                         </div>
                     </div>
                 </a>
@@ -1909,10 +1415,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="approved_by_you" data-count="${counts.approved_by_you || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">✅ Approved by You</h6>
                             <div class="kpi-value">${counts.approved_by_you || 0}</div>
-                            <h6 class="text-success">Approved by You</h6>
-                            <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up"><i class="ri-arrow-up-line"></i> ${trends.approved_by_you || 0}%</span>
+                            <span class="kpi-trend-up">🔼 ${trends.approved_by_you || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -1920,10 +1426,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="rejected_by_you" data-count="${counts.rejected_by_you || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">❌ Rejected by You</h6>
                             <div class="kpi-value">${counts.rejected_by_you || 0}</div>
-                            <h6 class="text-danger"><b>Rejected by You</b></h6>
-                            <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected_by_you || 0}</span>
+                            <span class="kpi-trend-down">🔽 ${trends.rejected_by_you || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -1931,24 +1437,24 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="reverted_by_you" data-count="${counts.reverted_by_you || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">🔁 Reverted by You</h6>
                             <div class="kpi-value">${counts.reverted_by_you || 0}</div>
-                            <h6 class="text-danger"><b>Reverted</b></h6>
-                            <span class="kpi-trend-up badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> ${trends.reverted_by_you || 0}</span>
+                            <span class="kpi-trend-up">🔼 ${trends.reverted_by_you || 0}%</span>
                         </div>
                     </div>
                 </a>
             </div>
         `;
-       } else if (dashboardType === 'regular') {
+    } else if (dashboardType === 'regular') {
              kpiHtml = `
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="total" data-count="${counts.total || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">Total Forms</h6>
                             <div class="kpi-value" id="kpi-total-submitted">${counts.total || 0}</div>
-                            <h6 class="text-success"><b>Total Forms</b></h6>
-                            <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up "><i class="ri-arrow-up-line"></i> ${trends.total_submitted || 0}%</span>
+                            <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 ${trends.total_submitted || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -1956,10 +1462,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="appointments" data-count="${counts.distributorship_created || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">Appointments</h6>
                             <div class="kpi-value" id="kpi-appointments-completed">${counts.distributorship_created || 0}</div>
-                            <h6 class="text-success"><b>Appointments</b></h6>
-                            <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-appointments-completed"><i class="ri-arrow-up-line"></i> ${trends.appointments_completed || 0}%</span>
+                            <span class="kpi-trend-up" id="kpi-trend-appointments-completed">🔼 ${trends.appointments_completed || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -1967,10 +1473,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="in_process" data-count="${counts.in_process || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">In Process</h6>
                             <div class="kpi-value" id="kpi-in-process">${counts.in_process || 0}</div>
-                            <h6 class="text-warning"><b>In Process</b></h6>
-                            <span class="kpi-trend-neutral badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-in-process">—</span>
+                            <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
                         </div>
                     </div>
                 </a>
@@ -1978,10 +1484,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="reverted" data-count="${counts.reverted || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">Reverted</h6>
                             <div class="kpi-value" id="kpi-reverted">${counts.reverted || 0}</div>
-                            <h6 class="text-danger"><b>Reverted</b></h6>
-                            <span class="kpi-trend-up badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-reverted"><i class="ri-arrow-up-line"></i> ${trends.reverted || 0}</span>
+                            <span class="kpi-trend-up" id="kpi-trend-reverted">🔼 ${trends.reverted || 0}</span>
                         </div>
                     </div>
                 </a>
@@ -1989,10 +1495,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="rejected" data-count="${counts.rejected || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">Rejected</h6>
                             <div class="kpi-value" id="kpi-rejected">${counts.rejected || 0}</div>
-                             <h6 class="text-danger"><b>Rejected</b></h6>
-                            <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected || 0}</span>
+                            <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 ${trends.rejected || 0}</span>
                         </div>
                     </div>
                 </a>
@@ -2000,10 +1506,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             <div class="col-6 col-md-3 col-lg-2">
                 <a href="#" class="text-decoration-none">
                     <div class="card kpi-card clickable" data-kpi="to_mis" data-count="${counts.forwarded_to_mis || 0}">
-                        <div class="card-body text-center">
+                        <div class="card-body">
+                            <h6 class="small">To MIS</h6>
                             <div class="kpi-value" id="kpi-forwarded-to-mis">${counts.forwarded_to_mis || 0}</div>
-                            <h6 class="text-success"><b>To MIS</b></h6>
-                            <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-forwarded-to-mis"><i class="ri-arrow-up-line"></i> ${trends.forwarded_to_mis || 0}%</span>
+                            <span class="kpi-trend-up" id="kpi-trend-forwarded-to-mis">🔼 ${trends.forwarded_to_mis || 0}%</span>
                         </div>
                     </div>
                 </a>
@@ -2016,10 +1522,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="total_created" data-count="${counts.total_created || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Total Created</h6>
                                 <div class="kpi-value" id="kpi-total-created">${counts.total_created || 0}</div>
-                                <h6 class="text-success">Total Created</h6>
-                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-total-created"><i class="ri-arrow-up-line"></i> ${trends.total_created || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-total-created">🔼 ${trends.total_created || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2027,10 +1533,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="in_approval" data-count="${counts.in_approval || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">In Approval</h6>
                                 <div class="kpi-value" id="kpi-in-approval">${counts.in_approval || 0}</div>
-                                <h6 class="text-success"><b>In Approval</b></h6>
-                                <span class="kpi-trend-neutral badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-in-approval">—</span>
+                                <span class="kpi-trend-neutral" id="kpi-trend-in-approval">—</span>
                             </div>
                         </div>
                     </a>
@@ -2038,11 +1544,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="to_mis" data-count="${counts.to_mis || 0}">
-                            <div class="card-body text-center">
-                                
+                            <div class="card-body">
+                                <h6 class="small">In MIS</h6>
                                 <div class="kpi-value" id="kpi-to-mis">${counts.to_mis || 0}</div>
-                                <h6 class="text-success"><b>In MIS</b></h6>
-                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-to-mis"><i class="ri-arrow-up-line"></i> ${trends.to_mis || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-to-mis">🔼 ${trends.to_mis || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2050,10 +1555,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="completed" data-count="${counts.completed || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Completed</h6>
                                 <div class="kpi-value" id="kpi-completed">${counts.completed || 0}</div>
-                                <h6 class="text-success"><b>Completed</b></h6>
-                                <span class="kpi-trend-up badge bg-success-subtle text-success mt-2 float-end" id="kpi-trend-completed"><i class="ri-arrow-up-line"></i> ${trends.completed || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-completed">🔼 ${trends.completed || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2061,21 +1566,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="rejected" data-count="${counts.rejected || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Rejected</h6>
                                 <div class="kpi-value" id="kpi-rejected">${counts.rejected || 0}</div>
-                                <h6 class="text-danger"><b>Rejected</b></h6>
-                                <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected || 0}%</span>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-                 <div class="col-6 col-md-3 col-lg-2">
-                    <a href="#" class="text-decoration-none">
-                        <div class="card kpi-card clickable" data-kpi="reverted" data-count="${counts.reverted || 0}">
-                            <div class="card-body text-center">
-                                <div class="kpi-value" id="kpi-reverted">${counts.reverted || 0}</div>
-                                <h6 class="text-danger"><b>Reverted</b></h6>
-                                <span class="kpi-trend-down badge bg-danger-subtle text-danger mt-2 float-end" id="kpi-trend-reverted"><i class="ri-arrow-down-line"></i> ${trends.reverted || 0}%</span>
+                                <span class="kpi-trend-down" id="kpi-trend-rejected">🔽 ${trends.rejected || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2087,10 +1581,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="total" data-count="${counts.total || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Total Forms</h6>
                                 <div class="kpi-value" id="kpi-total-submitted">${counts.total || 0}</div>
-                                <h6 class="text-success">Total Forms</h6>
-                                <span id="kpi-trend-total-submitted" class="badge bg-success-subtle text-success mt-2 float-end"><i class="ri-arrow-up-line"></i> ${trends.total_submitted || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-total-submitted">🔼 ${trends.total_submitted || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2098,10 +1592,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <!--<div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="document_verified" data-count="${counts.document_verified || 0}">
-                            <div class="card-body text-center">   
+                            <div class="card-body">
+                                <h6 class="small">Docs Verified</h6>
                                 <div class="kpi-value" id="kpi-document-verified">${counts.document_verified || 0}</div>
-                                <h6 class="text-success">Docs Verified</h6>
-                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-document-verified"><i class="ri-arrow-up-line"></i> ${trends.document_verified || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-document-verified">🔼 ${trends.document_verified || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2109,10 +1603,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="agreement_created" data-count="${counts.agreement_created || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Agreements</h6>
                                 <div class="kpi-value" id="kpi-agreement-created">${counts.agreement_created || 0}</div>
-                                <h6 class="text-success">Agreements</h6>
-                                 <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-agreement-created"><i class="ri-arrow-up-line"></i> ${trends.agreement_created || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-agreement-created">🔼 ${trends.agreement_created || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2120,10 +1614,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="physical_docs_verified" data-count="${counts.physical_docs_verified || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Physical Docs</h6>
                                 <div class="kpi-value" id="kpi-physical-docs-verified">${counts.physical_docs_verified || 0}</div>
-                                 <h6 class="text-sucess">Physical Docs</h6>
-                                 <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-physical-docs-verified"><i class="ri-arrow-up-line"></i> ${trends.physical_docs_verified || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-physical-docs-verified">🔼 ${trends.physical_docs_verified || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2131,22 +1625,21 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="distributorship_created" data-count="${counts.distributorship_created || 0}">
-                            <div class="card-body text-center">
+                            <div class="card-body">
+                                <h6 class="small">Completed</h6>
                                 <div class="kpi-value" id="kpi-distributors-created">${counts.distributorship_created || 0}</div>
-                                <h6 class="text-success">Completed</h6>
-                                <span class="badge bg-success-subtle text-success mt-2 float-end kpi-trend-up" id="kpi-trend-distributors-created"><i class="ri-arrow-up-line"></i> ${trends.distributorship_created || 0}%</span>
+                                <span class="kpi-trend-up" id="kpi-trend-distributors-created">🔼 ${trends.distributorship_created || 0}%</span>
                             </div>
                         </div>
                     </a>
                 </div>
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
-                        <div class="card kpi-card clickable" data-kpi="rejected" data-count="${counts.rejected || 0}">
-                            <div class="card-body text-center">
-                               
-                                <div class="kpi-value" id="kpi-mis-rejected">${counts.rejected || 0}</div>
-                                <h6 class="text-danger">Rejected</h6>
-                                <span class="badge bg-danger-subtle text-danger mt-2 float-end kpi-trend-up" id="kpi-trend-mis-rejected"><i class="ri-arrow-down-line"></i> ${trends.rejected || 0}%</span>
+                        <div class="card kpi-card clickable" data-kpi="mis_rejected" data-count="${counts.mis_rejected || 0}">
+                            <div class="card-body">
+                                <h6 class="small">Rejected</h6>
+                                <div class="kpi-value" id="kpi-mis-rejected">${counts.mis_rejected || 0}</div>
+                                <span class="kpi-trend-down" id="kpi-trend-mis-rejected">🔽 ${trends.mis_rejected || 0}%</span>
                             </div>
                         </div>
                     </a>
@@ -2154,11 +1647,10 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 <div class="col-6 col-md-3 col-lg-2">
                     <a href="#" class="text-decoration-none">
                         <div class="card kpi-card clickable" data-kpi="in_process" data-count="${counts.in_process || 0}">
-                            <div class="card-body text-center">
-                                
+                            <div class="card-body">
+                                <h6 class="small">In Process</h6>
                                 <div class="kpi-value" id="kpi-in-process">${counts.in_process || 0}</div>
-                                <h6 class="text-warning">In Process</h6>
-                                <span class="badge bg-warning-subtle text-warning mt-2 float-end kpi-trend-neutral" id="kpi-trend-in-process">—</span>
+                                <span class="kpi-trend-neutral" id="kpi-trend-in-process">—</span>
                             </div>
                         </div>
                     </a>
@@ -2234,8 +1726,8 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
                 'distributorship_created': {
                     mis: { status: kpiStatusMappings.distributorship_created || 'distributorship_created', label: 'Completed' }
                 },
-                'rejected': {
-                    mis: { status: kpiStatusMappings.rejected || statusGroups.rejected.slugs, label: 'Rejected' }
+                'mis_rejected': {
+                    mis: { status: kpiStatusMappings.mis_rejected || statusGroups.rejected.slugs, label: 'Rejected' }
                 },
                 'in_process': {
                     mis: { status: kpiStatusMappings.in_process || statusGroups.mis.slugs, label: 'In Process' }
@@ -2384,7 +1876,7 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             $('#followUpSection').addClass('d-none');
             $('#follow_up_date').val('').prop('required', false);
 
-            const nonActionableStatuses = ['distributorship_created', 'rejected', 'rejected', 'agreement_created', 'document_verified', 'documents_received', 'mis_processing'];
+            const nonActionableStatuses = ['distributorship_created', 'rejected', 'mis_rejected', 'agreement_created', 'document_verified', 'documents_received', 'mis_processing'];
             const submitBtn = $('#action-submit-btn');
             if (nonActionableStatuses.includes(status)) {
                 submitBtn.prop('disabled', true).addClass('disabled');
@@ -2861,7 +2353,7 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
     });
 
     // Update the confirm distributor modal handler
-     $(document).on('click', '.confirm-distributor-btn', function(e) {
+$(document).on('click', '.confirm-distributor-btn', function(e) {
     e.preventDefault();
     e.stopPropagation();
     closeAllTableDropdowns();
@@ -2886,12 +2378,12 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
     $('#confirm-distributor-form').data('url', url);
     
     $('#confirmDistributorModal').modal('show');
-     });
+});
 
  
-    let isConfirmSubmitting = false;
+let isConfirmSubmitting = false;
 
-    $(document).on('click', '.confirm-distributor-btn', function(e) {
+$(document).on('click', '.confirm-distributor-btn', function(e) {
     e.preventDefault();
     e.stopPropagation();
     closeAllTableDropdowns();
@@ -2923,9 +2415,9 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
     $('#confirm-distributor-form').data('url', url);
     
     $('#confirmDistributorModal').modal('show');
-    });
+});
 
-     $(document).on('submit', '#confirm-distributor-form', function(e) {
+$(document).on('submit', '#confirm-distributor-form', function(e) {
     e.preventDefault();
     e.stopPropagation();
     
@@ -3002,15 +2494,15 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             isConfirmSubmitting = false;
         }
     });
- });
+});
 
- $('#confirmDistributorModal').on('hidden.bs.modal', function() {
+$('#confirmDistributorModal').on('hidden.bs.modal', function() {
     isConfirmSubmitting = false;
     $('#confirm-distributor-form')[0].reset();
     $('#confirm-distributor-form').removeClass('was-validated');
     $('#confirm-distributor-submit').prop('disabled', false).html('Confirm Distributor');
     $('#date-of-appointment, #distributor-code').removeClass('is-valid is-invalid');
- });
+});
 
 
 
@@ -3028,7 +2520,7 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
     });
 
     console.log('Table dropdowns initialized successfully');
- }
+}
 
     window.initializeTimelineToggles = initializeTimelineToggles;
     window.initializeAllFeatures = initializeAllFeatures;
@@ -3051,9 +2543,9 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
     $('#documentChecklistCanvas').on('shown.bs.offcanvas', function() {
         loadDocumentChecklist();
     });
- }
+}
 
- function loadDocumentChecklist() {
+function loadDocumentChecklist() {
     const entityType = $('#canvas_entity_type').val();
     
     // Show loading, hide content and error
@@ -3085,16 +2577,16 @@ function unifiedUpdate(dashboardType = isMisUser ? 'mis' : (isApproverUser ? 'ap
             console.error('Error loading document checklist:', xhr);
         }
     });
- }
+}
 
- function showChecklistError() {
+function showChecklistError() {
     $('#checklistError').removeClass('d-none');
     $('#checklistContent').addClass('d-none');
- }
+}
 
- function initializeCanvasTooltips() {
+function initializeCanvasTooltips() {
     // Initialize tooltips only
     $('[data-bs-toggle="tooltip"]').tooltip();
- }
+}
 </script>
 @endpush

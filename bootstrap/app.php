@@ -18,7 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::middleware('web')->group(base_path('routes/distributor_route.php'));
             Route::middleware('web')->group(base_path('routes/item_indent_route.php'));
             Route::middleware('web')->group(base_path('routes/purchase_order_route.php'));
-
+            Route::middleware('api')->group(base_path('routes/api.php'));
         }
     )
     ->withMiddleware(function (Middleware $middleware) {

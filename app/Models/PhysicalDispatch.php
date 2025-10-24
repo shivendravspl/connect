@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -29,5 +30,10 @@ class PhysicalDispatch extends Model
     public function onboarding()
     {
         return $this->belongsTo(Onboarding::class);
+    }
+
+    public function createdBy()
+    {
+        return $this->belongsTo(Employee::class, 'created_by' ,'employee_id');
     }
 }

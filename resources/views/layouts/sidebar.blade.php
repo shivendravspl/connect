@@ -53,10 +53,10 @@
 
     @hasanyrole('Admin|Super Admin')          
     <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
+        <a class="nav-link menu-link {{ request()->is('distributor', 'distributor/', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'active' : '' }}" href="#sidebarMaster" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarMaster">
             <i class="ri-apps-2-line"></i> <span data-key="t-dashboards">Masters</span>
         </a>
-        <div class="collapse menu-dropdown {{ request()->is('distributor*', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'show' : '' }}" id="sidebarMaster">
+        <div class="collapse menu-dropdown {{ request()->is('distributor', 'distributor/', 'users*', 'roles*', 'zones*', 'regions*', 'territories*', 'categories*', 'crops*', 'varieties*', 'verticals*', 'business-units*', 'org-functions*', 'companies*', 'core_api*','item-groups*','items*','indents*','communication*') ? 'show' : '' }}" id="sidebarMaster">
             <ul class="nav nav-sm flex-column">
                 <li class="nav-item">
                     <a href="{{ route('distributor.index') }}" class="nav-link {{ request()->is('distributor*') ? 'active' : '' }}" data-key="t-analytics">Distributor</a>
@@ -256,36 +256,132 @@
     @endcanany
     @endrole
 
-  @can('list-distributor')
-    <li class="nav-item">
-        <a class="nav-link menu-link {{ request()->is('applications*') ? 'active' : '' }}" href="#sidebarDistributor" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarDistributor">
-            <i class="ri-apps-line"></i> <span data-key="t-dashboards">Distributor</span>
-        </a>
-        <div class="collapse menu-dropdown {{ request()->is('applications*') ? 'show' : '' }}" id="sidebarDistributor">
-            <ul class="nav nav-sm flex-column">
-                <li class="nav-item">
-                    <a href="{{ route('applications.index') }}" class="nav-link {{ request()->is('applications*') ? 'active' : '' }}" data-key="t-analytics">Onboarding</a>
-                </li>
-                @php
-                    $pendingCount = \App\Models\Onboarding::where('status', 'documents_pending')
-                        ->where('created_by', auth()->user()->emp_id)
-                        ->count();
-                @endphp
-                @if($pendingCount > 0)
-                <li class="nav-item">
-                    <a href="{{ route('applications.pending-documents') }}" 
-                       class="nav-link {{ request()->routeIs('applications.pending-documents') ? 'active' : '' }}">
-                        <i class="nav-icon ri-file-upload-line"></i>
-                        <p>
-                            Pending Documents
-                            <span class="badge bg-danger ms-1">{{ $pendingCount }}</span>
-                        </p>
-                    </a>
-                </li>
-                @endif
-            </ul>                   
-        </div>      
-    </li>
+@can('list-distributor')
+<li class="nav-item">
+    @php
+        $isDistributorRoute = request()->routeIs('applications.*') || request()->is('applications*');
+        $isReportRoute = request()->routeIs('applications.*-status') || 
+                        request()->routeIs('applications.distributor-summary') || 
+                        request()->routeIs('applications.lifecycle') || 
+                        request()->routeIs('applications.pending') || 
+                        request()->routeIs('applications.rejected');
+        $isNonReportDistributor = $isDistributorRoute && !$isReportRoute;
+    @endphp
+    
+    <a class="nav-link menu-link {{ $isDistributorRoute ? 'active' : '' }}" 
+       href="#sidebarDistributor" 
+       data-bs-toggle="collapse" 
+       role="button" 
+       aria-expanded="{{ $isDistributorRoute ? 'true' : 'false' }}" 
+       aria-controls="sidebarDistributor">
+        <i class="ri-apps-line"></i> <span data-key="t-dashboards">Distributor</span>
+    </a>
+    
+    <div class="collapse menu-dropdown {{ $isDistributorRoute ? 'show' : '' }}" 
+         id="sidebarDistributor">
+        <ul class="nav nav-sm flex-column">
+            <li class="nav-item">
+                <a href="{{ route('applications.index') }}" 
+                   class="nav-link {{ request()->routeIs('applications.index') ? 'active' : '' }}" 
+                   data-key="t-analytics">Onboarding</a>
+            </li>
+            
+            <!-- Reports Section -->
+            <li class="nav-item">
+                <a href="#sidebarReports" 
+                   class="nav-link collapsed {{ $isReportRoute ? 'active' : '' }}" 
+                   data-bs-toggle="collapse" 
+                   role="button" 
+                   aria-expanded="{{ $isReportRoute ? 'true' : 'false' }}" 
+                   aria-controls="sidebarReports" 
+                   data-key="t-calender">
+                    Reports
+                </a>
+              
+                <div class="menu-dropdown collapse {{ $isReportRoute ? 'show' : '' }}" 
+                     id="sidebarReports">
+                    <ul class="nav nav-sm flex-column">
+                        <li class="nav-item">
+                            <a href="{{ route('applications.distributor-summary') }}" 
+                               class="nav-link {{ request()->routeIs('applications.distributor-summary') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                Distributor Summary
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('applications.approval-status') }}" 
+                               class="nav-link {{ request()->routeIs('applications.approval-status') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                Approval Status
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('applications.verification-status') }}" 
+                               class="nav-link {{ request()->routeIs('applications.verification-status') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                Verification Status
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('applications.dispatch-status') }}" 
+                               class="nav-link {{ request()->routeIs('applications.dispatch-status') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                Dispatch / Physical Verification
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('applications.lifecycle') }}" 
+                               class="nav-link {{ request()->routeIs('applications.lifecycle') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                Lifecycle Report
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('applications.pending') }}" 
+                               class="nav-link {{ request()->routeIs('applications.pending') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                Pending Work
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('applications.rejected') }}" 
+                               class="nav-link {{ request()->routeIs('applications.rejected') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                Rejected / Rework
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{{ route('applications.reports.tat') }}" 
+                               class="nav-link {{ request()->routeIs('applications.reports.tat') ? 'active' : '' }}" 
+                               data-key="t-analytics">
+                                TAT
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </li>
+            <!-- End Reports Section -->
+            
+            @php
+                $pendingCount = \App\Models\Onboarding::where('status', 'documents_pending')
+                    ->where('created_by', auth()->user()->emp_id)
+                    ->count();
+            @endphp
+            @if($pendingCount > 0)
+            <li class="nav-item">
+                <a href="{{ route('applications.pending-documents') }}" 
+                   class="nav-link {{ request()->routeIs('applications.pending-documents') ? 'active' : '' }}">
+                    <i class="nav-icon ri-file-upload-line"></i>
+                    <p>
+                        Pending Documents
+                        <span class="badge bg-danger ms-1">{{ $pendingCount }}</span>
+                    </p>
+                </a>
+            </li>
+            @endif
+        </ul>                   
+    </div>      
+</li>
 @endcan
 
 

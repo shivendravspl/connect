@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class CoreAPIController extends Controller
 {
@@ -73,6 +74,9 @@ class CoreAPIController extends Controller
 
     public function importAPISData(Request $request)
     {
+        // For large imports: Remove PHP limits (use cautiously in web context; prefer queues for prod)
+        ini_set('memory_limit', '-1'); 
+        ini_set('max_execution_time', 0);
         $apiEndPoints = $request->input('api_end_points');
         $CoreAPI = DB::table('core_api_setup')->first();
         $apiKey = $CoreAPI->api_key;
@@ -154,21 +158,30 @@ class CoreAPIController extends Controller
             }
 
             // Normal processing for other APIs
-            if ($parameter) {
-                $ids = DB::table($tableName)->pluck('id');
+              if ($parameter) {
+                $ids = $this->getParameterValues($parameter, $api);
 
                 if ($ids->isEmpty()) {
-                    return response()->json(['status' => 400, 'msg' => "No records found in table $tableName"]);
+                    Log::warning("No parameter values found for API $api (parameter: $parameter), skipping");
+                    continue;
                 }
 
-                foreach ($ids as $id) {
-                    $response = Http::withHeaders([
-                        'api-key' => $apiKey,
-                        'Accept' => 'application/json',
-                    ])->get("$baseUrl/api/$api", [$parameter => $id]);
+                // Chunk the IDs to avoid overwhelming the API or DB
+                $idChunkSize = 500; // Adjust based on API limits
+                $ids->chunk($idChunkSize)->each(function ($idChunk) use ($tableName, $baseUrl, $apiKey, $api, $parameter, &$success) {
+                    foreach ($idChunk as $id) {
+                        $response = Http::withHeaders([
+                            'api-key' => $apiKey,
+                            'Accept' => 'application/json',
+                        ])->timeout(60)
+                          ->get("$baseUrl/api/$api", [$parameter => $id]);
 
-                    $this->processApiResponse($tableName, $response, $api, $parameter, $id);
-                }
+                        $processSuccess = $this->processApiResponse($tableName, $response, $api, $parameter, $id);
+                        if (!$processSuccess) {
+                            $success = false;
+                        }
+                    }
+                });
             } else {
                 $response = Http::withHeaders([
                     'api-key' => $apiKey,
@@ -182,10 +195,36 @@ class CoreAPIController extends Controller
         return response()->json(['status' => 200, 'msg' => 'APIs synchronized successfully']);
     }
 
+      private function getParameterValues($parameter, $api)
+    {
+        // Dynamic fallback: Assume source table is 'core_' + parameter without '_id'
+        $sourceTable = null;
+        if (substr($parameter, -3) === '_id') {
+            $paramBase = substr($parameter, 0, -3);
+            $sourceTable = 'core_' . $paramBase;
+        }
+
+        // Explicit overrides/mappings for known cases (extend as needed)
+        $explicitMappings = [
+            'state_id' => 'core_state',
+            'district_id' => 'core_district',
+            // Add more, e.g., 'region_id' => 'core_region',
+        ];
+
+        $finalSourceTable = $explicitMappings[$parameter] ?? $sourceTable;
+
+        if (!$finalSourceTable || !Schema::hasTable($finalSourceTable)) {
+            Log::warning("Source table '$finalSourceTable' does not exist for parameter '$parameter' in API '$api', skipping");
+            return collect();
+        }
+
+        return DB::table($finalSourceTable)->pluck('id');
+    }
+
     private function processApiResponse($tableName, $response, $api, $parameter = null, $id = null)
     {
         // 🔄 Extend script execution time to 5 minutes
-        set_time_limit(300);
+        //set_time_limit(300);
 
         if ($response->failed()) {
             $errorMsg = $parameter && $id ? "$parameter=$id" : "No parameter";

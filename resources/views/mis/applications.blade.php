@@ -425,9 +425,9 @@
 					</div>
 
 					{{-- Pagination --}}
-					<div class="d-flex justify-content-center mt-3 p-3">
-						{{ $applications->appends(request()->query())->links() }}
-					</div>
+					 <div class="d-flex justify-content-center mt-2">
+                        {{ $applications->links('pagination::bootstrap-4') }}
+                    </div>
 					@else
 					<div class="no-data-message p-4">
 						<i class="ri-inbox-line fs-2 text-muted"></i>

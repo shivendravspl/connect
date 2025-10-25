@@ -2295,12 +2295,12 @@ class ApprovalController extends Controller
 
         // Define allowed statuses for draft agreement
         $allowedStatuses = [
-            'documents_resubmitted', 
+            'documents_resubmitted',
             'documents_verified',
-            'physical_docs_pending', 
-            'physical_docs_redispatched', 
-            'physical_docs_verified', 
-            'agreement_created',      
+            'physical_docs_pending',
+            'physical_docs_redispatched',
+            'physical_docs_verified',
+            'agreement_created',
         ];
 
         // Check if application is in allowed status
@@ -2310,4 +2310,231 @@ class ApprovalController extends Controller
 
         return view('approvals.draft-agreement', compact('application'));
     }
+
+    /**
+     * List applications eligible for security cheque management (MIS only)
+     */
+    public function listSecurityCheques(Request $request)
+    {
+        if (!Auth::user()->employee->isMisTeam()) {
+            abort(403, 'Unauthorized access. Only MIS team can view security cheques list.');
+        }
+
+        $query = Onboarding::with(['entityDetails', 'createdBy'])
+            ->whereIn('status', ['distributorship_created', 'completed']) // Adjust statuses as needed
+            ->orderBy('created_at', 'desc');
+
+        // Optional: Add search/filter by establishment name or distributor code
+        if ($search = $request->get('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('distributor_code', 'like', "%{$search}%")
+                    ->orWhereHas('entityDetails', function ($subQ) use ($search) {
+                        $subQ->where('establishment_name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $applications = $query->paginate(20);
+
+        return view('mis.list-security-cheques', compact('applications'));
+    }
+
+    public function manageSecurityCheques(Onboarding $application)
+    {
+        if (!Auth::user()->employee->isMisTeam()) {
+            abort(403, 'Unauthorized access. Only MIS team can manage security cheques.');
+        }
+
+        $allowedStatuses = ['distributorship_created', 'completed'];
+        if (!in_array($application->status, $allowedStatuses)) {
+            abort(403, 'Security cheque management is only available after distributorship confirmation.');
+        }
+
+        // Explicit foreign key in with() for reliability
+        $securityChequeChecks = PhysicalDocumentCheck::where('application_id', $application->id)
+            ->where('document_type', 'security_cheques')
+            ->with(['securityChequeDetails' => function ($query) {
+                $query->orderBy('created_at', 'asc'); // Optional: Sort details
+            }])
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $application->load(['entityDetails', 'createdBy']);
+
+        // Debug: Temporarily uncomment to verify loading (remove after fix)
+        //dd($securityChequeChecks->toArray()); // Should show 'security_cheque_details' array with your records
+
+        return view('mis.manage-security-cheques', compact('application', 'securityChequeChecks'));
+    }
+
+    /**
+     * Process new security cheque file upload (AJAX, like process-document)
+     */
+    // In your MisController or wherever processSecurityCheque is
+public function processSecurityCheque(Request $request, \App\Services\S3Service $s3Service)
+{
+    $request->validate([
+        'file' => 'required|file|mimes:pdf,doc,docx,jpg,png|max:5120',  // 5MB
+        'application_id' => 'required|exists:onboardings,id',  // Add validation for safety
+    ]);
+
+    $application = Onboarding::findOrFail($request->application_id);
+    if (!Auth::user()->employee->isMisTeam()) {
+        return response()->json(['status' => 'ERROR', 'message' => 'Unauthorized'], 403);
+    }
+
+    $file = $request->file('file');
+    $extension = $file->getClientOriginalExtension();
+    $timestamp = now()->timestamp;
+    $filename = "security_cheques_{$timestamp}.{$extension}";  // Consistent naming
+    $s3BasePath = "Connect/Distributor/security_cheques/";     // Matches processDocument
+    $filePath = $s3BasePath . $filename;                      // Full: "Connect/Distributor/security_cheques/security_cheques_1761326674.jpg"
+
+    $upload = $s3Service->uploadFile($file, $filePath);       // Uses S3Service (note: your S3Service uploadFile takes $file, $path)
+    if (!$upload['success']) {
+        return response()->json(['status' => 'ERROR', 'message' => 'Upload failed'], 500);
+    }
+
+    return response()->json([
+        'status' => 'SUCCESS',
+        'data' => [
+            'filename' => $filename,  // Just filename for DB
+            'displayName' => $file->getClientOriginalName(),
+            'url' => $upload['url'],  // From S3Service (full S3 URL)
+        ]
+    ]);
+}
+    
+
+    /**
+     * Updated: Handle updates + optional new cheques
+     */
+    public function updateSecurityChequeDetails(Request $request, Onboarding $application)
+    {
+        if (!Auth::user()->employee->isMisTeam()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
+        }
+          //dd($request->all());
+ 
+        $allowedStatuses = ['distributorship_created', 'completed'];
+        if (!in_array($application->status, $allowedStatuses)) {
+            return response()->json(['success' => false, 'message' => 'Invalid application status.'], 403);
+        }
+
+        // FIXED: Validation for deeper nesting (existing_cheques[check][detail][field])
+        $validator = Validator::make($request->all(), [
+            'existing_cheques' => 'required|array',
+            'existing_cheques.*.*.id' => 'required|exists:security_cheque_details,id', // FIXED: *.* for check > detail
+            'existing_cheques.*.*.date_use' => 'nullable|date|before_or_equal:today',
+            'existing_cheques.*.*.purpose' => 'nullable|string|max:200',
+            'existing_cheques.*.*.date_return' => 'nullable|date|before_or_equal:today',
+            'existing_cheques.*.*.remark_return' => 'nullable|string|max:500',
+            'new_cheques' => 'nullable|array',
+            'new_cheques.*.cheque_no' => 'required_if:new_cheques.*.date_obtained,present|string|max:50',
+            'new_cheques.*.date_obtained' => 'required_if:new_cheques.*.cheque_no,present|date|before_or_equal:today',
+            'new_cheques.*.file_path' => 'required_if:new_cheques.*.cheque_no,present|string',
+            'new_cheques.*.purpose' => 'nullable|string|max:200',
+            'new_cheques.*.date_use' => 'nullable|date|before_or_equal:today',
+            'new_cheques.*.date_return' => 'nullable|date|before_or_equal:today',
+            'new_cheques.*.remark_return' => 'nullable|string|max:500',
+        ], [
+            'existing_cheques.*.*.id.required' => 'ID is required for each existing cheque detail.',
+            'existing_cheques.*.*.id.exists' => 'Invalid cheque detail ID.',
+            'new_cheques.*.file_path.required_if' => 'File path is required for new cheques (upload first).',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $updatedCount = 0;
+            $newCount = 0;
+
+            // Handle existing cheques updates (loop unchanged; matches nesting)
+            $existingCheques = $request->input('existing_cheques', []);
+            foreach ($existingCheques as $checkIndex => $checkDetails) {
+                if (!is_array($checkDetails)) continue;
+                foreach ($checkDetails as $detailIndex => $detailData) {
+                    if (!is_array($detailData) || !isset($detailData['id'])) continue;
+                    SecurityChequeDetail::where('id', $detailData['id'])->update([
+                        'date_use' => $detailData['date_use'] ?? null,
+                        'purpose' => $detailData['purpose'] ?? null,
+                        'date_return' => $detailData['date_return'] ?? null,
+                        'remark_return' => $detailData['remark_return'] ?? null,
+                        'updated_by' => Auth::user()->emp_id,
+                        'updated_at' => now(),
+                    ]);
+                    $updatedCount++;
+                }
+            }
+
+            // Handle new cheques (unchanged)
+            $newCheques = $request->input('new_cheques', []);
+            foreach ($newCheques as $newChequeData) {
+                if (empty($newChequeData['cheque_no']) || empty($newChequeData['date_obtained']) || empty($newChequeData['file_path'])) continue;
+
+                $physicalCheck = PhysicalDocumentCheck::create([
+                    'application_id' => $application->id,
+                    'document_type' => 'security_cheques',
+                    'received' => true,
+                    'status' => 'verified',
+                    'file_path' => $newChequeData['file_path'],
+                    'original_filename' => $newChequeData['original_filename'] ?? basename($newChequeData['file_path']),
+                    'submitted_by' => Auth::user()->emp_id,
+                    'verified_date' => now(),
+                ]);
+
+                $physicalCheck->securityChequeDetails()->create([
+                    'cheque_no' => $newChequeData['cheque_no'],
+                    'date_obtained' => $newChequeData['date_obtained'],
+                    'date_use' => $newChequeData['date_use'] ?? null,
+                    'purpose' => $newChequeData['purpose'] ?? null,
+                    'date_return' => $newChequeData['date_return'] ?? null,
+                    'remark_return' => $newChequeData['remark_return'] ?? null,
+                    'created_by' => Auth::user()->emp_id,
+                ]);
+
+                $newCount++;
+            }
+
+            // Log action
+            $logMessage = "Updated {$updatedCount} existing cheque details. Added {$newCount} new cheques.";
+            $this->createApprovalLog(
+                $application->id,
+                Auth::user()->emp_id,
+                Auth::user()->employee->emp_designation ?? 'MIS User',
+                'security_cheque_updated',
+                $logMessage
+            );
+
+            DB::commit();
+
+            $message = "Security cheque details saved successfully. Updated: {$updatedCount}, New: {$newCount}.";
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'redirect' => route('mis.manage-security-cheques', $application)
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating security cheque details', [
+                'application_id' => $application->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error saving details: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+  
 }

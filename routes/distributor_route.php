@@ -71,6 +71,18 @@ Route::middleware('auth')->group(function(){
     Route::get('/approver/applications', [ApprovalController::class, 'applications'])->name('approver.applications');
     Route::get('/approvals/{id}/draft-agreement', [ApprovalController::class, 'showDraftAgreement'])->name('approvals.draft-agreement');
     
+
+    // List all eligible applications for security cheque management
+    Route::get('/mis/security-cheques', [ApprovalController::class, 'listSecurityCheques'])
+        ->name('mis.list-security-cheques');
+
+    // Manage cheques for a specific application (existing)
+    Route::get('/mis/security-cheques/{application}', [ApprovalController::class, 'manageSecurityCheques'])
+        ->name('mis.manage-security-cheques');
+    Route::post('/mis/security-cheques/{application}', [ApprovalController::class, 'updateSecurityChequeDetails'])
+        ->name('approvals.update-security-cheque-details');
+        Route::post('/mis/process-security-cheque', [ApprovalController::class, 'processSecurityCheque'])
+    ->name('mis.process-security-cheque');
     
 });
 

@@ -285,6 +285,15 @@
                    class="nav-link {{ request()->routeIs('applications.index') ? 'active' : '' }}" 
                    data-key="t-analytics">Onboarding</a>
             </li>
+         @if(auth()->user()->hasAnyRole(['Mis Admin', 'Mis User']))
+                <li class="nav-item">
+                    <a href="{{ route('mis.list-security-cheques') }}" 
+                    class="nav-link {{ request()->routeIs(['mis.list-security-cheques', 'mis.manage-security-cheques']) ? 'active' : '' }}" 
+                    data-key="t-analytics">
+                        Manage Security Cheques
+                    </a>
+                </li>
+            @endif
             
             <!-- Reports Section -->
              @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'Mis Admin', 'Mis User', 'Management']))

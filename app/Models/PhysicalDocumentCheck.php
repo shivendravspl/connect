@@ -36,7 +36,7 @@ class PhysicalDocumentCheck extends Model
 
     public function securityChequeDetails()
     {
-        return $this->hasMany(SecurityChequeDetail::class);
+        return $this->hasMany(SecurityChequeDetail::class,'physical_document_check_id');
     }
 
     public function securityDepositDetail()

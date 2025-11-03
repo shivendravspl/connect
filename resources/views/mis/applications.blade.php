@@ -375,7 +375,7 @@
 														data-submission-date="{{ $application->created_at->format('Y-m-d') }}"
 														data-initiator="{{ $application->createdBy->emp_name ?? 'N/A' }}"
 														data-status="{{ $application->status }}">
-														<i class="ri-user-add-line align-bottom me-2 text-muted"></i> Confirm Distributor
+														<i class="ri-user-add-line align-bottom me-2 text-muted"></i> Finalize distributorship appointment
 													</a>
 												</li>
 												@endif

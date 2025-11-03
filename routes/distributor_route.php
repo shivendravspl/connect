@@ -63,55 +63,48 @@ Route::middleware('auth')->group(function(){
     Route::get('/approvals/{application}/view-doc-verification', [ApprovalController::class, 'viewDocVerification'])->name('approvals.view-doc-verification');
     Route::get('/approvals/{application}/view-physical-doc-verification', [ApprovalController::class, 'viewPhysicalDocVerification'])->name('approvals.view-physical-doc-verification');
     Route::post('/approvals/{application}/confirm-distributor', [ApprovalController::class, 'confirmDistributor'])->name('approvals.confirm-distributor');
+    
+
+    
     Route::get('/document-checklist/canvas-data', [DocumentChecklistController::class, 'canvasData'])->name('document-checklist.canvas-data');
+    Route::get('/document-checklist/download-excel', [DocumentChecklistController::class, 'downloadExcel'])->name('document-checklist.download-excel');
+    Route::get('/document-checklist/download-pdf', [DocumentChecklistController::class, 'downloadPDF'])->name('document-checklist.download-pdf');
+    Route::post('/document-checklist/save', [DocumentChecklistController::class, 'saveChecklist'])->name('document-checklist.save');
     
 
     Route::get('/mis/applications', [ApprovalController::class, 'applications'])->name('mis.applications');
     // For Approver/Admin users  
     Route::get('/approver/applications', [ApprovalController::class, 'applications'])->name('approver.applications');
-    Route::get('/approvals/{id}/draft-agreement', [ApprovalController::class, 'showDraftAgreement'])->name('approvals.draft-agreement');
     
+   // routes/web.php
+Route::get('/approvals/{id}/draft-agreement', [ApprovalController::class, 'showDraftAgreement'])->name('approvals.draft-agreement');
+Route::get('/approvals/{id}/draft-agreement/pdf/{type}', [ApprovalController::class, 'downloadDraftAgreementPdf'])->name('approvals.draft-agreement.pdf');
 
-    // List all eligible applications for security cheque management
-    Route::get('/mis/security-cheques', [ApprovalController::class, 'listSecurityCheques'])
+    // Group MIS routes for better organization
+Route::prefix('mis')->group(function () {
+    Route::get('/security-cheques', [ApprovalController::class, 'listSecurityCheques'])
         ->name('mis.list-security-cheques');
-
-    // Manage cheques for a specific application (existing)
-    Route::get('/mis/security-cheques/{application}', [ApprovalController::class, 'manageSecurityCheques'])
+    
+    Route::get('/security-cheques/{application}', [ApprovalController::class, 'manageSecurityCheques'])
         ->name('mis.manage-security-cheques');
-    Route::post('/mis/security-cheques/{application}', [ApprovalController::class, 'updateSecurityChequeDetails'])
+    
+    Route::post('/security-cheques/{application}', [ApprovalController::class, 'updateSecurityChequeDetails'])
         ->name('approvals.update-security-cheque-details');
-        Route::post('/mis/process-security-cheque', [ApprovalController::class, 'processSecurityCheque'])
-    ->name('mis.process-security-cheque');
+    
+    Route::post('/process-security-cheque', [ApprovalController::class, 'processSecurityCheque'])
+        ->name('mis.process-security-cheque');
+    
+    Route::post('/security-cheques-return-acknowledgement', [ApprovalController::class, 'processSecurityChequeReturnAck'])
+        ->name('mis.process-security-cheque-return-ack');
+});
     
 });
 
-
 Route::middleware('auth')->group(function() {
-        Route::get('/distributor-summary', [DistributorReportController::class, 'distributorSummary'])
-            ->name('applications.distributor-summary');
-
-        Route::get('/approval-status', [DistributorReportController::class, 'approvalStatus'])
-            ->name('applications.approval-status');
-
-        Route::get('/verification-status', [DistributorReportController::class, 'verificationStatus'])
-            ->name('applications.verification-status');
-
-        Route::get('/dispatch-status', [DistributorReportController::class, 'dispatchStatus'])
-            ->name('applications.dispatch-status');
-
-        Route::get('/lifecycle', [DistributorReportController::class, 'lifecycle'])
-            ->name('applications.lifecycle');
-
-        Route::get('/pending', [DistributorReportController::class, 'pending'])
-            ->name('applications.pending');
-
-        Route::get('/rejected', [DistributorReportController::class, 'rejected'])
-            ->name('applications.rejected');
-
-        Route::get('/pending-documents', [DistributorReportController::class, 'pendingDocuments'])
-            ->name('pending-documents');
-        
-        Route::get('/reports/tat', [DistributorReportController::class, 'tatReport'])->name('applications.reports.tat');
-
+    // Summary Report (dynamic sub-reports via ?report_type=approval|verification|etc.)
+     Route::get('/distributor-summary', [DistributorReportController::class, 'distributorSummary'])
+        ->name('applications.distributor-summary');
+    // TAT Report (separate)
+    Route::get('/reports/tat', [DistributorReportController::class, 'tatReport'])
+        ->name('applications.reports.tat');
 });

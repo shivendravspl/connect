@@ -744,7 +744,7 @@
 @if(isset($application->businessPlans) && $application->businessPlans->isNotEmpty())
 <div id="business-plan" class="card mb-3">
     <div class="card-header">
-        <h6 class="mb-1">Business Plan (Next Two Years)</h6>
+        <h3 class="mb-1">Business Plan (Next Two Years)</h3>
     </div>
     <div class="card-body p-2">
         <div class="table-responsive">
@@ -836,76 +836,152 @@
 
 <div class="form-section">
     <h3>Declarations</h3>
-    @if($application->declarations->isNotEmpty())
+    @php
+        // Define all questions including labels and config like in the form
+        $questions = [
+            'is_other_distributor' => [
+                'label' => 'Whether the Distributor is an Agent/Distributor of any other Company?',
+                'details_field' => 'other_distributor_details',
+            ],
+            'has_sister_concern' => [
+                'label' => 'Whether the Distributor has any sister concern or affiliated entity other than the one applying for this distributorship?',
+                'details_field' => 'sister_concern_details',
+            ],
+            'has_question_c' => [
+                'label' => 'Whether the Distributor is acting as an Agent/Distributor for any other entities in the distribution of similar crops?',
+                'details_field' => 'question_c_details',
+            ],
+            'has_question_d' => [
+                'label' => 'Whether the Distributor is a partner, relative, or otherwise associated with any entity engaged in the business of agro inputs?',
+                'details_field' => 'question_d_details',
+            ],
+            'has_question_e' => [
+                'label' => 'Whether the Distributor has previously acted as an Agent/Distributor of VNR Seeds and is again applying for a Distributorship?',
+                'details_field' => 'question_e_details',
+            ],
+            'has_disputed_dues' => [
+                'label' => 'Whether any disputed dues are payable by the Distributor to the other Company/Bank/Financial Institution?',
+                'details_fields' => [
+                    'disputed_amount' => 'Amount',
+                    'dispute_nature' => 'Nature of Dispute',
+                    'dispute_year' => 'Year of Dispute',
+                    'dispute_status' => 'Present Position',
+                    'dispute_reason' => 'Reason for Default',
+                ],
+            ],
+            'has_question_g' => [
+                'label' => 'Whether the Distributor has ceased to be Agent/Distributor of any other company in the last twelve months?',
+                'details_field' => 'question_g_details',
+            ],
+            'has_question_h' => [
+                'label' => 'Whether the Distributor’s relative is connected in any way with VNR Seeds and any other Seed Company?',
+                'details_field' => 'question_h_details',
+            ],
+            'has_question_i' => [
+                'label' => 'Whether the Distributor is involved in any other capacity with the Company apart from this application?',
+                'details_field' => 'question_i_details',
+            ],
+            'has_question_j' => [
+                'label' => 'Whether the Distributor has been referred by any Distributors or other parties associated with the Company?',
+                'details_fields' => [
+                    'referrer_1' => 'Referrer I',
+                    'referrer_2' => 'Referrer II',
+                    'referrer_3' => 'Referrer III',
+                    'referrer_4' => 'Referrer IV',
+                ],
+            ],
+            'has_question_k' => [
+                'label' => 'Whether the Distributor is currently marketing or selling products under its own brand name?',
+                'details_field' => 'question_k_details',
+            ],
+            'has_question_l' => [
+                'label' => 'Whether the Distributor has been employed in the agro-input industry at any point during the past 5 years?',
+                'details_field' => 'question_l_details',
+            ],
+        ];
+
+        // Letters mapping
+        $declarationLetters = [
+            'is_other_distributor' => 'a.',
+            'has_sister_concern' => 'b.',
+            'has_question_c' => 'c.',
+            'has_question_d' => 'd.',
+            'has_question_e' => 'e.',
+            'has_disputed_dues' => 'f.',
+            'has_question_g' => 'g.',
+            'has_question_h' => 'h.',
+            'has_question_i' => 'i.',
+            'has_question_j' => 'j.',
+            'has_question_k' => 'k.',
+            'has_question_l' => 'l.',
+        ];
+    @endphp
+
+    @foreach($questions as $questionKey => $config)
         @php
-            $declarationQuestions = [
-                'is_other_distributor' => 'Whether the Distributor is an Agent/Distributor of any other Company?',
-                'has_sister_concern' => 'Whether the Distributor has any sister concern or affiliated entity other than the one applying for this distributorship?',
-                'has_question_c' => 'Whether the Distributor is acting as an Agent/Distributor for any other entities in the distribution of similar crops?',
-                'has_question_d' => 'Whether the Distributor is a partner, relative, or otherwise associated with any entity engaged in the business of agro inputs?',
-                'has_question_e' => 'Whether the Distributor has previously acted as an Agent/Distributor of VNR Seeds and is again applying for a Distributorship?',
-                'has_disputed_dues' => 'Whether any disputed dues are payable by the Distributor to the other Company/Bank/Financial Institution?',
-                'has_question_g' => 'Whether the Distributor has ceased to be Agent/Distributor of any other company in the last twelve months?',
-                'has_question_h' => 'Whether the Distributor\'s relative is connected in any way with VNR Seeds and any other Seed Company?',
-                'has_question_i' => 'Whether the Distributor is involved in any other capacity with the Company apart from this application?',
-                'has_question_j' => 'Whether the Distributor has been referred by any Distributors or other parties associated with the Company?',
-                'has_question_k' => 'Whether the Distributor is currently marketing or selling products under its own brand name?',
-                'has_question_l' => 'Whether the Distributor has been employed in the agro-input industry at any point during the past 5 years?',
-                'declaration_truthful' => 'I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief.'
-            ];
+            $declaration = $application->declarations->where('question_key', $questionKey)->first();
+            $hasIssue = $declaration ? (bool) $declaration->has_issue : false;
+            $details = $declaration ? (is_array($declaration->details) ? $declaration->details : json_decode($declaration->details, true) ?? []) : [];
+            $letterPrefix = $declarationLetters[$questionKey] ?? '';
         @endphp
-        
-        @foreach($application->declarations as $declaration)
-            @php
-                $questionText = $declarationQuestions[$declaration->question_key] ?? Str::title(str_replace('_', ' ', $declaration->question_key));
-                $hasIssue = (bool) $declaration->has_issue;
-                $details = is_array($declaration->details) ? $declaration->details : json_decode($declaration->details, true) ?? [];
-            @endphp
-            
-            <table class="table">
-                <tr>
-                    <td class="q_label">{{ $questionText }}</td>
-                    <td class="q_value">{{ $hasIssue ? 'Yes' : 'No' }}</td>
-                </tr>
-                
-                @if($hasIssue && !empty($details))
-                    @if($declaration->question_key === 'has_disputed_dues' && is_array($details))
-                        @if(isset($details['amount']) && $details['amount'])
-                            <tr><td class="q_label">Amount:</td><td class="q_value">₹{{ number_format($details['amount'], 2) }}</td></tr>
-                        @endif
-                        @if(isset($details['nature']) && $details['nature'])
-                            <tr><td class="q_label">Nature of Dispute:</td><td class="q_value">{{ $details['nature'] }}</td></tr>
-                        @endif
-                        @if(isset($details['year']) && $details['year'])
-                            <tr><td class="q_label">Year of Dispute:</td><td class="q_value">{{ $details['year'] }}</td></tr>
-                        @endif
-                        @if(isset($details['present_position']) && $details['present_position'])
-                            <tr><td class="q_label">Present Position:</td><td class="q_value">{{ $details['present_position'] }}</td></tr>
-                        @endif
-                        @if(isset($details['reason']) && $details['reason'])
-                            <tr><td class="q_label">Reason for Default:</td><td class="q_value">{{ $details['reason'] }}</td></tr>
-                        @endif
-                    @else
-                        @foreach($details as $detailKey => $detailValue)
-                            @if(is_string($detailValue) && !empty(trim($detailValue)))
-                                <tr>
-                                    <td class="q_label">{{ Str::title(str_replace('_', ' ', $detailKey)) }}:</td>
-                                    <td class="q_value">{{ $detailValue }}</td>
-                                </tr>
-                            @endif
-                        @endforeach
-                    @endif
-                @endif
-            </table>
-        @endforeach
-    @else
+
         <table class="table">
             <tr>
-                <td class="label">Declarations:</td>
-                <td class="value">No declarations provided.</td>
+                <td class="q_label">{{ $letterPrefix }} {{ $config['label'] }}</td>
+                <td class="q_value">{{ $hasIssue ? 'Yes' : 'No' }}</td>
+            </tr>
+            
+            @if($hasIssue && !empty($details))
+                @if($questionKey === 'has_disputed_dues' && is_array($details))
+                    @foreach($config['details_fields'] as $fieldKey => $fieldLabel)
+                        @if(isset($details[$fieldKey]) && !empty($details[$fieldKey]))
+                            <tr>
+                                <td class="q_label">{{ $fieldLabel }}:</td>
+                                <td class="q_value">
+                                    @if($fieldKey === 'disputed_amount')
+                                        ₹{{ number_format($details[$fieldKey], 2) }}
+                                    @else
+                                        {{ $details[$fieldKey] }}
+                                    @endif
+                                </td>
+                            </tr>
+                        @endif
+                    @endforeach
+                @elseif($questionKey === 'has_question_j' && is_array($details))
+                    @foreach($config['details_fields'] as $fieldKey => $fieldLabel)
+                        @if(isset($details[$fieldKey]) && !empty($details[$fieldKey]))
+                            <tr>
+                                <td class="q_label">{{ $fieldLabel }}:</td>
+                                <td class="q_value">{{ $details[$fieldKey] }}</td>
+                            </tr>
+                        @endif
+                    @endforeach
+                @elseif(isset($config['details_field']) && isset($details[$config['details_field']]) && !empty($details[$config['details_field']]))
+                    <tr>
+                        <td class="q_label">Please specify:</td>
+                        <td class="q_value">{{ $details[$config['details_field']] }}</td>
+                    </tr>
+                @endif
+            @endif
+        </table>
+    @endforeach
+
+    {{-- Truthful Declaration --}}
+    @php
+        $truthfulDeclaration = $application->declarations->where('question_key', 'declaration_truthful')->first();
+        $isTruthful = $truthfulDeclaration ? (bool) $truthfulDeclaration->has_issue : true; // Assume true if submitted
+    @endphp
+    {{--@if($isTruthful)
+        <table class="table">
+            <tr>
+                <td class="q_label">Declaration:</td>
+                <td class="q_value">
+                    <em>I hereby solemnly affirm and declare that the information furnished in this form is true, correct, and complete to the best of my knowledge and belief.</em>
+                    <span class="badge bg-success ms-2">Accepted</span>
+                </td>
             </tr>
         </table>
-    @endif
+    @endif--}}
 </div>
 
 {{-- **UPDATED: Final Declaration Section ** --}}
@@ -918,7 +994,7 @@
     
     <table class="table">
         <tr>
-            <td class="label" style="width: 30%;">Form Filled By:</td>
+            <td class="label" style="width: 30%;">Form Filled For:</td>
             <td class="value" style="width: 70%;">{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
         </tr>
         <tr>
@@ -936,7 +1012,7 @@
         @if($application->createdBy)
             <tr>
                 <td class="label">Created By:</td>
-                <td class="value">{{ $application->createdBy->name ?? 'N/A' }}</td>
+                <td class="value">{{ $application->createdBy->emp_name ?? 'N/A' }}</td>
             </tr>
         @endif
     </table>

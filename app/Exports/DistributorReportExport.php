@@ -17,6 +17,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Font;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
 class DistributorReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithEvents
 {
@@ -346,9 +347,12 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                // Auto-size any remaining columns not explicitly set
-                foreach (range('A', $sheet->getHighestColumn()) as $col) {
-                    $sheet->getColumnDimension($col)->setAutoSize(true);
+                // Auto-size all columns (handles >26 columns safely)
+                $highestColumn = $sheet->getHighestColumn();
+                $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
+                for ($col = 1; $col <= $highestColumnIndex; ++$col) {
+                    $columnLetter = Coordinate::stringFromColumnIndex($col);
+                    $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
                 }
 
                 // Freeze first row for better scrolling

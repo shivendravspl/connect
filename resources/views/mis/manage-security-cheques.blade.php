@@ -1,5 +1,3 @@
-{{-- resources/views/mis/manage-security-cheques.blade.php --}}
-
 @extends('layouts.app')
 
 @section('content')
@@ -16,6 +14,60 @@
         </a>
     </div>
 
+    <!-- Security Deposit Details Section (Read-only) -->
+<div class="card shadow-sm rounded-3 mb-4">
+    <div class="card-header bg-light py-2">
+        <h6 class="mb-0"><i class="ri-bank-card-line me-2"></i> Security Deposit Details</h6>
+    </div>
+    <div class="card-body">
+        @if($securityDeposit)
+            <div class="row">
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Focus Code</label>
+                    <div class="form-control form-control-sm bg-light">
+                         {{ $application->distributor_code ?? 'N/A' }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Date of Appointment</label>
+                    <div class="form-control form-control-sm bg-light">
+                          {{ $application->date_of_appointment ? \Carbon\Carbon::parse($application->date_of_appointment)->format('d-m-Y') : 'N/A' }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Date</label>
+                    <div class="form-control form-control-sm bg-light">
+                        {{ $securityDeposit->deposit_date ? \Carbon\Carbon::parse($securityDeposit->deposit_date)->format('d-m-Y') : 'N/A' }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Amount</label>
+                    <div class="form-control form-control-sm bg-light">
+                        {{ $securityDeposit->amount ? '₹' . number_format($securityDeposit->amount, 2) : 'N/A' }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Mode of Payment</label>
+                    <div class="form-control form-control-sm bg-light">
+                        {{ $securityDeposit->mode_of_payment ?? 'N/A' }}
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small fw-bold">Reference No.</label>
+                    <div class="form-control form-control-sm bg-light">
+                        {{ $securityDeposit->reference_no ?? 'N/A' }}
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="text-center text-muted py-3">
+                <i class="ri-information-line me-2"></i> No security deposit details found.
+            </div>
+        @endif
+    </div>
+</div>
+
+    <!-- Security Cheques Management Section -->
     <div class="card shadow-sm rounded-3">
         <div class="card-header bg-light py-2">
             <h6 class="mb-0"><i class="ri-file-list-line me-2"></i> Security Cheque Details</h6>
@@ -34,6 +86,7 @@
                                 <th>Date of Use</th>
                                 <th>Purpose of Use</th>
                                 <th>Date of Return</th>
+                                <th>Returned Acknowledgement</th>
                                 <th>Remark/Reason of Return</th>
                             </tr>
                         </thead>
@@ -67,6 +120,28 @@
                                                 value="{{ $detail->date_return?->format('Y-m-d') }}" class="form-control form-control-sm" max="{{ now()->toDateString() }}">
                                         </td>
                                         <td>
+                                            <!-- Returned Acknowledgement Upload -->
+                                            <div class="d-flex flex-column gap-1 return-ack-container">
+                                                @if($detail->return_acknowledgement_file)
+                                                    <a href="#" class="view-return-ack" data-src="{{ $detail->return_acknowledgement_file }}" data-original="Return Acknowledgement">
+                                                        <i class="ri-eye-line"></i> View
+                                                    </a>
+                                                    <input type="hidden" 
+                                                        name="existing_cheques[{{ $checkIndex }}][{{ $detailIndex }}][return_acknowledgement_file]" 
+                                                        value="{{ $detail->return_acknowledgement_file }}">
+                                                @else
+                                                    <input type="file" 
+                                                        class="return-ack-file form-control form-control-sm" 
+                                                        data-detail-id="{{ $detail->id }}"
+                                                        accept=".pdf,.doc,.docx,.jpg,.png">
+                                                    <input type="hidden" 
+                                                        name="existing_cheques[{{ $checkIndex }}][{{ $detailIndex }}][return_acknowledgement_file]" 
+                                                        value="">
+                                                    <small class="text-muted">Max 5MB</small>
+                                                @endif
+                                            </div>
+                                        </td>
+                                        <td>
                                             <textarea name="existing_cheques[{{ $checkIndex }}][{{ $detailIndex }}][remark_return]" 
                                                     class="form-control form-control-sm" rows="2" maxlength="500">{{ $detail->remark_return }}</textarea>
                                         </td>
@@ -75,12 +150,12 @@
                                     @php $detailIndex++; @endphp
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">No details for Cheque {{ $checkIndex + 1 }}.</td>
+                                        <td colspan="9" class="text-center text-muted">No details for Cheque {{ $checkIndex + 1 }}.</td>
                                     </tr>
                                 @endforelse
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center text-muted">No security cheques found. Add new ones below.</td>
+                                    <td colspan="9" class="text-center text-muted">No security cheques found. Add new ones below.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -112,7 +187,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">View Cheque File</h5>
+                    <h5 class="modal-title">View File</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -124,7 +199,7 @@
 </div>
 
 <script>
-    let newChequeIndex = 0; // Start at 0 since no default row
+    let newChequeIndex = 0;
 
     // Add new cheque row
     document.getElementById('addNewChequeBtn').addEventListener('click', function() {
@@ -183,7 +258,87 @@
         }
     });
 
-    // S3 Upload for New Cheque Files (like physical docs)
+    // Handle Return Acknowledgement file upload
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('return-ack-file')) {
+            const fileInput = e.target;
+            const detailId = fileInput.dataset.detailId;
+            const hiddenInput = fileInput.parentElement.querySelector('input[type="hidden"]');
+            
+            uploadReturnAcknowledgement(fileInput.files[0], detailId, hiddenInput, fileInput);
+        }
+        
+        // Existing new cheque file upload
+        if (e.target.matches('.new-cheque-file')) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const index = e.target.closest('.new-cheque-row').dataset.index;
+            const fileNameField = document.getElementById(`file-name-new-${index}`);
+            const fileInput = e.target;
+
+            processNewChequeFile(file, fileNameField, index);
+        }
+    });
+
+    // Upload Return Acknowledgement - Consistent with cheque upload pattern
+    async function uploadReturnAcknowledgement(file, detailId, hiddenInput, fileInput) {
+        if (!file) return;
+        
+        // Show loading state
+        fileInput.disabled = true;
+        const originalParent = fileInput.parentElement;
+        
+        // Create loading indicator
+        const loadingText = document.createElement('span');
+        loadingText.className = 'text-primary small';
+        loadingText.textContent = 'Uploading...';
+        fileInput.style.display = 'none';
+        originalParent.appendChild(loadingText);
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('application_id', {{ $application->id }});
+        formData.append('detail_id', detailId);
+
+        try {
+            const response = await fetch('{{ route("mis.process-security-cheque-return-ack") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                },
+                body: formData,
+            });
+
+            const result = await response.json();
+            if (response.ok && result.status === 'SUCCESS') {
+                // Store the FULL URL in hidden input
+                hiddenInput.value = result.data.url;
+                
+                // Create view link (same pattern as cheque upload)
+                const viewLink = `<a href="#" class="view-return-ack" data-src="${result.data.url}" data-original="${result.data.displayName}">
+                    <i class="ri-eye-line"></i> View
+                </a> (${result.data.displayName})`;
+                
+                // Remove loading and file input, show success
+                loadingText.remove();
+                fileInput.remove();
+                originalParent.insertAdjacentHTML('beforeend', viewLink);
+                
+                alert('Return acknowledgement uploaded successfully!');
+            } else {
+                throw new Error(result.message || 'Upload failed');
+            }
+        } catch (error) {
+            alert('Upload failed: ' + error.message);
+            // Restore file input
+            loadingText.remove();
+            fileInput.style.display = 'block';
+            fileInput.disabled = false;
+        }
+    }
+
+    // Existing new cheque file upload function
     async function processNewChequeFile(file, fileNameField, index) {
         fileNameField.textContent = 'Uploading...';
         fileNameField.classList.remove('text-danger');
@@ -221,46 +376,42 @@
         }
     }
 
-    // Handle new file changes
-    document.addEventListener('change', function(e) {
-        if (e.target.matches('.new-cheque-file')) {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            const index = e.target.closest('.new-cheque-row').dataset.index;
-            const fileNameField = document.getElementById(`file-name-new-${index}`);
-            const fileInput = e.target;
-
-            processNewChequeFile(file, fileNameField, index);
-        }
-    });
-
-    // View new uploaded files
+    // View files (existing functionality) - Add return ack handling
     document.addEventListener('click', function(e) {
-        if (e.target.matches('.view-new-cheque')) {
+        if (e.target.matches('.view-new-cheque') || e.target.closest('.view-new-cheque')) {
             e.preventDefault();
-            const src = e.target.dataset.src;
-            const original = e.target.dataset.original;
+            const target = e.target.matches('.view-new-cheque') ? e.target : e.target.closest('.view-new-cheque');
+            const src = target.dataset.src;
+            const original = target.dataset.original;
             document.getElementById('chequeFrame').src = src;
             document.querySelector('#chequeModal .modal-title').textContent = `New Cheque: ${original}`;
             new bootstrap.Modal(document.getElementById('chequeModal')).show();
         }
-    });
-
-    // Existing view cheque file (unchanged)
-    document.addEventListener('click', function(e) {
-        if (e.target.matches('.view-cheque-file')) {
+        
+        if (e.target.matches('.view-cheque-file') || e.target.closest('.view-cheque-file')) {
             e.preventDefault();
-            const filename = e.target.dataset.filename;
-            const original = e.target.dataset.original;
+            const target = e.target.matches('.view-cheque-file') ? e.target : e.target.closest('.view-cheque-file');
+            const filename = target.dataset.filename;
+            const original = target.dataset.original;
             const src = `https://s3.ap-south-1.amazonaws.com/developerinvnr.bkt/Connect/Distributor/security_cheques/${filename}`;
             document.getElementById('chequeFrame').src = src;
             document.querySelector('#chequeModal .modal-title').textContent = `Cheque File: ${original}`;
             new bootstrap.Modal(document.getElementById('chequeModal')).show();
         }
+        
+        // Add return acknowledgement view handling
+        if (e.target.matches('.view-return-ack') || e.target.closest('.view-return-ack')) {
+            e.preventDefault();
+            const target = e.target.matches('.view-return-ack') ? e.target : e.target.closest('.view-return-ack');
+            const src = target.dataset.src;
+            const original = target.dataset.original;
+            document.getElementById('chequeFrame').src = src;
+            document.querySelector('#chequeModal .modal-title').textContent = `Return Acknowledgement: ${original}`;
+            new bootstrap.Modal(document.getElementById('chequeModal')).show();
+        }
     });
 
-    // Form submission (unchanged, but now handles empty new_cheques gracefully)
+    // Form submission
     document.getElementById('securityChequesForm').addEventListener('submit', function(e) {
         e.preventDefault();
         const formData = new FormData(this);

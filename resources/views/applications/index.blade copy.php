@@ -2,11 +2,27 @@
 
 @section('content')
 <div class="container-fluid px-2 px-sm-3">
+    <!-- start page title -->
+    <div class="row">
+        <div class="col-12">
+            <div class="page-title-box d-sm-flex align-items-center justify-content-between bg-galaxy-transparent">
+                <h4 class="mb-sm-0">Onboarding</h4>
+                <div class="page-title-right">
+                    <ol class="breadcrumb m-0">
+                        <li class="breadcrumb-item"><a href="javascript: void(0);">Pages</a></li>
+                        <li class="breadcrumb-item active">My Applications</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- end page title -->
+
     <div class="row justify-content-center">
         <div class="col-12 px-0 px-sm-2">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center py-1 px-2">
-                    <h5 class="mb-0 small font-weight-bold">My Applications</h5>
+                    <h5 class="card-title mb-0">My Applications</h5>
                     <div class="d-flex align-items-center" style="gap: 0.5rem;">
                         <!-- Filters -->
                         <div class="d-flex align-items-center" style="gap: 0.5rem;">
@@ -73,7 +89,8 @@ $(document).ready(function() {
             return $(this).find('option:first').text();
         },
         allowClear: true,
-        dropdownCssClass: 'custom-select2-dropdown'
+        dropdownCssClass: 'custom-select2-dropdown',
+        escapeMarkup: function (markup) { return markup; }
     });
 
     // Set CSRF token for AJAX requests
@@ -156,12 +173,23 @@ $(document).ready(function() {
         table.draw();
     });
 
-    // Ensure Select2 dropdowns stay within card boundaries
+    // Ensure Select2 dropdowns stay within card boundaries and scroll internally
     $('.select2-filter').on('select2:open', function() {
-        $('.custom-select2-dropdown').css({
-            'z-index': 1050, // Above card
-            'max-width': $(this).parent().width()
-        });
+        setTimeout(() => {
+            const dropdown = $('.custom-select2-dropdown');
+            dropdown.css({
+                'z-index': 1050, // Above card
+                'max-width': $(this).parent().width(),
+                'max-height': '300px', // Limit height to prevent full page scroll
+                'overflow-y': 'auto' // Enable internal scrolling
+            });
+
+            // Also ensure the results container scrolls if needed
+            dropdown.find('.select2-results__options').css({
+                'max-height': '250px',
+                'overflow-y': 'auto'
+            });
+        }, 0);
     });
 });
 </script>
@@ -257,6 +285,18 @@ $(document).ready(function() {
         color: #fff !important;
     }
 
+    /* Ensure dropdown scrolls internally and doesn't affect page scroll */
+    .custom-select2-dropdown {
+        max-height: 300px !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+    }
+
+    .custom-select2-dropdown .select2-results__options {
+        max-height: 250px !important;
+        overflow-y: auto !important;
+    }
+
     @media (max-width: 576px) {
         .container-fluid {
             padding-left: 0.25rem;
@@ -304,6 +344,15 @@ $(document).ready(function() {
 
         .custom-select2-dropdown .select2-results__option {
             font-size: 0.7rem;
+        }
+
+        /* Adjust dropdown height for mobile */
+        .custom-select2-dropdown {
+            max-height: 250px !important;
+        }
+
+        .custom-select2-dropdown .select2-results__options {
+            max-height: 200px !important;
         }
     }
 </style>

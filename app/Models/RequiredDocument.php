@@ -13,8 +13,10 @@ class RequiredDocument extends Model
     
     protected $fillable = [
         'category',
-        'document_name', 
-        'description',
+        'sub_category',
+        'document_name',
+        'checkpoints',
+        'applicability_justification',
         'applicability',
         'entity_types',
         'sort_order'
@@ -26,12 +28,12 @@ class RequiredDocument extends Model
 
     // Entity type constants
     const ENTITY_TYPES = [
-        'sole_proprietorship' => 'Sole Proprietorship',
-        'partnership' => 'Partnership',
+        'sole_proprietorship' => 'SOLE PROPRIETORSHIP',
+        'partnership' => 'PARTNERSHIP',
         'llp' => 'LLP',
-        'company' => 'Company',
-        'cooperative_society' => 'Cooperative Society',
-        'trust' => 'Trust'
+        'company' => 'COMPANY',
+        'cooperative_society' => 'COOPERATIVE SOCIETY',
+        'trust' => 'TRUST'
     ];
 
     public function getEntityTypesAttribute($value)

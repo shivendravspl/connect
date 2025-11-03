@@ -1033,7 +1033,150 @@
    
     @endif
 
- 
+    <!-- 5. MAIN DATA TABLES -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <div class="card">
+                <div>
+                    @if($showAdminDashboard)
+                        {{-- Admin Table --}}
+                        <div class="card-header d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="header-title mb-0" id="table-title">
+                                @if($viewMode == 'all')
+                                    All Applications (<span id="table-count">{{ $data['counts']['total'] ?? 0 }}</span>)
+                                @else
+                                    Pending Approvals (<span id="table-count">{{ $data['counts']['pending'] ?? 0 }}</span>)
+                                @endif
+                            </h5>
+                        </div>
+                        <div class="card-body" id="main-container">
+                            @if($viewMode == 'all')
+                                @if (isset($masterReportApplications) && $masterReportApplications->isEmpty())
+                                    <div class="no-data-message">No applications found.</div>
+                                @else
+                                    <div class="table-responsive">
+                                        <table class="table table-sm compact-table table-hover">
+                                            <thead>
+                                                <tr>
+                                                    <th>Application ID</th>
+                                                    <th>Distributor Name</th>
+                                                    <th>Territory</th>
+                                                    <th>Region</th>
+                                                    <th>Initiator</th>
+                                                    <th>Stage</th>
+                                                    <th>Status</th>
+                                                    <th>Submission Date</th>
+                                                    <th>Approval Date</th>
+                                                    <th>Final Appointment Date</th>
+                                                    <th>TAT (Days)</th>
+                                                    <th>Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse ($masterReportApplications as $application)
+                                                <tr>
+                                                    <td>
+                                                        <div class="app-id-with-toggle">
+                                                            <button class="toggle-timeline" 
+                                                                    data-application-id="{{ $application->id }}"
+                                                                    title="Show Approval Timeline">
+                                                                <i class="ri-add-circle-line"></i>
+                                                            </button>
+                                                            <span>{{ $application->id }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
+                                                    <td>{{ $application->territoryDetail->territory_name ?? 'N/A' }}</td>
+                                                    <td>{{ $application->regionDetail->region_name ?? 'N/A' }}</td>
+                                                    <td>{{ $application->createdBy->emp_name ?? 'Unknown' }} ({{ $application->createdBy->emp_designation ?? 'N/A' }})</td>
+                                                    <td>{{ ucfirst($application->approval_level ?? 'N/A') }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ $application->status_badge ?? 'secondary' }}">
+                                                            {{ ucwords(str_replace('_', ' ', $application->status ?? 'N/A')) }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ $application->created_at->format('d M Y') }}</td>
+                                                    <td>
+                                                        @php
+                                                            $approvalLog = $application->approvalLogs->where('action', 'approved')->sortByDesc('created_at')->first();
+                                                        @endphp
+                                                        {{ $approvalLog ? $approvalLog->created_at->format('d M Y') : 'N/A' }}
+                                                    </td>
+                                                    <td>
+                                                        {{ in_array($application->status, explode(',', $statusGroups['completed']['slugs'] ?? '')) ? $application->updated_at->format('d M Y') : 'N/A' }}
+                                                    </td>
+                                                    <td>
+                                                        {{ in_array($application->status, explode(',', $statusGroups['completed']['slugs'] ?? '')) ? $application->created_at->diffInDays($application->updated_at) : 'N/A' }}
+                                                    </td>
+                                                    <td>
+                                                        <a href="{{ route('approvals.show', $application->id) }}" class="btn btn-sm btn-primary" title="View">
+                                                            <i class="ri-eye-line"></i>
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                <tr class="timeline-row" id="timeline-{{ $application->id }}">
+                                                    <td colspan="12" class="p-3">
+                                                        {{-- Timeline content --}}
+                                                        <div class="timeline-container d-flex flex-row align-items-center justify-content-start p-3 overflow-x-auto overflow-y-hidden bg-light rounded">
+                                                            {{-- Timeline stages would go here --}}
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                @empty
+                                                <tr>
+                                                    <td colspan="12" class="text-center no-data-message">No applications found based on current filters.</td>
+                                                </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                        {{ $masterReportApplications->links() }}
+                                    </div>
+                                @endif
+                            @else
+                                @if (isset($pendingApplications) && $pendingApplications->isEmpty())
+                                    <div class="no-data-message">No applications pending your approval.</div>
+                                @else
+                                    @include('dashboard._approver-table', ['pendingApplications' => $pendingApplications ?? collect()])
+                                @endif
+                            @endif
+                        </div>
+                    @elseif($showApproverDashboard)
+                        {{-- Approver Table --}}
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="header-title mb-0" id="approver-table-title">
+                                📂 Pending Forms Assigned to You (<span id="approver-table-count">{{ $data['counts']['pending_your_approval'] ?? 0 }}</span>)
+                            </h5>
+                        </div>
+                        <div id="approver-pending-container">
+                            @if (isset($approverPendingApplications) && $approverPendingApplications->isEmpty())
+                                <div class="no-data-message">No pending forms assigned to you.</div>
+                            @else
+                                @include('dashboard._approver-pending-table', ['approverPendingApplications' => $approverPendingApplications ?? collect()])
+                            @endif
+                        </div>
+                    @elseif($showMisDashboard)
+                        {{-- MIS Table --}}
+                        <div id="mis-table-container">
+                            @if (isset($misApplications) && $misApplications->isEmpty())
+                                <div class="no-data-message">No applications found.</div>
+                            @else
+                                @include('dashboard._mis-table', ['misApplications' => $misApplications ?? collect()])
+                            @endif
+                        </div>
+                    @elseif($showSalesDashboard)
+                        {{-- Sales Table --}}
+                        <div class="card-body" id="sales-table-container">
+                            @if (isset($myApplications) && $myApplications->isEmpty())
+                                <div class="no-data-message">No applications created by you.</div>
+                            @else
+                                @include('dashboard._sales-table', ['myApplications' => $myApplications ?? collect()])
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
 @else
     <!-- Fallback for users without dashboard access -->
     <div class="container">

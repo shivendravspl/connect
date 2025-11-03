@@ -2,205 +2,307 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Draft Distributorship Agreement</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <title>Distributorship Agreement - {{ $application->entityDetails->firm_name ?? 'N/A' }}</title>
     <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            background: #f5f5f5;
-            font-family: 'Calibri', 'Arial', sans-serif;
+            font-family: 'DejaVu Sans', 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #000000;
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
         }
         
+        /* Page setup */
+        @page {
+            margin: 20mm 15mm;
+            size: A4;
+        }
+        
+        .page-break {
+            page-break-before: always;
+            margin-top: 20mm;
+        }
+        
+        .keep-together {
+            page-break-inside: avoid;
+        }
+        
+        .avoid-break {
+            page-break-before: avoid;
+        }
+        
+        /* Stamp paper header */
+        .stamp-header {
+            background-color: #fff0f0;
+            border: 2px solid #cc0000;
+            text-align: center;
+            padding: 8px;
+            margin-bottom: 100px;
+            font-weight: bold;
+            color: #cc0000;
+            font-size: 12pt;
+        }
+        
+        /* Main agreement container */
         .agreement-container {
-            max-width: 210mm;
-            margin: 20px auto;
-            background: white;
-            padding: 25.4mm 31.75mm;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 100%;
+            margin: 0 auto;
         }
         
+        /* Header styles */
         .agreement-header {
             text-align: center;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #000000;
         }
         
-        .agreement-header h2 {
-            font-size: 18px;
+        .agreement-header h1 {
+            font-size: 18pt;
             font-weight: bold;
             text-decoration: underline;
             margin: 0;
+            padding: 0;
         }
         
+        /* Content styles */
         .agreement-content {
-            font-size: 11pt;
-            line-height: 1.5;
             text-align: justify;
         }
         
         .agreement-content p {
+            margin-bottom: 12px;
+            text-align: justify;
+            line-height: 1.5;
+        }
+        
+        .clause-number {
+            font-weight: bold;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 11pt;
+        }
+        
+        .sub-clause {
+            margin-left: 20px;
             margin-bottom: 10px;
         }
         
-        .agreement-content h5 {
-            font-size: 11pt;
-            font-weight: bold;
-            margin-top: 15px;
-            margin-bottom: 10px;
-        }
-        
-        .agreement-content h6 {
-            font-size: 11pt;
-            font-weight: bold;
-            margin-top: 12px;
-            margin-bottom: 8px;
-        }
-        
-        .agreement-content ul {
-            margin: 10px 0;
-            padding-left: 40px;
-        }
-        
-        .agreement-content ul li {
-            margin-bottom: 5px;
-        }
-        
-        .agreement-content ol {
-            margin: 10px 0;
-            padding-left: 40px;
+        /* List styles */
+        ol.alpha {
             list-style-type: lower-alpha;
+            margin-left: 40px;
+            margin-bottom: 15px;
         }
         
-        .agreement-content ol li {
-            margin-bottom: 8px;
+        ol.roman {
+            list-style-type: lower-roman;
+            margin-left: 40px;
+            margin-bottom: 15px;
         }
         
-        .numbered-clause {
-            font-weight: bold;
-            margin-top: 15px;
-            margin-bottom: 10px;
+        ul.dash {
+            list-style-type: none;
+            margin-left: 20px;
         }
         
-        table.blank-table {
+        ul.dash li:before {
+            content: "- ";
+            margin-right: 5px;
+        }
+        
+        /* Table styles optimized for PDF */
+        .agreement-table {
             width: 100%;
-            margin: 15px 0;
             border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 9pt;
+            page-break-inside: avoid;
         }
         
-        table.blank-table th,
-        table.blank-table td {
-            border: 1px solid #000;
-            padding: 8px;
+        .agreement-table th {
+            border: 1px solid #000000;
+            padding: 6px 8px;
+            background-color: #f5f5f5;
+            font-weight: bold;
             text-align: left;
         }
         
-        table.blank-table th {
-            background-color: #f8f9fa;
-            font-weight: bold;
+        .agreement-table td {
+            border: 1px solid #000000;
+            padding: 6px 8px;
+            text-align: left;
+            vertical-align: top;
         }
         
-        .stamp-space {
-            height: 400px;
-            border: 2px dashed #999;
+        .agreement-table .blank-cell {
+            height: 25px;
+            min-height: 25px;
+        }
+        
+        /* Signature section */
+        .signature-section {
+            margin-top: 40px;
+            page-break-inside: avoid;
+        }
+        
+        .signature-table {
+            width: 100%;
+            border: none;
             margin: 20px 0;
+        }
+        
+        .signature-table td {
+            border: none;
+            padding: 10px;
+            vertical-align: top;
+            width: 50%;
+        }
+        
+        .witness-section {
+            margin-top: 30px;
+        }
+        
+        /* Stamp space */
+        .stamp-space {
+            height: 120px;
+            border: 2px dashed #666666;
+            margin: 30px 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #999;
-            font-size: 14px;
+            color: #666666;
+            font-size: 12pt;
+            page-break-inside: avoid;
         }
         
-        .signature-section {
-            margin-top: 40px;
+        /* Annexure headers */
+        .annexure-header {
+            text-align: center;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #000000;
         }
         
-        .action-buttons {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        .annexure-header h2 {
+            font-size: 12pt;
+            font-weight: bold;
+            text-decoration: underline;
         }
         
-        .section-break {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px dashed #ddd;
+        /* Utility classes */
+        .text-center {
+            text-align: center;
         }
         
+        .text-underline {
+            text-decoration: underline;
+        }
+        
+        .text-bold {
+            font-weight: bold;
+        }
+        
+        .mb-10 {
+            margin-bottom: 10px;
+        }
+        
+        .mb-15 {
+            margin-bottom: 15px;
+        }
+        
+        .mb-20 {
+            margin-bottom: 20px;
+        }
+        
+        .mt-20 {
+            margin-top: 20px;
+        }
+        
+        .mt-30 {
+            margin-top: 30px;
+        }
+        
+        /* Checkbox styles */
+        .checkbox {
+            margin-right: 5px;
+        }
+        
+        /* Ensure proper spacing for print */
         @media print {
             body {
-                background: white;
+                font-size: 10pt;
             }
             
-            .agreement-container {
-                margin: 0;
-                padding: 0;
-                box-shadow: none;
-                max-width: 100%;
-            }
-            
-            .action-buttons,
-            .no-print {
-                display: none !important;
-            }
-            
-            .section-break {
-                border-top: none;
+            .page-break {
                 page-break-before: always;
                 margin-top: 0;
-                padding-top: 0;
             }
             
-            h5, h6 {
-                page-break-after: avoid;
+            .keep-together {
+                page-break-inside: avoid;
             }
             
-            p {
-                orphans: 3;
-                widows: 3;
+            .agreement-table {
+                font-size: 9pt;
             }
         }
+
+		@page :first {
+    margin-top: {{ $type === 'stamp' ? '100mm' : '10mm' }};
+}
+
+/* .section-break {
+    page-break-before: always;
+    margin-top: 0;
+} */
+
+.blank-table {
+    /* Duplicate .agreement-table styles if not using class rename */
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 9pt;
+    page-break-inside: avoid;
+}
+
+.blank-table th, .blank-table td {
+    border: 1px solid #000000;
+    padding: 6px 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.blank-table th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
     </style>
 </head>
 <body>
-    <div class="action-buttons no-print">
-        <div class="btn-group-vertical" role="group">
-            <button type="button" class="btn btn-primary btn-sm mb-2" onclick="window.print()">
-                <i class="ri-printer-line"></i> Print
-            </button>
-            <a href="{{ route('approvals.draft-agreement.pdf', ['id' => $application->id, 'type' => 'stamp']) }}" 
-               class="btn btn-success btn-sm mb-2">
-                <i class="ri-download-line"></i> Download PDF (Stamp Paper)
-            </a>
-            <a href="{{ route('approvals.draft-agreement.pdf', ['id' => $application->id, 'type' => 'e-stamp']) }}" 
-               class="btn btn-info btn-sm mb-2">
-                <i class="ri-download-line"></i> Download PDF (E-Stamp)
-            </a>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.close()">
-                <i class="ri-close-line"></i> Close
-            </button>
-        </div>
-        
-        <div class="mt-3">
-            <p class="small text-muted mb-1"><strong>Application Details:</strong></p>
-            <p class="small mb-1">Firm: {{ $application->entityDetails->firm_name ?? 'N/A' }}</p>
-            <p class="small mb-1">Contact: {{ $application->entityDetails->contact_person_name ?? 'N/A' }}</p>
-            <p class="small mb-0">Status: {{ ucfirst(str_replace('_', ' ', $application->status)) }}</p>
-        </div>
-    </div>
-
     <div class="agreement-container">
-        <!-- Agreement Header -->
+        <!-- Stamp Paper Header -->
+        @if($type === 'stamp')
+        <div class="stamp-header">
+           
+        </div>
+        @endif
+
+        <!-- Main Agreement Header -->
         <div class="agreement-header">
-            <h2>DISTRIBUTORSHIP AGREEMENT</h2>
+            <h1>DISTRIBUTORSHIP AGREEMENT</h1>
         </div>
 
-        <!-- Agreement Content -->
+                <!-- Agreement Content -->
         <div class="agreement-content">
             <p><strong>This Distributorship Agreement ("the Agreement")</strong> is made and entered into as of [_______________Effective Date], by and between:</p>
             
@@ -752,22 +854,16 @@
 
             <p style="margin-top: 60px;">__________________________</p>
             <p>Signature of Owner</p>
+
+		   @if($type === 'e-stamp')
+            <div class="stamp-space keep-together">
+                <div class="text-center">
+                    <strong>Space for E-Stamp/Seal</strong><br>
+                    <small>(For physical execution)</small>
+                </div>
+            </div>
+            @endif
         </div>
     </div>
-      <!-- Footer for page numbers -->
-    <div class="footer">
-        Page <span class="pageNumber"></span> of <span class="totalPages"></span>
-    </div>
-    <script type="text/php">
-        if (isset($pdf)) {
-            $text = "Page {PAGE_NUM} of {PAGE_COUNT}";
-            $size = 10;
-            $font = $fontMetrics->getFont("DejaVu Sans");
-            $width = $fontMetrics->get_text_width($text, $font, $size) / 2;
-            $x = ($pdf->get_width() - $width) / 2;
-            $y = $pdf->get_height() - 35;
-            $pdf->page_text($x, $y, $text, $font, $size);
-        }
-    </script>
 </body>
 </html>

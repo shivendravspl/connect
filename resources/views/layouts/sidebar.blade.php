@@ -256,7 +256,21 @@
     @endcanany
     @endrole
 
-@can('list-distributor')
+    @php
+// Check if user is CURRENT approver (has pending applications to approve)
+$isCurrentApprover = \App\Models\Onboarding::where('current_approver_id', auth()->user()->emp_id)
+    ->whereIn('status', ['under_level1_review', 'under_level2_review', 'under_level3_review', 'reverted', 'on_hold'])
+    ->exists();
+
+// Check if user is HISTORICAL approver (has approval actions in logs)
+$isHistoricalApprover = \App\Models\ApprovalLog::where('user_id', auth()->user()->emp_id)
+    ->whereIn('action', ['approved', 'rejected', 'reverted', 'hold'])
+    ->exists();
+
+$isApprover = $isCurrentApprover || $isHistoricalApprover;
+@endphp
+
+@if(auth()->user()->can('list-distributor') || $isApprover)
 <li class="nav-item">
     @php
         $isDistributorRoute = request()->routeIs('applications.*') || request()->is('applications*');
@@ -275,6 +289,16 @@
        aria-expanded="{{ $isDistributorRoute ? 'true' : 'false' }}" 
        aria-controls="sidebarDistributor">
         <i class="ri-apps-line"></i> <span data-key="t-dashboards">Distributor</span>
+        @if($isCurrentApprover)
+            @php
+                $pendingApprovalCount = \App\Models\Onboarding::where('current_approver_id', auth()->user()->emp_id)
+                    ->whereIn('status', ['under_level1_review', 'under_level2_review', 'under_level3_review', 'reverted', 'on_hold'])
+                    ->count();
+            @endphp
+            @if($pendingApprovalCount > 0)
+                <span class="badge bg-danger ms-1">{{ $pendingApprovalCount }}</span>
+            @endif
+        @endif
     </a>
     
     <div class="collapse menu-dropdown {{ $isDistributorRoute ? 'show' : '' }}" 
@@ -285,116 +309,91 @@
                    class="nav-link {{ request()->routeIs('applications.index') ? 'active' : '' }}" 
                    data-key="t-analytics">Onboarding</a>
             </li>
-         @if(auth()->user()->hasAnyRole(['Mis Admin', 'Mis User']))
-                <li class="nav-item">
-                    <a href="{{ route('mis.list-security-cheques') }}" 
-                    class="nav-link {{ request()->routeIs(['mis.list-security-cheques', 'mis.manage-security-cheques']) ? 'active' : '' }}" 
-                    data-key="t-analytics">
-                        Manage Security Cheques
-                    </a>
-                </li>
-            @endif
             
-            <!-- Reports Section -->
-             @if(auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'Mis Admin', 'Mis User', 'Management']))
-                <li class="nav-item">
-                    <a href="#sidebarReports" 
-                    class="nav-link collapsed {{ $isReportRoute ? 'active' : '' }}" 
-                    data-bs-toggle="collapse" 
-                    role="button" 
-                    aria-expanded="{{ $isReportRoute ? 'true' : 'false' }}" 
-                    aria-controls="sidebarReports" 
-                    data-key="t-calender">
-                        Reports
-                    </a>
-                
-                    <div class="menu-dropdown collapse {{ $isReportRoute ? 'show' : '' }}" 
-                        id="sidebarReports">
-                        <ul class="nav nav-sm flex-column">
-                            <li class="nav-item">
-                                <a href="{{ route('applications.distributor-summary') }}" 
-                                class="nav-link {{ request()->routeIs('applications.distributor-summary') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    Distributor Summary
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('applications.approval-status') }}" 
-                                class="nav-link {{ request()->routeIs('applications.approval-status') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    Approval Status
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('applications.verification-status') }}" 
-                                class="nav-link {{ request()->routeIs('applications.verification-status') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    Verification Status
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('applications.dispatch-status') }}" 
-                                class="nav-link {{ request()->routeIs('applications.dispatch-status') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    Dispatch / Physical Verification
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('applications.lifecycle') }}" 
-                                class="nav-link {{ request()->routeIs('applications.lifecycle') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    Lifecycle Report
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('applications.pending') }}" 
-                                class="nav-link {{ request()->routeIs('applications.pending') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    Pending Work
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('applications.rejected') }}" 
-                                class="nav-link {{ request()->routeIs('applications.rejected') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    Rejected / Rework
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{{ route('applications.reports.tat') }}" 
-                                class="nav-link {{ request()->routeIs('applications.reports.tat') ? 'active' : '' }}" 
-                                data-key="t-analytics">
-                                    TAT
-                                </a>
-                            </li>
-                        </ul>
-                    </div>
-                </li>
-            @endif
-
-            <!-- End Reports Section -->
-            
-            @php
-                $pendingCount = \App\Models\Onboarding::where('status', 'documents_pending')
-                    ->where('created_by', auth()->user()->emp_id)
-                    ->count();
-            @endphp
-            @if($pendingCount > 0)
+            <!-- Show approval section for current approvers -->
+            @if($isCurrentApprover)
             <li class="nav-item">
-                <a href="{{ route('applications.pending-documents') }}" 
-                   class="nav-link {{ request()->routeIs('applications.pending-documents') ? 'active' : '' }}">
-                    <i class="nav-icon ri-file-upload-line"></i>
+                <a href="{{ route('applications.pending-approval') }}" 
+                   class="nav-link {{ request()->routeIs('applications.pending-approval') ? 'active' : '' }}">
+                    <i class="nav-icon ri-checkbox-circle-line"></i>
                     <p>
-                        Pending Documents
-                        <span class="badge bg-danger ms-1">{{ $pendingCount }}</span>
+                        Pending Approval
+                        @if($pendingApprovalCount > 0)
+                            <span class="badge bg-danger ms-1">{{ $pendingApprovalCount }}</span>
+                        @endif
                     </p>
                 </a>
             </li>
             @endif
-        </ul>                   
-    </div>      
-</li>
-@endcan
+            
+            @if(auth()->user()->hasAnyRole(['Mis Admin', 'Mis User']))
+                <li class="nav-item">
+                    <a href="{{ route('mis.list-security-cheques') }}" 
+                    class="nav-link {{ request()->routeIs(['mis.list-security-cheques', 'mis.manage-security-cheques']) ? 'active' : '' }}" 
+                    data-key="t-analytics">
+                        Manage Security Cheques And Deposit
+                    </a>
+                </li>
+            @endif
+            
+            <!-- Reports Section - Show for approvers too -->
+                            @if(
+                                auth()->user()->hasAnyRole(['Super Admin', 'Admin', 'Mis Admin', 'Mis User', 'Management']) 
+                                || $isApprover 
+                                || auth()->user()->can('list-distributor')
+                            )
+                            <li class="nav-item">
+                                <a href="#sidebarReports" 
+                                class="nav-link collapsed {{ $isReportRoute ? 'active' : '' }}" 
+                                data-bs-toggle="collapse" 
+                                role="button" 
+                                aria-expanded="{{ $isReportRoute ? 'true' : 'false' }}" 
+                                aria-controls="sidebarReports">
+                                    <i class="nav-icon ri-bar-chart-line"></i>
+                                    <span>Reports</span>
+                                </a>
+                                <div class="menu-dropdown collapse {{ $isReportRoute ? 'show' : '' }}" id="sidebarReports">
+                                    <ul class="nav nav-sm flex-column">
+                                        <li class="nav-item">
+                                            <a href="{{ route('applications.distributor-summary') }}" 
+                                            class="nav-link {{ request()->routeIs('applications.distributor-summary') ? 'active' : '' }}">
+                                                Distributor Summary
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a href="{{ route('applications.reports.tat') }}" 
+                                            class="nav-link {{ request()->routeIs('applications.reports.tat') ? 'active' : '' }}">
+                                                TAT Report
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </li>
+                        @endif
+
+                        <!-- End Reports Section -->
+                            
+                            @php
+                                $pendingCount = \App\Models\Onboarding::where('status', 'documents_pending')
+                                    ->where('created_by', auth()->user()->emp_id)
+                                    ->count();
+                            @endphp
+                            @if($pendingCount > 0)
+                            <li class="nav-item">
+                                <a href="{{ route('applications.pending-documents') }}" 
+                                class="nav-link {{ request()->routeIs('applications.pending-documents') ? 'active' : '' }}">
+                                    <i class="nav-icon ri-file-upload-line"></i>
+                                    <p>
+                                        Pending Documents
+                                        <span class="badge bg-danger ms-1">{{ $pendingCount }}</span>
+                                    </p>
+                                </a>
+                            </li>
+                            @endif
+                        </ul>                   
+                    </div>      
+                </li>
+            @endif
 
 
     {{--@if(Auth::user()->employee && Auth::user()->employee->isMisTeam())

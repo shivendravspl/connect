@@ -8,6 +8,7 @@ use App\Models\DistributionDetail;
 use App\Models\BankDetail;
 use App\Models\FinancialInfo;
 use App\Models\ExistingDistributorship;
+use App\Helpers\helpers;
 use App\Models\Employee;
 use App\Models\AuthorizedPerson;
 use App\Models\IndividualDetails;
@@ -44,160 +45,508 @@ use App\Models\Status;
 class OnboardingController extends Controller
 {
     private $documentPaths = [];
-    public function index()
+    protected $helper;
+
+    public function __construct()
     {
-        //dd(1);
-        $user = Auth::user();
-        if ($user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin'])) {
-            $applications = Onboarding::orderBy('created_at', 'desc')
-                ->paginate(10);
-        } else {
-            $applications = Onboarding::where('created_by', $user->emp_id)
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-        }
-        // Fetch territories for filter dropdown
-        $territories = DB::table('core_territory')->select('id', 'territory_name')->orderBy('territory_name')->get();
-        // Define possible statuses
-        $statuses = Status::where('is_active', 1)
-            ->orderBy('sort_order', 'asc')
-            ->pluck('name')
-            ->toArray();
-        return view('applications.index', compact('applications', 'territories', 'statuses'));
+        $this->middleware('auth');
+        $this->helper = new helpers();
     }
 
-    public function datatable(Request $request)
+    public function index(Request $request)
     {
-        try {
-            $user = Auth::user();
+        $user = Auth::user();
+        $employee_details = $user->employee;
 
-            // Base query with joins and eager loading
-            $query = Onboarding::query()
-                ->select('onboardings.*') // avoid ambiguous columns after join
-                ->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.application_id')
-                ->leftJoin('core_territory', 'onboardings.territory', '=', 'core_territory.id')
-                ->with(['entityDetails', 'territoryDetail']);
+        // Set filters with defaults
+        $filters = [
+            'bu' => $request->input('bu', 'All'),
+            'zone' => $request->input('zone', 'All'),
+            'region' => $request->input('region', 'All'),
+            'territory' => $request->input('territory', 'All'),
+            'date_from' => $request->input('date_from'),
+            'date_to' => $request->input('date_to'),
+            'status' => $request->input('status', 'All'),
+        ];
+        
+        // Get common data
+        $bu_list = $this->helper->getAssociatedBusinessUnitList($user->emp_id);
+        $zone_list = $this->helper->getAssociatedZoneList($user->emp_id);
+        $region_list = $this->helper->getAssociatedRegionList($user->emp_id);
+        $territory_list = $this->helper->getAssociatedTerritoryList($user->emp_id);
+        $statuses = Status::where('is_active', 1)->orderBy('sort_order')->get();
 
-            // Role-based filtering
-            if (!$user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin'])) {
-                $query->where('onboardings.created_by', $user->emp_id);
+        // Define status groups for filtering
+        $statusGroups = [
+            'draft' => ['draft'],
+            'sales_approval' => ['under_level1_review', 'under_level2_review', 'under_level3_review', 'approved', 'reverted', 'on_hold'],
+            'mis_verification' => [
+                'mis_processing',
+                'documents_pending',
+                'documents_resubmitted',
+                'documents_verified',
+                'physical_docs_pending',
+                'physical_docs_redispatched',
+                'physical_docs_verified',
+                'agreement_created'
+            ],
+            'completed' => ['distributorship_created'],
+            'reverted' => ['reverted'],
+            'rejected' => ['rejected'],
+            'on_hold' => ['on_hold']
+        ];
+
+        // Add individual statuses that MIS users should be able to filter by
+        $misIndividualStatuses = [
+            'mis_processing',
+            'documents_pending',
+            'documents_resubmitted',
+            'documents_verified',
+            'physical_docs_pending',
+            'physical_docs_redispatched',
+            'physical_docs_verified',
+            'agreement_created',
+            'distributorship_created'
+        ];
+
+        // Add these to status groups for individual filtering
+        foreach ($misIndividualStatuses as $status) {
+            if (!array_key_exists($status, $statusGroups)) {
+                $statusGroups[$status] = [$status];
+            }
+        }
+
+        // Determine user capabilities
+        $userCapabilities = $this->getUserCapabilities($user, $employee_details);
+
+        // Get applications based on user capabilities
+        $applicationsData = $this->getApplicationsByUserRole($user, $filters, $userCapabilities, $statusGroups);
+
+        return view('applications.index', array_merge(
+            $applicationsData,
+            compact(
+                'filters',
+                'bu_list',
+                'zone_list',
+                'region_list',
+                'territory_list',
+                'statuses',
+                'statusGroups',
+                'userCapabilities'
+            )
+        ));
+    }
+
+    // Determine user capabilities
+    protected function getUserCapabilities($user, $employee_details)
+    {
+        $capabilities = [
+            'is_super_admin' => $user->hasRole('Super Admin'),
+            'is_admin' => $user->hasAnyRole(['Admin', 'SP Admin', 'Management']),
+            'is_mis' => $user->hasAnyRole(['Mis Admin', 'Mis User']),
+            'is_approver' => false,
+            'is_creator' => false,
+            'can_see_all' => false,
+            'approver_designations' => ['Regional Business Manager', 'Zonal Business Manager', 'General Manager'],
+            'access_level' => 'all'
+        ];
+
+        // Determine access level
+        if ($employee_details) {
+            if ($user->hasAnyRole(['Super Admin', 'Admin', 'SP Admin', 'Management', 'Mis Admin', 'Mis User'])) {
+                $capabilities['access_level'] = 'all';
+                $capabilities['can_see_all'] = true;
+            } elseif ($employee_details->territory > 0) {
+                $capabilities['access_level'] = 'territory';
+            } elseif ($employee_details->region > 0) {
+                $capabilities['access_level'] = 'region';
+            } elseif ($employee_details->zone > 0) {
+                $capabilities['access_level'] = 'zone';
+            } elseif ($employee_details->bu > 0) {
+                $capabilities['access_level'] = 'bu';
             }
 
-            // Global search
-            if ($request->has('search') && !empty($request->input('search.value'))) {
-                $search = trim($request->input('search.value'));
-                $query->where(function ($q) use ($search) {
-                    $q->where('onboardings.application_code', 'like', "%{$search}%")
-                        ->orWhere('onboardings.status', 'like', "%{$search}%")
-                        ->orWhereRaw("DATE_FORMAT(onboardings.created_at, '%d-%b-%Y') LIKE ?", ["%{$search}%"])
-                        ->orWhere('entity_details.establishment_name', 'like', "%{$search}%")
-                        ->orWhere('core_territory.territory_name', 'like', "%{$search}%");
-                });
+            // Check if user is an approver
+            $capabilities['is_approver'] = in_array($employee_details->emp_designation ?? '', $capabilities['approver_designations']);
+
+            // Check if user is a creator (sales person)
+            $capabilities['is_creator'] = !$capabilities['is_approver'] &&
+                !$capabilities['is_admin'] &&
+                !$capabilities['is_mis'] &&
+                !$capabilities['is_super_admin'];
+        }
+
+        return $capabilities;
+    }
+
+    // Get applications based on user role and capabilities
+    protected function getApplicationsByUserRole($user, $filters, $capabilities, $statusGroups)
+    {
+        $data = [
+            'user_type' => '',
+            'has_pending_approvals' => false,
+            'pending_approvals' => null,
+            'my_applications' => null,
+            'all_applications' => null,
+            'mis_applications' => null
+        ];
+
+        // Priority: Super Admin/Admin with pending approvals > MIS > Approver > Creator
+        if ($capabilities['is_super_admin'] || $capabilities['is_admin']) {
+            $data['user_type'] = 'admin';
+            $data['all_applications'] = $this->getAllApplications($filters, $user, $capabilities, $statusGroups);
+            // Check if admin has pending approvals
+            $pendingApprovals = $this->getPendingApprovals($filters, $user, $capabilities, $statusGroups);
+            if ($pendingApprovals->isNotEmpty()) {
+                $data['user_type'] = 'admin_approver';
+                $data['has_pending_approvals'] = true;
+                $data['pending_approvals'] = $pendingApprovals;
             }
+            //dd($data);
 
-            // Filters
-            if ($territory = $request->input('territory')) {
-                $query->where('onboardings.territory', $territory);
-            }
+        } elseif ($capabilities['is_mis']) {
+            $data['user_type'] = 'mis';
 
-            if ($status = $request->input('status')) {
-                $query->where('onboardings.status', $status);
-            }
+            $data['mis_applications'] = $this->getMISApplications($filters, $user, $capabilities, $statusGroups);
+        } elseif ($capabilities['is_approver']) {
+            $data['user_type'] = 'approver';
+            $pendingApprovals = $this->getPendingApprovals($filters, $user, $capabilities, $statusGroups);
+            $data['pending_approvals'] = $pendingApprovals;
+            $data['has_pending_approvals'] = $pendingApprovals->isNotEmpty();
 
-            // Sorting
-            $columns = [
-                'application_code' => 'onboardings.application_code',
-                'distributor' => 'entity_details.establishment_name',
-                'territory' => 'core_territory.territory_name',
-                'status' => 'onboardings.status',
-                'created_at' => 'onboardings.created_at',
-            ];
+            // Approvers can also see applications they created or were involved with
+            $data['my_applications'] = $this->getMyApplications($filters, $user, $capabilities, $statusGroups);
+        } else { // Creator (Sales person)
+            $data['user_type'] = 'creator';
+            $data['my_applications'] = $this->getMyApplications($filters, $user, $capabilities, $statusGroups);
+        }
 
-            if ($request->has('order')) {
-                $orderColumnIndex = $request->input('order.0.column');
-                $orderDir = $request->input('order.0.dir', 'asc');
-                $orderColumn = $request->input("columns.$orderColumnIndex.data");
+        return $data;
+    }
 
-                if (isset($columns[$orderColumn])) {
-                    $query->orderBy($columns[$orderColumn], $orderDir);
-                }
-            } else {
-                $query->orderBy('onboardings.created_at', 'desc');
-            }
+    // Get all applications (for Admin/Super Admin)
+    protected function getAllApplications(array $filters, $user, $capabilities, $statusGroups)
+    {
+        $query = Onboarding::query()
+            ->with(['entityDetails', 'createdBy', 'currentApprover', 'territoryDetail', 'regionDetail', 'zoneDetail', 'approvalLogs'])
+            ->select([
+                'onboardings.id',
+                'onboardings.application_code',
+                'onboardings.territory',
+                'onboardings.region',
+                'onboardings.zone',
+                'onboardings.business_unit',
+                'onboardings.status',
+                'onboardings.doc_verification_status',
+                'onboardings.agreement_status',
+                'onboardings.physical_docs_status',
+                'onboardings.final_status',
+                'onboardings.created_by',
+                'onboardings.current_approver_id',
+                'onboardings.final_approver_id',
+                'onboardings.approval_level',
+                'onboardings.created_at',
+                'onboardings.updated_at',
+                'core_region.region_name',
+                'core_zone.zone_name',
+                'core_territory.territory_name',
+                'core_employee.emp_name as created_by_name',
+                'core_employee.emp_designation as created_by_designation',
+                'ca.emp_name as current_approver_name',
+                'entity_details.establishment_name',
+            ])
+            ->leftJoin('core_territory', 'onboardings.territory', '=', 'core_territory.id')
+            ->leftJoin('core_region', 'onboardings.region', '=', 'core_region.id')
+            ->leftJoin('core_zone', 'onboardings.zone', '=', 'core_zone.id')
+            ->leftJoin('core_employee', 'onboardings.created_by', '=', 'core_employee.employee_id')
+            ->leftJoin('core_employee as ca', 'onboardings.current_approver_id', '=', 'ca.employee_id')
+            ->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.application_id');
 
-            // Records count
-            $totalRecords = Onboarding::count();
-            $totalFiltered = $query->count();
+        // Apply access level filters for non-super admins
+        if (!$capabilities['is_super_admin'] && $capabilities['access_level'] !== 'all') {
+            $this->applyAccessLevelFilters($query, $capabilities);
+        }
 
-            // Pagination
-            $start = $request->input('start', 0);
-            $length = $request->input('length', 10);
-            $applications = $query->skip($start)->take($length)->get();
+        // Apply status filter
+        $this->applyStatusFilter($query, $filters, $statusGroups);
 
-            // Prepare data for DataTable
-            $data = $applications->map(function ($application, $index) use ($start) {
-                return [
-                    's_no' => $start + $index + 1,
-                    'application_code' => $application->application_code ?? 'N/A',
-                    'distributor' => $application->entityDetails?->establishment_name ?? 'N/A',
-                    'territory' => $application->territoryDetail?->territory_name ?? 'N/A',
-                    'status' => '<span class="badge bg-' . ($application->status_badge ?? 'secondary') . '" style="font-size: 0.65rem;">' . ucfirst($application->status ?? 'unknown') . '</span>',
-                    'created_at' => $application->created_at?->format('d-M-Y') ?? 'N/A',
-                    'actions' => $this->getActions($application),
-                ];
+        // Apply other filters
+        $this->applyCommonFilters($query, $filters);
+
+        return $query->orderBy('created_at', 'desc')->paginate(10);
+    }
+
+    // Get pending approvals for approvers
+    protected function getPendingApprovals(array $filters, $user, $capabilities, $statusGroups)
+    {
+        $approvalStatuses = $statusGroups['sales_approval'];
+
+        $query = Onboarding::query()
+            ->with(['entityDetails', 'createdBy', 'territoryDetail', 'regionDetail', 'zoneDetail'])
+            ->where('onboardings.current_approver_id', $user->emp_id)
+            ->whereIn('onboardings.status', $approvalStatuses)
+            ->selectRaw('onboardings.*, CASE WHEN onboardings.status IN ("under_level1_review", "under_level2_review", "under_level3_review") THEN 1 ELSE 2 END as priority_sort')
+            ->orderBy('priority_sort', 'ASC')
+            ->orderBy('onboardings.created_at', 'DESC');
+
+        // Apply access level filters
+        if ($capabilities['access_level'] !== 'all') {
+            $this->applyAccessLevelFilters($query, $capabilities);
+        }
+
+        // Apply status filter
+        $this->applyStatusFilter($query, $filters, $statusGroups);
+
+        // Apply other filters
+        $this->applyCommonFilters($query, $filters);
+
+        return $query->paginate(10);
+    }
+
+    // Get MIS applications
+    protected function getMISApplications(array $filters, $user, $capabilities, $statusGroups)
+    {
+        $misStatuses = array_merge(
+            $statusGroups['draft'],
+            $statusGroups['sales_approval'],
+            $statusGroups['mis_verification'],
+            $statusGroups['completed'],
+            $statusGroups['reverted'],
+            $statusGroups['rejected'],
+            $statusGroups['on_hold']
+        );
+
+        $query = Onboarding::query()
+            ->with(['entityDetails', 'createdBy', 'currentApprover', 'territoryDetail', 'regionDetail', 'zoneDetail', 'approvalLogs'])
+            ->select([
+                'onboardings.id',
+                'onboardings.application_code',
+                'onboardings.territory',
+                'onboardings.region',
+                'onboardings.zone',
+                'onboardings.business_unit',
+                'onboardings.status',
+                'onboardings.doc_verification_status',
+                'onboardings.agreement_status',
+                'onboardings.physical_docs_status',
+                'onboardings.final_status',
+                'onboardings.created_by',
+                'onboardings.current_approver_id',
+                'onboardings.final_approver_id',
+                'onboardings.approval_level',
+                'onboardings.created_at',
+                'onboardings.updated_at',
+                'core_region.region_name',
+                'core_zone.zone_name',
+                'core_territory.territory_name',
+                'core_employee.emp_name as created_by_name',
+                'core_employee.emp_designation as created_by_designation',
+                'ca.emp_name as current_approver_name',
+                'entity_details.establishment_name',
+            ])
+            ->leftJoin('core_territory', 'onboardings.territory', '=', 'core_territory.id')
+            ->leftJoin('core_region', 'onboardings.region', '=', 'core_region.id')
+            ->leftJoin('core_zone', 'onboardings.zone', '=', 'core_zone.id')
+            ->leftJoin('core_employee', 'onboardings.created_by', '=', 'core_employee.employee_id')
+            ->leftJoin('core_employee as ca', 'onboardings.current_approver_id', '=', 'ca.employee_id')
+            ->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.application_id');
+
+        // Only apply MIS status filter if no specific status filter is selected
+        if (!isset($filters['status']) || $filters['status'] === 'All' || $filters['status'] === '') {
+            $query->whereIn('onboardings.status', $misStatuses);
+        }
+
+        // Apply access level filters
+        if ($capabilities['access_level'] !== 'all') {
+            $this->applyAccessLevelFilters($query, $capabilities);
+        }
+
+        // Apply status filter
+        $this->applyStatusFilter($query, $filters, $statusGroups);
+
+        // Apply other filters
+        $this->applyCommonFilters($query, $filters);
+
+        // Apply priority ordering when no specific status filter is selected
+        if (!isset($filters['status']) || $filters['status'] === 'All' || $filters['status'] === '') {
+            $query->orderByRaw($this->getMISPriorityOrder());
+        } else {
+            // When specific status is selected, use default ordering
+            $query->orderBy('created_at', 'desc');
+        }
+
+        return $query->paginate(10);
+    }
+
+    // Define priority order for MIS applications
+    protected function getMISPriorityOrder()
+    {
+        return "
+        CASE 
+            -- High Priority: Active MIS processing tasks
+            WHEN onboardings.status = 'mis_processing' THEN 1
+            WHEN onboardings.status = 'documents_pending' THEN 2
+            WHEN onboardings.status = 'documents_resubmitted' THEN 3
+            WHEN onboardings.status = 'physical_docs_pending' THEN 4
+            WHEN onboardings.status = 'physical_docs_redispatched' THEN 5
+            
+            -- Medium Priority: Documents ready for verification
+            WHEN onboardings.status = 'documents_verified' THEN 6
+            WHEN onboardings.status = 'physical_docs_verified' THEN 7
+            WHEN onboardings.status = 'agreement_created' THEN 8
+            
+            -- Completed applications
+            WHEN onboardings.status = 'distributorship_created' THEN 9
+            
+            -- Sales approval pending (should be visible to MIS for tracking)
+            WHEN onboardings.status IN ('under_level1_review', 'under_level2_review', 'under_level3_review') THEN 10
+            WHEN onboardings.status = 'approved' THEN 11
+            
+            -- Special statuses
+            WHEN onboardings.status = 'reverted' THEN 12
+            WHEN onboardings.status = 'on_hold' THEN 13
+            WHEN onboardings.status = 'rejected' THEN 14
+            
+            -- Low priority: Draft applications
+            WHEN onboardings.status = 'draft' THEN 15
+            
+            -- Fallback for any other statuses
+            ELSE 16
+        END ASC,
+        onboardings.updated_at DESC,
+        onboardings.created_at DESC
+    ";
+    }
+
+    // Get my applications (for creators and approvers)
+    protected function getMyApplications(array $filters, $user, $capabilities, $statusGroups)
+    {
+        $query = Onboarding::query()
+            ->with(['entityDetails', 'createdBy', 'territoryDetail', 'regionDetail', 'zoneDetail', 'approvalLogs'])
+            ->where(function ($q) use ($user) {
+                $q->where('onboardings.created_by', $user->emp_id)
+                    ->orWhere('onboardings.final_approver_id', $user->emp_id)
+                    ->orWhereExists(function ($subQ) use ($user) {
+                        $subQ->select(DB::raw(1))
+                            ->from('approval_logs')
+                            ->whereColumn('approval_logs.application_id', 'onboardings.id')
+                            ->where('approval_logs.user_id', $user->emp_id);
+                    });
             });
 
-            return response()->json([
-                'draw' => intval($request->input('draw')),
-                'recordsTotal' => $totalRecords,
-                'recordsFiltered' => $totalFiltered,
-                'data' => $data,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'draw' => intval($request->input('draw')),
-                'recordsTotal' => 0,
-                'recordsFiltered' => 0,
-                'data' => [],
-                'error' => 'An error occurred while fetching data: ' . $e->getMessage(),
-            ], 500);
+        // Apply access level filters
+        if ($capabilities['access_level'] !== 'all') {
+            $this->applyAccessLevelFilters($query, $capabilities);
         }
+
+        // Apply status filter
+        $this->applyStatusFilter($query, $filters, $statusGroups);
+
+        // Apply other filters
+        $this->applyCommonFilters($query, $filters);
+
+        if (!isset($filters['status']) || $filters['status'] === 'All' || $filters['status'] === '') {
+            $query->orderByRaw($this->getSalesPriorityOrder());
+        } else {
+            // When specific status is selected, use default ordering
+            $query->orderBy('created_at', 'desc');
+        }
+
+        return $query->paginate(10);
     }
 
-
-    private function getActions($application)
+    protected function getSalesPriorityOrder()
     {
-        $user = Auth::user();
-        $actions = '<div class="d-flex justify-content-center" style="gap: 0.25rem;">';
-        $actions .= '<a href="' . route('applications.show', $application->id) . '" class="btn btn-info btn-action p-0" title="View"><i class="bx bx-show fs-10 d-flex justify-content-center align-items-center"></i></a>';
-
-        if (in_array($application->status, ['draft', 'reverted']) && ($application->created_by === $user->emp_id || $user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin']))) {
-            $actions .= '<a href="' . route('applications.edit', $application->id) . '" class="btn btn-info btn-action p-0" title="Edit"><i class="bx bx-pencil fs-10 d-flex justify-content-center align-items-center"></i></a>';
-        }
-
-        if ($application->status === 'draft' && ($application->created_by === $user->emp_id || $user->hasAnyRole(['Admin', 'Super Admin', 'Mis Admin']))) {
-            $actions .= '<form action="' . route('applications.destroy', $application->id) . '" method="POST" class="d-inline" onsubmit="return confirm(\'Delete this application?\');">' .
-                csrf_field() .
-                method_field('DELETE') .
-                '<button type="submit" class="btn btn-danger btn-action p-0" title="Delete"><i class="bx bx-trash fs-10 d-flex justify-content-center align-items-center"></i></button>' .
-                '</form>';
-        }
-
-        // Dispatch Details button for initiated applications
-        if (
-            ($application->status !== 'draft')
-            && ($application->created_by === $user->emp_id)
-        ) {
-            $actions .= '<a href="' . route('dispatch.show', $application->id) . '" 
-                class="btn btn-primary btn-action p-0" 
-                title="Fill Dispatch Details">
-                <i class="ri-truck-line fs-10 d-flex justify-content-center align-items-center"></i>
-            </a>';
-        }
-
-        $actions .= '</div>';
-        return $actions;
+        return "
+        CASE 
+            -- High Priority: Active sales approval processes
+            -- Draft applications (needs attention)
+            WHEN onboardings.status = 'draft' THEN 1
+            WHEN onboardings.status IN ('under_level1_review', 'under_level2_review', 'under_level3_review') THEN 2
+            WHEN onboardings.status = 'reverted' THEN 3
+            WHEN onboardings.status = 'on_hold' THEN 4
+            
+            -- Approved but in MIS processing
+            WHEN onboardings.status = 'approved' THEN 5
+            WHEN onboardings.status = 'mis_processing' THEN 6
+            WHEN onboardings.status = 'documents_pending' THEN 7
+            WHEN onboardings.status = 'documents_resubmitted' THEN 8
+            WHEN onboardings.status = 'physical_docs_pending' THEN 9
+            WHEN onboardings.status = 'physical_docs_redispatched' THEN 10
+            
+            -- Documents verified and agreement stages
+            WHEN onboardings.status = 'documents_verified' THEN 11
+            WHEN onboardings.status = 'physical_docs_verified' THEN 12
+            WHEN onboardings.status = 'agreement_created' THEN 13
+            
+            -- Completed applications
+            WHEN onboardings.status = 'distributorship_created' THEN 14
+            
+            -- Rejected applications
+            WHEN onboardings.status = 'rejected' THEN 15
+            
+            -- Fallback for any other statuses
+            ELSE 16
+        END ASC,
+        onboardings.updated_at DESC,
+        onboardings.created_at DESC
+    ";
     }
+
+    // Helper method to apply access level filters
+    protected function applyAccessLevelFilters($query, $capabilities)
+    {
+        $employee_details = Auth::user()->employee;
+        if ($employee_details) {
+            if ($capabilities['access_level'] === 'territory' && $employee_details->territory > 0) {
+                $query->where('onboardings.territory', $employee_details->territory);
+            } elseif ($capabilities['access_level'] === 'region' && $employee_details->region > 0) {
+                $query->where('onboardings.region', $employee_details->region);
+            } elseif ($capabilities['access_level'] === 'zone' && $employee_details->zone > 0) {
+                $query->where('onboardings.zone', $employee_details->zone);
+            } elseif ($capabilities['access_level'] === 'bu' && $employee_details->bu > 0) {
+                $query->where('onboardings.business_unit', $employee_details->bu);
+            }
+        }
+    }
+
+    // Helper method to apply status filter
+    protected function applyStatusFilter($query, $filters, $statusGroups)
+    {
+        if (isset($filters['status']) && $filters['status'] !== 'All' && $filters['status'] !== '') {
+            if (array_key_exists($filters['status'], $statusGroups)) {
+                $query->whereIn('onboardings.status', $statusGroups[$filters['status']]);
+            } else {
+                $query->where('onboardings.status', $filters['status']);
+            }
+        } else {
+            \Log::debug('Status Filter: Showing All Statuses');
+        }
+
+        return $query;
+    }
+
+    // Helper method to apply common filters
+    protected function applyCommonFilters($query, $filters)
+    {
+        if ($filters['territory'] && $filters['territory'] !== 'All') {
+            $query->where('onboardings.territory', $filters['territory']);
+        }
+        if ($filters['region'] && $filters['region'] !== 'All') {
+            $query->where('onboardings.region', $filters['region']);
+        }
+        if ($filters['zone'] && $filters['zone'] !== 'All') {
+            $query->where('onboardings.zone', $filters['zone']);
+        }
+        if ($filters['bu'] && $filters['bu'] !== 'All') {
+            $query->where('onboardings.business_unit', $filters['bu']);
+        }
+        if ($filters['date_from'] && $filters['date_to']) {
+            $query->whereBetween('onboardings.created_at', [$filters['date_from'], $filters['date_to']]);
+        }
+    }
+
+
     function getAssociatedBusinessUnitList($employeeId)
     {
         $user = Auth::user();
@@ -3036,7 +3385,8 @@ class OnboardingController extends Controller
                 'district',
                 'state',
                 'status',
-                'business_unit'
+                'business_unit',
+                'created_by'
             ])->with([
                 'businessUnit:id,business_unit_name',
                 'zoneDetail:id,zone_name',
@@ -3208,7 +3558,8 @@ class OnboardingController extends Controller
                 'district',
                 'state',
                 'status',
-                'business_unit'
+                'business_unit',
+                'created_by'
             ])->with([
                 'businessUnit:id,business_unit_name',
                 'zoneDetail:id,zone_name',
@@ -3835,7 +4186,7 @@ class OnboardingController extends Controller
                     'email' => $item->email,
                     'phone' => $item->phone,
                     'territory' => $item->territory,
-                    'vertical' => $item->vertical,                  
+                    'vertical' => $item->vertical,
                     'created_by' => $item->created_by,
                 ];
             });

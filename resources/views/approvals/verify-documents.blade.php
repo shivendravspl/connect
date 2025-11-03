@@ -6,11 +6,9 @@
         <h5 class="mb-0">
             <i class="ri-check-line me-2"></i> MIS Document Verification for <b>{{ $application->entityDetails->establishment_name }}</b>
         </h5>
-        @if($isSubmitted)
-            <button type="button" onclick="window.print()" class="btn btn-outline-secondary btn-sm">
-                <i class="ri-printer-line me-1"></i> Print
-            </button>
-        @endif
+        <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">
+                <i class="ri-arrow-left-line me-1"></i> Back
+        </a>
     </div>
 
     @if($application->status === 'documents_resubmitted')

@@ -991,7 +991,7 @@ function renumberChequeRows() {
                 successMsg.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                 setTimeout(() => {
-                    window.location.href = "{{ route('dashboard') }}";
+                    window.location.href = "{{ route('applications.index') }}";
                 }, 2000);
             } else {
                 throw new Error(data.message || 'Something went wrong');

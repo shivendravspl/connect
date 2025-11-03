@@ -156,7 +156,7 @@ use App\Models\Status;
                                         data-submission-date="{{ $application->created_at->format('Y-m-d') }}"
                                         data-initiator="{{ $application->createdBy->emp_name ?? 'N/A' }}"
                                         data-status="{{ $application->status }}">
-                                        <i class="ri-user-add-line align-bottom me-2 text-muted"></i> Confirm Distributor
+                                        <i class="ri-user-add-line align-bottom me-2 text-muted"></i> Finalize distributorship appointment
                                     </a>
                                 </li>
                                 @endif
@@ -414,7 +414,7 @@ use App\Models\Status;
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="confirmDistributorModalLabel">Confirm Distributor</h5>
+                    <h5 class="modal-title" id="confirmDistributorModalLabel">Finalize distributorship appointment</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">

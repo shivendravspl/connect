@@ -88,12 +88,14 @@
 
 @section('content')
 <div class="container mt-3">
-    <h5 class="mb-3">Distributor Application - View (ID: {{ $application->application_code }})</h5>
 
     <!-- Application Status -->
     <div class="card mb-3">
-        <div class="card-header">
-            <h6 class="mb-1">Application Status: <span class="badge bg-{{ $application->status_badge }}">{{ ucfirst($application->status) }}</span></h6>
+        <div class="card-header d-flex justify-content-between align-items-cent">
+            <h6 class="mb-0">Distributor Application Status: <span class="badge bg-{{ $application->status_badge }}">{{ ucfirst($application->status) }}</span></h6>
+            <a href="{{ url()->previous() }}" class="btn btn-sm btn-outline-secondary">
+                <i class="ri-arrow-left-line me-1"></i> Back
+            </a>
         </div>
         <div class="card-body p-2">
             <div class="table-responsive">
@@ -1293,54 +1295,198 @@
     </div>
     @endif
 
-  @if(isset($createdBy) || $verifications->isNotEmpty() || isset($approvals))
-    <div id="audit-trail" class="card mb-3">
-        <div class="card-header">
-            <h6 class="mb-1">Audit Trail</h6>
+  {{-- ... previous code remains the same ... --}}
+
+<!-- Audit Trail -->
+@if(isset($createdBy) || $application->approvalLogs->isNotEmpty() || $application->distributor_code || $application->date_of_appointment)
+<div id="audit-trail" class="card mb-3">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h6 class="mb-0">Audit Trail</h6>
+    </div>
+    <div class="card-body p-2">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 20%">Action</th>
+                        <th style="width: 20%">Name</th>
+                        <th style="width: 15%">Role</th>
+                        <th style="width: 15%">Date</th>
+                        <th style="width: 30%">Remarks/Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{-- Filled By --}}
+                    @if(isset($createdBy))
+                    <tr>
+                        <td><strong>Application Created</strong></td>
+                        <td>{{ $createdBy->emp_name ?? 'N/A' }}</td>
+                        <td>{{ $createdBy->emp_designation ?? 'N/A' }}</td>
+                        <td>{{ $application->created_at->format('d-M-Y H:i') }}</td>
+                        <td>
+                            <span class="badge bg-primary">Submitted</span>
+                        </td>
+                    </tr>
+                    @endif
+
+                    {{-- Approval Logs --}}
+                    @if($application->approvalLogs->isNotEmpty())
+                        @foreach($application->approvalLogs->sortBy('created_at') as $log)
+                        <tr>
+                            <td>
+                                <strong>
+                                    @switch($log->action)
+                                        @case('approved')
+                                            Approved
+                                            @break
+                                        @case('reverted')
+                                            Reverted
+                                            @break
+                                        @case('rejected')
+                                            Rejected
+                                            @break
+                                        @case('hold')
+                                            Put on Hold
+                                            @break
+                                        @case('documents_verified')
+                                            Documents Verified
+                                            @break
+                                        @case('distributor_confirmed')
+                                            Distributor Confirmed
+                                            @break
+                                        @case('security_cheque_updated')
+                                            Security Cheque Updated
+                                            @break
+                                        @default
+                                            {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                                    @endswitch
+                                </strong>
+                            </td>
+                            <td>{{ $log->user->name ?? 'N/A' }}</td>
+                            <td>{{ $log->role ?? 'N/A' }}</td>
+                            <td>{{ $log->created_at->format('d-M-Y H:i') }}</td>
+                            <td>
+                                @if($log->remarks)
+                                    <div class="small">{{ $log->remarks }}</div>
+                                @endif
+                                @if($log->follow_up_date)
+                                    <div class="small text-muted">
+                                        <strong>Follow-up:</strong> {{ \Carbon\Carbon::parse($log->follow_up_date)->format('d-M-Y') }}
+                                    </div>
+                                @endif
+                                <span class="badge bg-{{ 
+                                    $log->action === 'approved' ? 'success' : 
+                                    ($log->action === 'reverted' ? 'warning' : 
+                                    ($log->action === 'rejected' ? 'danger' : 
+                                    ($log->action === 'hold' ? 'secondary' : 
+                                    ($log->action === 'documents_verified' ? 'info' : 
+                                    ($log->action === 'distributor_confirmed' ? 'success' : 
+                                    ($log->action === 'security_cheque_updated' ? 'primary' : 'info')))))) 
+                                }}">
+                                    @switch($log->action)
+                                        @case('approved')
+                                            Approved
+                                            @break
+                                        @case('reverted')
+                                            Reverted
+                                            @break
+                                        @case('rejected')
+                                            Rejected
+                                            @break
+                                        @case('hold')
+                                            On Hold
+                                            @break
+                                        @case('documents_verified')
+                                            Documents Verified
+                                            @break
+                                        @case('distributor_confirmed')
+                                            Distributor Confirmed
+                                            @break
+                                        @case('security_cheque_updated')
+                                            Cheque Updated
+                                            @break
+                                        @default
+                                            {{ ucfirst(str_replace('_', ' ', $log->action)) }}
+                                    @endswitch
+                                </span>
+                            </td>
+                        </tr>
+                        @endforeach
+                    @endif
+
+                    {{-- Distributor Onboarding Information --}}
+                    @if($application->distributor_code || $application->date_of_appointment)
+                    <tr class="table-success">
+                        <td><strong>Distributor Onboarded</strong></td>
+                        <td colspan="2">
+                            @if($application->distributor_code)
+                                <strong>Focus Code:</strong> {{ $application->distributor_code }}
+                            @else
+                                Distributor Created
+                            @endif
+                        </td>
+                        <td>
+                            @if($application->date_of_appointment)
+                                {{ \Carbon\Carbon::parse($application->date_of_appointment)->format('d-M-Y') }}
+                            @else
+                                {{ $application->created_at->format('d-M-Y') }}
+                            @endif
+                        </td>
+                        <td>
+                            @if($application->date_of_appointment)
+                                <div class="small">
+                                    <strong>Date of Appointment:</strong> {{ \Carbon\Carbon::parse($application->date_of_appointment)->format('d-M-Y') }}
+                                </div>
+                            @endif
+                            @if($application->distributor_code)
+                                <div class="small">
+                                    <strong>Focus Code:</strong> {{ $application->distributor_code }}
+                                </div>
+                            @endif
+                            <span class="badge bg-success">Completed</span>
+                        </td>
+                    </tr>
+                    @endif
+
+                    {{-- If no audit trail data exists --}}
+                    @if(!isset($createdBy) && $application->approvalLogs->isEmpty() && !$application->distributor_code && !$application->date_of_appointment)
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            <i class="ri-information-line me-1"></i>
+                            No audit trail data available
+                        </td>
+                    </tr>
+                    @endif
+                </tbody>
+            </table>
         </div>
-        <div class="card-body p-2">
+
+        {{-- Distributor Information Summary --}}
+        @if($application->distributor_code || $application->date_of_appointment)
+        <div class="mt-3 p-2 border rounded bg-light">
             <div class="row">
-                {{-- Filled By --}}
-                <div class="col-md-4">
-                    <h6>Filled By</h6>
-                    <div class="border-bottom pb-2 mb-3">
-                        <strong>Name:</strong> {{ $createdBy->emp_name ?? 'N/A' }}<br>
-                        <strong>Designation:</strong> {{ $createdBy->emp_designation ?? 'N/A' }}<br>
-                        <strong>Date:</strong> {{ $application->created_at->format('Y-m-d') }}
-                    </div>
+                @if($application->distributor_code)
+                <div class="col-md-6">
+                    <strong>Focus Code:</strong> 
+                    <span class="badge bg-success fs-6">{{ $application->distributor_code }}</span>
                 </div>
-
-                {{-- Checked / Verified By --}}
-                <div class="col-md-4">
-                    @if($verifications->isNotEmpty())
-                    <h6>Verified by / Approved By</h6>
-                    @foreach($verifications as $verification)
-                    <div class="border-bottom pb-2 mb-2">
-                        <strong>Name:</strong> {{ $verification->employee->emp_name ?? 'N/A' }}<br>
-                        <strong>Designation:</strong> {{ $verification->employee->designation ?? 'N/A' }}<br>
-                        <strong>Date:</strong> {{ $verification->created_at->format('Y-m-d') }}<br>
-                        <small><strong>Action:</strong> {{ ucfirst(str_replace('_', ' ', $verification->action)) }}</small>
-                    </div>
-                    @endforeach
-                    @endif
+                @endif
+                @if($application->date_of_appointment)
+                <div class="col-md-6">
+                    <strong>Date of Appointment:</strong> 
+                    <span class="fw-bold">
+                        {{ \Carbon\Carbon::parse($application->date_of_appointment)->format('d-M-Y') }}
+                    </span>
                 </div>
-
-                {{-- Approved By --}}
-                {{--<div class="col-md-4">
-                    @if($approvals)
-                    <h6>Approved By</h6>
-                    <div class="border-bottom pb-2">
-                        <strong>Name:</strong> {{ $approvals->employee->emp_name ?? 'N/A' }}<br>
-                        <strong>Designation:</strong> {{ $approvals->employee->designation ?? 'N/A' }}<br>
-                        <strong>Date:</strong> {{ $approvals->created_at->format('Y-m-d') }}
-                    </div>
-                    @endif
-                </div>--}}
+                @endif
             </div>
         </div>
+        @endif
     </div>
+</div>
 @endif
 
+{{-- ... rest of the code remains the same ... --}}
 
     <!-- Approval Logs -->
     {{--@if(isset($application->approvalLogs) && !$application->approvalLogs->isEmpty())

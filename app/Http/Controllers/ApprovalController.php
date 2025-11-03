@@ -31,6 +31,7 @@ use App\Models\Status;
 
 use App\Models\SecurityChequeDetail;
 use App\Models\SecurityDepositDetail;
+use Mpdf\Mpdf;
 
 class ApprovalController extends Controller
 {
@@ -237,7 +238,6 @@ class ApprovalController extends Controller
     public function revert(Request $request, Onboarding $application)
     {
         $user = Auth::user();
-
         try {
             $this->authorizeApproval($application, $user->emp_id);
 
@@ -938,6 +938,7 @@ class ApprovalController extends Controller
             $verifications['additional'][$index] = $checkpoint && $checkpoint->status === 'verified';
             $verificationNotes['additional'][$index] = $checkpoint ? $checkpoint->reason : '';
         }
+        // dd($verificationNotes);
 
         return view('approvals.verify-documents', compact(
             'application',
@@ -1240,7 +1241,7 @@ class ApprovalController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Verification updated successfully.',
-            'redirect' => route('dashboard')
+            'redirect' => route('applications.index')
         ], 200);
     }
 
@@ -2140,10 +2141,10 @@ class ApprovalController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Distributor confirmed successfully!',
-                    'redirect' => route('dashboard')
+                    'redirect' => route('applications.index')
                 ]);
             }
-            return redirect()->route('dashboard')->with('success', 'Distributor confirmed successfully!');
+            return redirect()->route('applications.index')->with('success', 'Distributor confirmed successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             if ($request->ajax()) {
@@ -2288,12 +2289,10 @@ class ApprovalController extends Controller
         }
     }
 
-    // App\Http\Controllers\ApprovalController.php
     public function showDraftAgreement($id)
     {
         $application = Onboarding::with(['entityDetails', 'createdBy'])->findOrFail($id);
 
-        // Define allowed statuses for draft agreement
         $allowedStatuses = [
             'documents_resubmitted',
             'documents_verified',
@@ -2303,7 +2302,6 @@ class ApprovalController extends Controller
             'agreement_created',
         ];
 
-        // Check if application is in allowed status
         if (!in_array($application->status, $allowedStatuses)) {
             abort(403, 'Draft agreement is not available for the current application status.');
         }
@@ -2311,6 +2309,147 @@ class ApprovalController extends Controller
         return view('approvals.draft-agreement', compact('application'));
     }
 
+
+    public function downloadDraftAgreementPdf($id, $type = 'e-stamp')
+{
+    // Increase limits
+    ini_set('memory_limit', '512M');
+    ini_set('max_execution_time', 120);
+    ini_set('pcre.backtrack_limit', '1000000');
+    ini_set('pcre.recursion_limit', '1000000');
+
+    $application = Onboarding::with(['entityDetails', 'createdBy'])->findOrFail($id);
+
+    $allowedStatuses = [
+        'documents_resubmitted',
+        'documents_verified',
+        'physical_docs_pending',
+        'physical_docs_redispatched',
+        'physical_docs_verified',
+        'agreement_created',
+    ];
+
+    if (!in_array($application->status, $allowedStatuses)) {
+        abort(403, 'Draft agreement is not available for the current application status.');
+    }
+
+    try {
+        \Log::info('Starting PDF generation for application: ' . $id);
+
+        // Use the simplified PDF view
+        $html = view('approvals.pdf.draft-agreement', [
+            'application' => $application,
+            'type' => $type
+        ])->render();
+
+        \Log::info('View rendered successfully');
+
+        // Clean HTML for mPDF
+        $html = $this->cleanHtmlForMpdf($html);
+
+        // mPDF configuration optimized for legal documents
+        // For 'stamp' type, increase top margin to provide space for physical stamp paper printing on first page
+        // Subsequent pages will use normal spacing; mPDF @page margins apply uniformly, but extra top space ensures content starts lower on page 1
+        $topMargin = $type === 'stamp' ? 50 : 20; // 50mm for stamp (approx. space for stamp + header); 20mm otherwise
+        $mpdf = new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4',
+            'orientation' => 'P',
+            'margin_left' => 15,
+            'margin_right' => 15,
+            'margin_top' => $topMargin,
+            'margin_bottom' => 15,
+            'margin_header' => 5,
+            'margin_footer' => 8,
+            'default_font' => 'dejavusans',
+            'default_font_size' => 10,
+            'tempDir' => storage_path('app/tmp'),
+            'autoScriptToLang' => true,
+            'autoLangToFont' => true,
+            'ignore_invalid_utf8' => true,
+            'showImageErrors' => true,
+            'use_kwt' => true, // Keep-with-table
+            'keep_table_proportions' => true,
+            'shrink_tables_to_fit' => 1,
+        ]);
+
+        // Set PDF metadata
+        $mpdf->SetTitle('Distributorship Agreement - ' . ($application->entityDetails->firm_name ?? 'N/A'));
+        //$mpdf->SetAuthor('VNR Seeds Private Limited');
+
+        // No watermark for any type - removed as per requirement
+
+        // Set footer with page numbers
+        // $mpdf->SetFooter('Page {PAGENO} of {nb}|Generated on ' . date('d-m-Y H:i:s') . ' | VNR Seeds Private Limited');
+
+        \Log::info('Writing HTML to mPDF');
+
+        // Write HTML
+        $mpdf->WriteHTML($html);
+
+        \Log::info('PDF generation completed successfully');
+
+        $fileName = 'Distributorship-Agreement-' . ($type === 'stamp' ? 'Stamp-Paper' : 'E-Stamp') . '-' . $application->id . '.pdf';
+
+        return response($mpdf->Output($fileName, 'S'), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ]);
+    } catch (\Exception $e) {
+        \Log::error('mPDF Generation Error: ' . $e->getMessage());
+        \Log::error('mPDF Trace: ' . $e->getTraceAsString());
+
+        return back()->with('error', 'Unable to generate PDF at the moment. Please try again or contact support.');
+    }
+}
+    /**
+     * Clean HTML for mPDF compatibility
+     */
+    private function cleanHtmlForMpdf($html)
+    {
+        // Remove any problematic characters or tags
+        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+        $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
+        $html = preg_replace('/<!--(.*?)-->/is', '', $html);
+
+        // Fix any unclosed tags
+        $html = $this->closeUnclosedTags($html);
+
+        return $html;
+    }
+
+    /**
+     * Close any unclosed HTML tags
+     */
+    private function closeUnclosedTags($html)
+    {
+        preg_match_all('#<([a-z]+)(?: .*)?(?<![/| ])>#iU', $html, $result);
+        $openedtags = $result[1];
+
+        preg_match_all('#</([a-z]+)>#iU', $html, $result);
+        $closedtags = $result[1];
+
+        $len_opened = count($openedtags);
+
+        if (count($closedtags) == $len_opened) {
+            return $html;
+        }
+
+        $openedtags = array_reverse($openedtags);
+
+        for ($i = 0; $i < $len_opened; $i++) {
+            if (!in_array($openedtags[$i], $closedtags)) {
+                $html .= '</' . $openedtags[$i] . '>';
+            } else {
+                unset($closedtags[array_search($openedtags[$i], $closedtags)]);
+            }
+        }
+
+        return $html;
+    }
     /**
      * List applications eligible for security cheque management (MIS only)
      */
@@ -2358,53 +2497,61 @@ class ApprovalController extends Controller
             }])
             ->orderBy('created_at', 'asc')
             ->get();
+        // Get security deposit data
+        $securityDeposit = SecurityDepositDetail::whereHas('physicalDocumentCheck', function ($query) use ($application) {
+            $query->where('application_id', $application->id)
+                ->where('document_type', 'security_deposit');
+        })
+            ->first();
+
+
 
         $application->load(['entityDetails', 'createdBy']);
 
         // Debug: Temporarily uncomment to verify loading (remove after fix)
         //dd($securityChequeChecks->toArray()); // Should show 'security_cheque_details' array with your records
 
-        return view('mis.manage-security-cheques', compact('application', 'securityChequeChecks'));
+        return view('mis.manage-security-cheques', compact('application', 'securityChequeChecks', 'securityDeposit'));
     }
 
     /**
      * Process new security cheque file upload (AJAX, like process-document)
      */
     // In your MisController or wherever processSecurityCheque is
-public function processSecurityCheque(Request $request, \App\Services\S3Service $s3Service)
-{
-    $request->validate([
-        'file' => 'required|file|mimes:pdf,doc,docx,jpg,png|max:5120',  // 5MB
-        'application_id' => 'required|exists:onboardings,id',  // Add validation for safety
-    ]);
+    public function processSecurityCheque(Request $request, \App\Services\S3Service $s3Service)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,doc,docx,jpg,png|max:5120',  // 5MB
+            'application_id' => 'required|exists:onboardings,id',  // Add validation for safety
+        ]);
 
-    $application = Onboarding::findOrFail($request->application_id);
-    if (!Auth::user()->employee->isMisTeam()) {
-        return response()->json(['status' => 'ERROR', 'message' => 'Unauthorized'], 403);
+        $application = Onboarding::findOrFail($request->application_id);
+        if (!Auth::user()->employee->isMisTeam()) {
+            return response()->json(['status' => 'ERROR', 'message' => 'Unauthorized'], 403);
+        }
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+        $timestamp = now()->timestamp;
+        $filename = "security_cheques_{$timestamp}.{$extension}";  // Consistent naming
+        $s3BasePath = "Connect/Distributor/security_cheques/";     // Matches processDocument
+        $filePath = $s3BasePath . $filename;                      // Full: "Connect/Distributor/security_cheques/security_cheques_1761326674.jpg"
+
+        $upload = $s3Service->uploadFile($file, $filePath);       // Uses S3Service (note: your S3Service uploadFile takes $file, $path)
+        if (!$upload['success']) {
+            return response()->json(['status' => 'ERROR', 'message' => 'Upload failed'], 500);
+        }
+
+        return response()->json([
+            'status' => 'SUCCESS',
+            'data' => [
+                'filename' => $filename,  // Just filename for DB
+                'displayName' => $file->getClientOriginalName(),
+                'url' => $upload['url'],  // From S3Service (full S3 URL)
+            ]
+        ]);
     }
 
-    $file = $request->file('file');
-    $extension = $file->getClientOriginalExtension();
-    $timestamp = now()->timestamp;
-    $filename = "security_cheques_{$timestamp}.{$extension}";  // Consistent naming
-    $s3BasePath = "Connect/Distributor/security_cheques/";     // Matches processDocument
-    $filePath = $s3BasePath . $filename;                      // Full: "Connect/Distributor/security_cheques/security_cheques_1761326674.jpg"
-
-    $upload = $s3Service->uploadFile($file, $filePath);       // Uses S3Service (note: your S3Service uploadFile takes $file, $path)
-    if (!$upload['success']) {
-        return response()->json(['status' => 'ERROR', 'message' => 'Upload failed'], 500);
-    }
-
-    return response()->json([
-        'status' => 'SUCCESS',
-        'data' => [
-            'filename' => $filename,  // Just filename for DB
-            'displayName' => $file->getClientOriginalName(),
-            'url' => $upload['url'],  // From S3Service (full S3 URL)
-        ]
-    ]);
-}
-    
 
     /**
      * Updated: Handle updates + optional new cheques
@@ -2414,8 +2561,8 @@ public function processSecurityCheque(Request $request, \App\Services\S3Service 
         if (!Auth::user()->employee->isMisTeam()) {
             return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
         }
-          //dd($request->all());
- 
+        //dd($request->all());
+
         $allowedStatuses = ['distributorship_created', 'completed'];
         if (!in_array($application->status, $allowedStatuses)) {
             return response()->json(['success' => false, 'message' => 'Invalid application status.'], 403);
@@ -2430,6 +2577,7 @@ public function processSecurityCheque(Request $request, \App\Services\S3Service 
             'existing_cheques.*.*.date_return' => 'nullable|date|before_or_equal:today',
             'existing_cheques.*.*.remark_return' => 'nullable|string|max:500',
             'new_cheques' => 'nullable|array',
+            'existing_cheques.*.*.return_acknowledgement_file' => 'nullable|string',
             'new_cheques.*.cheque_no' => 'required_if:new_cheques.*.date_obtained,present|string|max:50',
             'new_cheques.*.date_obtained' => 'required_if:new_cheques.*.cheque_no,present|date|before_or_equal:today',
             'new_cheques.*.file_path' => 'required_if:new_cheques.*.cheque_no,present|string',
@@ -2468,6 +2616,7 @@ public function processSecurityCheque(Request $request, \App\Services\S3Service 
                         'purpose' => $detailData['purpose'] ?? null,
                         'date_return' => $detailData['date_return'] ?? null,
                         'remark_return' => $detailData['remark_return'] ?? null,
+                        'return_acknowledgement_file' => $detailData['return_acknowledgement_file'] ?? null,
                         'updated_by' => Auth::user()->emp_id,
                         'updated_at' => now(),
                     ]);
@@ -2536,5 +2685,39 @@ public function processSecurityCheque(Request $request, \App\Services\S3Service 
         }
     }
 
-  
+    public function processSecurityChequeReturnAck(Request $request, \App\Services\S3Service $s3Service)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,doc,docx,jpg,png|max:5120',
+            'application_id' => 'required|exists:onboardings,id',
+            'detail_id' => 'required|exists:security_cheque_details,id',
+        ]);
+
+        $application = Onboarding::findOrFail($request->application_id);
+        if (!Auth::user()->employee->isMisTeam()) {
+            return response()->json(['status' => 'ERROR', 'message' => 'Unauthorized'], 403);
+        }
+
+        $file = $request->file('file');
+        $extension = $file->getClientOriginalExtension();
+        $timestamp = now()->timestamp;
+        $filename = "return_ack_{$timestamp}.{$extension}";
+        $s3BasePath = "Connect/Distributor/security_cheques/return_ack/";
+        $filePath = $s3BasePath . $filename;
+
+        $upload = $s3Service->uploadFile($file, $filePath);
+        if (!$upload['success']) {
+            return response()->json(['status' => 'ERROR', 'message' => 'Upload failed'], 500);
+        }
+
+        // Return same structure as processSecurityCheque
+        return response()->json([
+            'status' => 'SUCCESS',
+            'data' => [
+                'filename' => $filename,
+                'displayName' => $file->getClientOriginalName(),
+                'url' => $upload['url'], // Full S3 URL
+            ]
+        ]);
+    }
 }

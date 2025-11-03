@@ -6,296 +6,201 @@ use App\Models\Onboarding;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\DistributorReportExport;
+use Illuminate\Support\Facades\Auth;
 
 class DistributorReportController extends Controller
 {
-    // Common method to build query for all reports
-    private function buildQuery(Request $request, $reportType = 'summary')
+    // Consolidated Distributor Summary Report
+    public function distributorSummary(Request $request)
     {
-        $query = Onboarding::query();
+        $reportType = $request->get('report_type', 'summary');
 
-        // Common search filter
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('application_code', 'like', "%{$request->search}%")
-                    ->orWhereHas('entityDetails', function ($q2) use ($request) {
-                        $q2->where('establishment_name', 'like', "%{$request->search}%");
-                    })
-                    ->orWhereHas('authorizedPersons', function ($q2) use ($request) {
-                        $q2->where('name', 'like', "%{$request->search}%");
-                    });
+        // Set simplified filters
+        $filters = [
+            'status' => $request->input('status', 'All'),
+            'search' => $request->input('search'),
+        ];
+
+        // Build query with role-based access
+        $query = $this->buildReportQuery($filters, $reportType);
+
+        // Export functionality
+        if ($request->has('export') && $request->export === 'excel') {
+            $distributors = $query->get();
+            $filename = $reportType === 'summary' ? 'distributor_summary.xlsx' : "{$reportType}_report.xlsx";
+            
+            return Excel::download(new DistributorReportExport($distributors, $reportType), $filename);
+        }
+
+        $distributors = $query->paginate(50)->appends($request->all());
+
+        return view('distributor.reports.summary', compact(
+            'distributors', 
+            'reportType',
+            'filters'
+        ));
+    }
+
+    // TAT Report
+    public function tatReport(Request $request)
+    {
+        // Set simplified filters
+        $filters = [
+            'status' => $request->input('status', 'All'),
+            'search' => $request->input('search'),
+        ];
+
+        // Build query for TAT report with role-based access
+        $query = $this->buildReportQuery($filters, 'tat');
+
+        // Export functionality
+        if ($request->has('export') && $request->export === 'excel') {
+            $distributors = $query->get();
+            return Excel::download(new DistributorReportExport($distributors, 'tat'), 'tat_report.xlsx');
+        }
+
+        $distributors = $query->paginate(50)->appends($request->all());
+
+        return view('distributor.reports.tat-report', compact(
+            'distributors',
+            'filters'
+        ));
+    }
+
+    // Common method to build report query with role-based access
+    protected function buildReportQuery($filters, $reportType = 'summary')
+    {
+        $user = Auth::user();
+        
+        $query = Onboarding::query()
+            ->with([
+                'entityDetails', 
+                'createdBy', 
+                'currentApprover', 
+                'approvalLogs' => function($q) {
+                    $q->orderBy('created_at', 'asc');
+                },
+                'physicalDispatch',
+                'vertical',
+                'authorizedPersons'
+            ]);
+
+        // Apply role-based data access
+        $this->applyRoleBasedAccess($query, $user);
+
+        // Apply search filter
+        if (!empty($filters['search'])) {
+            $query->where(function($q) use ($filters) {
+                $q->where('application_code', 'like', "%{$filters['search']}%")
+                  ->orWhereHas('entityDetails', function($q2) use ($filters) {
+                      $q2->where('establishment_name', 'like', "%{$filters['search']}%");
+                  });
             });
         }
 
-        // Report-specific filters and data scope
+        // Apply status filter
+        $this->applyStatusFilter($query, $filters);
+
+        // Report type specific modifications
         switch ($reportType) {
-            case 'summary':
-                // Show all applications with basic info
-                if ($request->filled('status')) {
-                    $query->where('status', $request->status);
-                }
-                if ($request->filled('territory')) {
-                    $query->where('territory', $request->territory);
-                }
-                $query->with(['createdBy', 'vertical', 'regionDetail', 'entityDetails', 'authorizedPersons'])
-                    ->orderBy('created_at', 'desc');
-                break;
-
             case 'approval':
-                // Show applications that are in approval process or have approval logs
-                if ($request->filled('approval_level')) {
-                    $query->where('approval_level', $request->approval_level);
-                }
-                // Only show applications that have some approval activity
-                $query->whereHas('approvalLogs')
-                    ->orWhereNotNull('approval_level')
-                    ->with(['currentApprover', 'approvalLogs', 'createdBy', 'entityDetails', 'authorizedPersons'])
-                    ->orderBy('updated_at', 'desc');
+                $query->whereIn('status', ['under_level1_review', 'under_level2_review', 'under_level3_review', 'approved', 'reverted', 'on_hold']);
                 break;
-
             case 'verification':
-                // Show applications in MIS processing/document verification stage
-                if ($request->filled('doc_status')) {
-                    $query->where('doc_verification_status', $request->doc_status);
-                }
-                // Applications in MIS processing workflow
                 $query->whereIn('status', [
-                    'mis_processing',
-                    'documents_pending',
-                    'documents_resubmitted',
-                    'documents_verified',
-                    'physical_docs_pending',
-                    'physical_docs_redispatched',
-                    'physical_docs_verified',
-                    'agreement_created'
-                ])
-                    ->with(['createdBy', 'entityDetails', 'authorizedPersons'])
-                    ->orderBy('mis_verified_at', 'desc');
+                    'mis_processing', 'documents_pending', 'documents_resubmitted', 
+                    'documents_verified', 'physical_docs_pending', 'physical_docs_redispatched', 
+                    'physical_docs_verified', 'agreement_created'
+                ]);
                 break;
-
-            case 'dispatch':
-                // Show ONLY applications that have physical dispatch records
-                if ($request->filled('dispatch_mode')) {
-                    $query->whereHas('physicalDispatch', function ($q) use ($request) {
-                        $q->where('mode', $request->dispatch_mode);
-                    });
-                }
-                // Only show applications with dispatch records
-                $query->whereHas('physicalDispatch')
-                    ->with(['physicalDispatch', 'authorizedPersons', 'entityDetails'])
-                    ->orderBy('created_at', 'desc');
-                break;
-
-            case 'lifecycle':
-                // Show applications with some progress in lifecycle
-                $query->where(function ($q) {
-                    $q->whereHas('approvalLogs')
-                        ->orWhereNotNull('mis_verified_at')
-                        ->orWhereNotNull('doc_verification_status')
-                        ->orWhereHas('physicalDispatch');
-                })
-                    ->with(['approvalLogs', 'authorizedPersons', 'entityDetails'])
-                    ->orderBy('created_at', 'desc');
-                break;
-
             case 'pending':
-                // Show ONLY pending applications
-                $query->where('status', 'documents_pending')
-                    ->when($request->pending_step, fn($q) => $q->where('current_progress_step', $request->pending_step))
-                    ->with(['createdBy', 'authorizedPersons', 'entityDetails'])
-                    ->orderBy('created_at', 'desc');
+                $query->where('status', 'documents_pending');
                 break;
-
             case 'rejected':
-                // Show ONLY rejected applications
-                $query->where('status', 'rejected')
-                    ->with(['approvalLogs.user', 'authorizedPersons', 'entityDetails'])
-                    ->orderBy('updated_at', 'desc');
+                $query->where('status', 'rejected');
                 break;
-
-            case 'pending_documents':
-                // Show ONLY applications with pending documents
-                $query->where('status', 'documents_pending')
-                    ->with(['createdBy', 'authorizedPersons', 'entityDetails'])
-                    ->orderBy('created_at', 'desc');
+            case 'completed':
+                $query->where('status', 'distributorship_created');
+                break;
+            case 'tat':
+                // For TAT report, include all accessible applications
+                $query->orderBy('created_at', 'desc');
+                break;
+            default: // summary
+                $query->orderBy('created_at', 'desc');
                 break;
         }
 
         return $query;
     }
 
-    // 1. Distributor Summary - Show ALL applications
-    public function distributorSummary(Request $request)
+    // Apply role-based data access
+    protected function applyRoleBasedAccess($query, $user)
     {
-        $query = $this->buildQuery($request, 'summary');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'summary'), 'distributor_summary.xlsx');
+        // Super Admin, Admin, MIS users can see all data
+        if ($user->hasAnyRole(['Super Admin', 'Admin', 'Mis Admin', 'Mis User', 'Management'])) {
+            return $query; // No restrictions
         }
 
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.summary', compact('distributors'));
-    }
-
-    // 2. Approval Status - Show applications with approval activity
-    public function approvalStatus(Request $request)
-    {
-        $query = $this->buildQuery($request, 'approval');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'approval'), 'approval_status.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.approval-status', compact('distributors'));
-    }
-
-    // 3. Verification Status - Show applications with verification activity
-    public function verificationStatus(Request $request)
-    {
-        $query = $this->buildQuery($request, 'verification');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'verification'), 'verification_status.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.verification-status', compact('distributors'));
-    }
-
-    // 4. Dispatch Status - Show ONLY applications with dispatch records
-    public function dispatchStatus(Request $request)
-    {
-        $query = $this->buildQuery($request, 'dispatch');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'dispatch'), 'dispatch_status.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.dispatch-status', compact('distributors'));
-    }
-
-    // 5. Lifecycle - Show applications with some progress
-    public function lifecycle(Request $request)
-    {
-        $query = $this->buildQuery($request, 'lifecycle');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'lifecycle'), 'lifecycle.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.lifecycle', compact('distributors'));
-    }
-
-    // 6. Pending Work - Show ONLY pending applications
-    public function pending(Request $request)
-    {
-        $query = $this->buildQuery($request, 'pending');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'pending'), 'pending_work.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.pending', compact('distributors'));
-    }
-
-    // 7. Rejected - Show ONLY rejected applications
-    public function rejected(Request $request)
-    {
-        $query = $this->buildQuery($request, 'rejected');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'rejected'), 'rejected.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.rejected', compact('distributors'));
-    }
-
-    // 8. Pending Documents - Show ONLY applications with pending documents
-    public function pendingDocuments(Request $request)
-    {
-        $query = $this->buildQuery($request, 'pending_documents');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'pending_documents'), 'pending_documents.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.pending-documents', compact('distributors'));
-    }
-
-    // 8. Show TAT
-
-    public function tatReport(Request $request)
-    {
-        $query = Onboarding::query();
-
-        // Common search filter
-        if ($request->filled('search')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('application_code', 'like', "%{$request->search}%")
-                    ->orWhereHas('entityDetails', function ($q2) use ($request) {
-                        $q2->where('establishment_name', 'like', "%{$request->search}%");
-                    })
-                    ->orWhereHas('authorizedPersons', function ($q2) use ($request) {
-                        $q2->where('name', 'like', "%{$request->search}%");
-                    });
+        // Approvers can see applications they need to approve or have approved
+        if ($this->isApprover($user)) {
+            return $query->where(function($q) use ($user) {
+                $q->where('current_approver_id', $user->emp_id)
+                  ->orWhere('final_approver_id', $user->emp_id)
+                  ->orWhereHas('approvalLogs', function($q2) use ($user) {
+                      $q2->where('user_id', $user->emp_id);
+                  });
             });
         }
 
-        // Date range filter
-        if ($request->filled('date_range')) {
-            $dates = explode(' to ', $request->date_range);
-            if (count($dates) == 2) {
-                $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay();
-                $endDate = \Carbon\Carbon::parse($dates[1])->endOfDay();
-                $query->whereBetween('created_at', [$startDate, $endDate]);
+        // Sales users can only see applications they created
+        return $query->where('created_by', $user->emp_id);
+    }
+
+    // Check if user is an approver based on designation
+    protected function isApprover($user)
+    {
+        $employee = $user->employee;
+        if (!$employee) {
+            return false;
+        }
+
+        $approverDesignations = [
+            'Regional Business Manager', 
+            'Zonal Business Manager', 
+            'General Manager',
+            'Senior Executive'
+        ];
+
+        return in_array($employee->emp_designation, $approverDesignations);
+    }
+
+    // Apply status filter
+    protected function applyStatusFilter($query, $filters)
+    {
+        if (isset($filters['status']) && $filters['status'] !== 'All' && $filters['status'] !== '') {
+            $statusGroups = $this->getStatusGroups();
+            
+            if (array_key_exists($filters['status'], $statusGroups)) {
+                $query->whereIn('status', $statusGroups[$filters['status']]);
+            } else {
+                $query->where('status', $filters['status']);
             }
         }
+    }
 
-        // Status filter
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // Vertical filter
-        if ($request->filled('vertical')) {
-            $query->where('vertical_id', $request->vertical);
-        }
-
-        // Get applications with their timeline data
-        $query->with([
-            'createdBy',
-            'vertical',
-            'regionDetail',
-            'entityDetails',
-            'authorizedPersons',
-            'approvalLogs' => function ($q) {
-                $q->orderBy('created_at', 'asc');
-            },
-            'documentVerifications',
-            'physicalDispatch'
-            // Removed agreements relationship as it's not needed
-        ])->orderBy('created_at', 'desc');
-
-        if ($request->export === 'excel') {
-            $distributors = $query->get();
-            return Excel::download(new DistributorReportExport($distributors, 'tat'), 'tat_report.xlsx');
-        }
-
-        $distributors = $query->paginate(20);
-        return view('distributor.reports.tat-report', compact('distributors'));
+    protected function getStatusGroups()
+    {
+        return [
+            'draft' => ['draft'],
+            'sales_approval' => ['under_level1_review', 'under_level2_review', 'under_level3_review', 'approved', 'reverted', 'on_hold'],
+            'mis_verification' => [
+                'mis_processing', 'documents_pending', 'documents_resubmitted', 
+                'documents_verified', 'physical_docs_pending', 'physical_docs_redispatched', 
+                'physical_docs_verified', 'agreement_created'
+            ],
+            'completed' => ['distributorship_created'],
+            'rejected' => ['rejected']
+        ];
     }
 }

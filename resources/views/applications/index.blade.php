@@ -336,29 +336,7 @@ use App\Models\Status;
     }
 
     /* Select2 small size */
-    .select2-filter.select2-container .select2-selection--single {
-        height: calc(1.8em + 0.5rem + 2px) !important;
-        font-size: 0.775rem;
-    }
-
-    .select2-filter.select2-container .select2-selection--single .select2-selection__rendered {
-        line-height: 1.8 !important;
-        padding-left: 0.5rem;
-    }
-
-    .select2-filter.select2-container .select2-selection--single .select2-selection__arrow {
-        height: calc(1.8em + 0.5rem + 2px) !important;
-    }
-
-    .select2-filter.select2-container .select2-selection--multiple {
-        min-height: calc(1.8em + 0.5rem + 2px) !important;
-        font-size: 0.775rem;
-    }
-
-    .select2-filter.select2-container .select2-selection--multiple .select2-selection__rendered {
-        padding-left: 0.5rem;
-    }
-
+    
     /* Ensure all filter elements align properly */
     .row.g-2.align-items-center {
         align-items: end !important;
@@ -493,7 +471,6 @@ use App\Models\Status;
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
         console.log('DOM loaded - initializing application features...');
@@ -528,7 +505,7 @@ use App\Models\Status;
             allowClear: false,
             minimumResultsForSearch: 5
         });
-        $select.next('.select2-container').find('.select2-selection').addClass('form-select-sm');
+        // $select.next('.select2-container').find('.select2-selection').addClass('form-select-sm');
     }
 
     // Initialize filter state from URL parameters

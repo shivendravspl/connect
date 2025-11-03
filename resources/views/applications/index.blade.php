@@ -588,7 +588,7 @@ use App\Models\Status;
         });
 
         // Adjust Select2 container width for small form controls
-        $('.select2-filter').next('.select2-container').find('.select2-selection').addClass('form-select-sm');
+        // $('.select2-filter').next('.select2-container').find('.select2-selection').addClass('form-select-sm');
 
         console.log('Select2 initialized');
     }

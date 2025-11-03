@@ -1,3 +1,5 @@
+{{-- resources/views/approvals/draft-agreement.blade.php --}}
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +11,14 @@
     <style>
         body {
             background: #f5f5f5;
-            font-family: 'Calibri', 'Arial', sans-serif;
+            font-family: 'Times New Roman', Times, serif;
         }
         
         .agreement-container {
-            max-width: 210mm;
+            max-width: 210mm; /* A4 width */
             margin: 20px auto;
             background: white;
-            padding: 25.4mm 31.75mm;
+            padding: 20mm 25mm; /* Default screen padding: top/bottom 20mm, left/right 25mm (like Word default) */
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
         
@@ -35,12 +37,15 @@
         
         .agreement-content {
             font-size: 11pt;
-            line-height: 1.5;
+            line-height: 1.15; /* Tighter line-height to match Word's compact spacing */
             text-align: justify;
+            text-indent: 1.25em; /* Standard Word indent for paragraphs */
+            hyphens: auto; /* Better word wrapping for justified text */
         }
         
         .agreement-content p {
-            margin-bottom: 10px;
+            margin-bottom: 6pt; /* Tighter paragraph spacing to match Word */
+            text-indent: 1.25em; /* Ensure consistent indent */
         }
         
         .agreement-content h5 {
@@ -48,6 +53,7 @@
             font-weight: bold;
             margin-top: 15px;
             margin-bottom: 10px;
+            text-indent: 0; /* No indent for headings */
         }
         
         .agreement-content h6 {
@@ -55,37 +61,45 @@
             font-weight: bold;
             margin-top: 12px;
             margin-bottom: 8px;
+            text-indent: 0;
         }
         
         .agreement-content ul {
-            margin: 10px 0;
+            margin: 6pt 0; /* Tighter margins */
             padding-left: 40px;
+            text-indent: 0;
         }
         
         .agreement-content ul li {
-            margin-bottom: 5px;
+            margin-bottom: 4pt; /* Tighter list spacing */
+            text-indent: 0;
         }
         
         .agreement-content ol {
-            margin: 10px 0;
+            margin: 6pt 0;
             padding-left: 40px;
             list-style-type: lower-alpha;
+            text-indent: 0;
         }
         
         .agreement-content ol li {
-            margin-bottom: 8px;
+            margin-bottom: 6pt;
+            text-indent: 0;
         }
         
         .numbered-clause {
             font-weight: bold;
             margin-top: 15px;
             margin-bottom: 10px;
+            page-break-after: avoid; /* Avoid breaking clause headers */
+            text-indent: 0;
         }
         
         table.blank-table {
             width: 100%;
             margin: 15px 0;
             border-collapse: collapse;
+            page-break-inside: avoid; /* Keep tables on one page */
         }
         
         table.blank-table th,
@@ -100,19 +114,27 @@
             font-weight: bold;
         }
         
-        .stamp-space {
-            height: 400px;
-            border: 2px dashed #999;
-            margin: 20px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 14px;
+        /* Stamp spacer for first page - Adjusted to allow content after on same page */
+        .first-page-spacer {
+            display: none;
+            height: 100mm;
+            background: #fff0f0;
+            border: 2px dashed #cc0000;
+            margin-bottom: 0;
+            page-break-after: avoid;
+            text-align: center;
+            color: #cc0000;
+            font-size: 12pt;
+            font-weight: bold;
+        }
+        
+        .stamp-mode .first-page-spacer {
+            display: block;
         }
         
         .signature-section {
             margin-top: 40px;
+            page-break-inside: avoid; /* Keep signature on one page */
         }
         
         .action-buttons {
@@ -130,18 +152,25 @@
             margin-top: 40px;
             padding-top: 20px;
             border-top: 1px dashed #ddd;
+            page-break-before: always; /* Force new page */
+            page-break-inside: avoid;
         }
         
+        /* Print styles - Mimic Word/A4 margins more closely */
         @media print {
             body {
-                background: white;
+                background: white !important;
+                font-size: 11pt !important;
+                font-family: 'Times New Roman', Times, serif !important; /* Enforce Times New Roman */
             }
             
             .agreement-container {
-                margin: 0;
-                padding: 0;
-                box-shadow: none;
-                max-width: 100%;
+                margin: 0 !important;
+                padding: 20mm 25mm !important; /* Top/bottom 20mm, left/right 25mm - Standard A4/Word margins */
+                box-shadow: none !important;
+                max-width: none !important;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
             
             .action-buttons,
@@ -149,52 +178,92 @@
                 display: none !important;
             }
             
+            /* Global page setup for A4 - Consistent with Word */
+            @page {
+                size: A4;
+                margin: 20mm 25mm 20mm 25mm; /* Top/right/bottom/left - Consistent with Word defaults */
+            }
+            
+            /* First page for stamp mode: Standard margin, spacer provides top space */
+            @page :first {
+                margin-top: 20mm;
+            }
+            
             .section-break {
-                border-top: none;
-                page-break-before: always;
-                margin-top: 0;
-                padding-top: 0;
+                border-top: none !important;
+                page-break-before: always !important;
+                margin-top: 0 !important;
+                padding-top: 0 !important;
+                height: 0 !important;
             }
             
-            h5, h6 {
-                page-break-after: avoid;
+            /* Pagination controls - Tighter to reduce page count */
+            h5, h6, .numbered-clause {
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
             }
             
-            p {
-                orphans: 3;
-                widows: 3;
+            p, li {
+                orphans: 1 !important; /* Further reduced to allow tighter packing */
+                widows: 1 !important;  /* Further reduced */
+                page-break-inside: avoid !important; /* Avoid breaking short paras */
+                margin-bottom: 6pt !important; /* Tighter para spacing */
+            }
+            
+            table {
+                page-break-inside: avoid !important;
+            }
+            
+            /* Spacer for stamp: No break after, content flows below */
+            .first-page-spacer {
+                page-break-after: avoid !important;
+                height: 100mm !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                background: none !important;
+            }
+            
+            .first-page-spacer > div {
+                display: none !important; /* Hide placeholder text in print */
             }
         }
     </style>
 </head>
 <body>
     <div class="action-buttons no-print">
-        <div class="btn-group-vertical" role="group">
-            <button type="button" class="btn btn-primary btn-sm mb-2" onclick="window.print()">
-                <i class="ri-printer-line"></i> Print
-            </button>
-            <a href="{{ route('approvals.draft-agreement.pdf', ['id' => $application->id, 'type' => 'stamp']) }}" 
-               class="btn btn-success btn-sm mb-2">
-                <i class="ri-download-line"></i> Download PDF (Stamp Paper)
-            </a>
-            <a href="{{ route('approvals.draft-agreement.pdf', ['id' => $application->id, 'type' => 'e-stamp']) }}" 
-               class="btn btn-info btn-sm mb-2">
-                <i class="ri-download-line"></i> Download PDF (E-Stamp)
-            </a>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="window.close()">
-                <i class="ri-close-line"></i> Close
-            </button>
+        <div class="mb-3">
+            <p class="small text-muted mb-2"><strong>Print Mode:</strong></p>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="printMode" id="e-stamp" value="e-stamp" checked>
+                <label class="form-check-label" for="e-stamp">
+                    Without Stamp (E-Stamp)
+                </label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="printMode" id="stamp" value="stamp">
+                <label class="form-check-label" for="stamp">
+                    With Stamp (Physical Stamp Paper - Adds space on first page)
+                </label>
+            </div>
         </div>
         
-        <div class="mt-3">
-            <p class="small text-muted mb-1"><strong>Application Details:</strong></p>
-            <p class="small mb-1">Firm: {{ $application->entityDetails->firm_name ?? 'N/A' }}</p>
-            <p class="small mb-1">Contact: {{ $application->entityDetails->contact_person_name ?? 'N/A' }}</p>
-            <p class="small mb-0">Status: {{ ucfirst(str_replace('_', ' ', $application->status)) }}</p>
-        </div>
+        <button type="button" class="btn btn-primary btn-sm mb-2 w-100" onclick="window.print()">
+            <i class="ri-printer-line"></i> Print / Save as PDF
+        </button>
+        
+        <button type="button" class="btn btn-secondary btn-sm w-100" onclick="window.close()">
+            <i class="ri-close-line"></i> Close
+        </button>
     </div>
 
-    <div class="agreement-container">
+    <div class="agreement-container {{ $type }}">
+        <!-- First-page spacer for stamp mode -->
+        <div class="first-page-spacer">
+            <div>Space for Physical Stamp Paper<br>
+            <small>(Print on stamp paper; content starts below)</small></div>
+        </div>
+
         <!-- Agreement Header -->
         <div class="agreement-header">
             <h2>DISTRIBUTORSHIP AGREEMENT</h2>
@@ -209,6 +278,8 @@
             <p><strong>AND</strong></p>
             
             <p><strong>{{ $application->entityDetails->firm_name ?? '__________________________________' }}</strong>, Distributor Name <strong>{{ $application->entityDetails->contact_person_name ?? '__________________________________' }}</strong>, having its Company place of business <strong>{{ $application->entityDetails->registered_address ?? '________________________________________________________________' }}</strong>, (hereinafter referred to as <strong>the "Second Party"</strong>, which expression shall, unless repugnant to the context or meaning thereof, mean and include its affiliates, successors and permitted assigns) of Other Part.</p>
+
+            <div class="section-break"></div>
 
             <p>For the purposes of this Agreement, the <strong>First Party shall be referred to as the "Company" and the Second Party shall be referred to as the "Authorized Distributor."</strong> The Company and the Authorized Distributor are hereinafter collectively referred to as the <strong>"Parties"</strong> and individually referred to as a <strong>"Party."</strong></p>
 
@@ -230,6 +301,8 @@
 
             <div class="numbered-clause">2. Term of Agreement</div>
             <p>This agreement shall be effective from ___________ and shall remain in force for the period unless terminated by either Party in writing.</p>
+
+            <div class="section-break"></div>
 
             <div class="numbered-clause">3. Security Deposit / Bank guarantee</div>
             
@@ -261,6 +334,7 @@
                 <li><strong>Record Keeping and Change of Status</strong>
                     <ol style="list-style-type: lower-roman;">
                         <li>The Authorized Distributor agrees to maintain accurate records of the stock of the Company's products. These records shall be open for inspection by the Company's representatives as and when required.</li>
+                        <div class="section-break"></div>
                         <li>The Authorized Distributor shall promptly notify the Company in writing of any changes to its legal status or organizational structure, including but not limited to changes in ownership, management, business constitution, or any form of legal reorganization, to facilitate the updating of official records. The continuation of this Agreement following such changes shall be subject solely to the discretion of the Company.</li>
                     </ol>
                 </li>
@@ -279,8 +353,6 @@
                 </li>
             </ol>
 
-            <div class="section-break"></div>
-
             <div class="numbered-clause">5. Delivery of Products</div>
             
             <ol>
@@ -290,7 +362,7 @@
                 
                 <li><strong>Self-Pickup Approval:</strong> The Authorized Distributor may request to collect the products directly from the Company's location, subject to prior approval by the Company.</li>
                 
-                <li><strong>Responsibility Upon Pickup:</strong> If approved, the entire responsibility for the products shall transfer to the Authorized Distributor upon collection, in such case no claims and liability other than the transport or delivery costs shall be entertained by the Company.</li>
+                <li><strong>Responsibility Upon Pickup:</strong> <p>If approved, the entire responsibility for the products shall transfer to the Authorized Distributor upon collection, in such case no claims and</p><div class="section-break"></div><p>and liability other than the transport or delivery costs shall be entertained by the Company.</p></li>
             </ol>
 
             <div class="numbered-clause">6. Sales Return and Representations</div>
@@ -317,15 +389,13 @@
                 </li>
                 
                 <li><strong>Payment Modes and Consequences of Dishonored Cheques</strong>
-                    <p>The Authorized Distributor shall make all payments due to the Company for supplies provided under this Agreement by way of Demand Draft, RTGS, or NEFT, to the bank account designated by the Company. In exceptional circumstances where the Company agrees to accept a cheque, such cheques must be honored at all times. The dishonor of any cheque shall constitute a material breach of this Agreement. In such an event, the Company reserves the right to immediately terminate the appointment of the Authorized Distributor without prior notice. Furthermore, the Company may initiate appropriate legal proceedings and impose penalties or recovery charges at its discretion.</p>
+                    <p>The Authorized Distributor shall make all payments due to the Company for supplies provided under this Agreement by way of Demand Draft, RTGS, or NEFT, to the bank account designated by the Company. In exceptional circumstances where the Company agrees to accept a cheque, such cheques must be honored at all times. The dishonor of any cheque shall constitute a material breach of this Agreement. In such </p><div class="section-break"></div><p>an event, the Company reserves the right to immediately terminate the appointment of the Authorized Distributor without prior notice. Furthermore, the Company may initiate appropriate legal proceedings and impose penalties or recovery charges at its discretion.</p>
                 </li>
                 
                 <li><strong>Credit Limit Payment Requirements</strong>
                     <p>If the Authorized Distributor avails the credit limit facility, payments must be accompanied by specific references to the corresponding invoices paid. In the absence of invoice references, the Company will allocate the payment amount to the oldest outstanding invoices.</p>
                 </li>
             </ol>
-
-            <div class="section-break"></div>
 
             <div class="numbered-clause">9. Appointment of Sub Distributors and Indemnification</div>
             
@@ -391,8 +461,6 @@
                 </li>
             </ol>
 
-            <div class="section-break"></div>
-
             <div class="numbered-clause">11. Declarations and Documentation</div>
             <p>The Authorized Distributor agrees to provide the following declarations as an integral part of this Agreement and acknowledges that all the information provided in these declarations is crucial to this Agreement. Any failure to submit accurate or complete information may lead to legal consequences or the termination of this Agreement:</p>
             <ol>
@@ -425,6 +493,7 @@
                 
                 <li><strong>Company's Right to Terminate:</strong>
                     <p>Without prejudice to any other remedies available to the Company, the Company may terminate this Agreement immediately by giving written notice to the Authorized Distributor under any of the following circumstances:</p>
+                    <div class="section-break"></div>
                     <ol style="list-style-type: lower-roman;">
                         <li>The Authorized Distributor breaches any terms or conditions of this Agreement.</li>
                         <li>The Authorized Distributor is unable to perform their duties for a continuous period of three months or for a total of three months within any twelve-month period.</li>
@@ -452,8 +521,6 @@
                 </li>
             </ol>
 
-            <div class="section-break"></div>
-
             <div class="numbered-clause">15. Force Majeure</div>
             <p>The Company shall not incur any legal liability for delays in performance of this agreement resulting directly or indirectly from circumstances beyond its control. These circumstances include, but are not limited to, fire, explosion, accidents, floods, labor disputes or shortages, war, hostilities, acts of government or authorized bodies, government orders or restrictions, inability to obtain suitable materials, transportation issues, or acts of God. The Company shall be the sole judge in determining the impact of such events, and its decision will be binding on the Authorized Distributor.</p>
 
@@ -475,15 +542,15 @@
             <p>Neither Party may assign its rights or obligations under this Agreement without the prior written consent of the other Party.</p>
 
             <div class="numbered-clause">20. Notices</div>
-            <p>All notices and confirmations required or permitted under this Agreement shall be in writing and delivered to the addresses specified in this Agreement (or to such other addresses as a party may designate by written notice). Notices shall be deemed given (a) when delivered personally, (b) three days after being sent by certified mail, return receipt requested, postage prepaid, or (c) upon confirmation of delivery when sent by email.</p>
+            <p>All notices and confirmations required or permitted under this Agreement shall be in writing and delivered to the addresses specified in this Agreement (or to such other addresses as a party may designate by written notice).</p>
+            <div class="section-break"></div>
+            <p>Notices shall be deemed given (a) when delivered personally, (b) three days after being sent by certified mail, return receipt requested, postage prepaid, or (c) upon confirmation of delivery when sent by email.</p>
 
             <div class="numbered-clause">21. Severability</div>
             <p>If any provision of this Agreement is held to be invalid or unenforceable, the remaining provisions shall continue in full force and effect.</p>
 
             <div class="numbered-clause">22. Waiver</div>
             <p>The failure of either Party to enforce any right or provision of this Agreement shall not constitute a waiver of such right or provision.</p>
-
-            <div class="section-break"></div>
 
             <div class="signature-section">
                 <p style="text-align: center; font-weight: bold; margin-top: 30px;">IN WITNESS WHEREOF THE PARTIES HERETO HAVE EXECUTED THIS AGREEMENT THE DAY AND YEAR FIRST ABOVE WRITTEN</p>
@@ -754,20 +821,29 @@
             <p>Signature of Owner</p>
         </div>
     </div>
-      <!-- Footer for page numbers -->
-    <div class="footer">
-        Page <span class="pageNumber"></span> of <span class="totalPages"></span>
-    </div>
-    <script type="text/php">
-        if (isset($pdf)) {
-            $text = "Page {PAGE_NUM} of {PAGE_COUNT}";
-            $size = 10;
-            $font = $fontMetrics->getFont("DejaVu Sans");
-            $width = $fontMetrics->get_text_width($text, $font, $size) / 2;
-            $x = ($pdf->get_width() - $width) / 2;
-            $y = $pdf->get_height() - 35;
-            $pdf->page_text($x, $y, $text, $font, $size);
-        }
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.agreement-container');
+            const radios = document.querySelectorAll('input[name="printMode"]');
+
+            radios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    // Remove stamp class first
+                    container.classList.remove('stamp-mode');
+                    
+                    if (this.value === 'stamp') {
+                        container.classList.add('stamp-mode');
+                    }
+                });
+            });
+
+            // Set initial mode based on default
+            if ('{{ $type }}' === 'stamp') {
+                document.getElementById('stamp').checked = true;
+                container.classList.add('stamp-mode');
+            }
+        });
     </script>
 </body>
 </html>

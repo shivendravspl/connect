@@ -2289,6 +2289,11 @@ class ApprovalController extends Controller
         }
     }
 
+
+
+    /**
+     * Show the draft agreement view.
+     */
     public function showDraftAgreement($id)
     {
         $application = Onboarding::with(['entityDetails', 'createdBy'])->findOrFail($id);
@@ -2306,150 +2311,12 @@ class ApprovalController extends Controller
             abort(403, 'Draft agreement is not available for the current application status.');
         }
 
-        return view('approvals.draft-agreement', compact('application'));
+        // Default to 'e-stamp'
+        $type = 'e-stamp';
+
+        return view('approvals.draft-agreement', compact('application', 'type'));
     }
 
-
-    public function downloadDraftAgreementPdf($id, $type = 'e-stamp')
-{
-    // Increase limits
-    ini_set('memory_limit', '512M');
-    ini_set('max_execution_time', 120);
-    ini_set('pcre.backtrack_limit', '1000000');
-    ini_set('pcre.recursion_limit', '1000000');
-
-    $application = Onboarding::with(['entityDetails', 'createdBy'])->findOrFail($id);
-
-    $allowedStatuses = [
-        'documents_resubmitted',
-        'documents_verified',
-        'physical_docs_pending',
-        'physical_docs_redispatched',
-        'physical_docs_verified',
-        'agreement_created',
-    ];
-
-    if (!in_array($application->status, $allowedStatuses)) {
-        abort(403, 'Draft agreement is not available for the current application status.');
-    }
-
-    try {
-        \Log::info('Starting PDF generation for application: ' . $id);
-
-        // Use the simplified PDF view
-        $html = view('approvals.pdf.draft-agreement', [
-            'application' => $application,
-            'type' => $type
-        ])->render();
-
-        \Log::info('View rendered successfully');
-
-        // Clean HTML for mPDF
-        $html = $this->cleanHtmlForMpdf($html);
-
-        // mPDF configuration optimized for legal documents
-        // For 'stamp' type, increase top margin to provide space for physical stamp paper printing on first page
-        // Subsequent pages will use normal spacing; mPDF @page margins apply uniformly, but extra top space ensures content starts lower on page 1
-        $topMargin = $type === 'stamp' ? 50 : 20; // 50mm for stamp (approx. space for stamp + header); 20mm otherwise
-        $mpdf = new Mpdf([
-            'mode' => 'utf-8',
-            'format' => 'A4',
-            'orientation' => 'P',
-            'margin_left' => 15,
-            'margin_right' => 15,
-            'margin_top' => $topMargin,
-            'margin_bottom' => 15,
-            'margin_header' => 5,
-            'margin_footer' => 8,
-            'default_font' => 'dejavusans',
-            'default_font_size' => 10,
-            'tempDir' => storage_path('app/tmp'),
-            'autoScriptToLang' => true,
-            'autoLangToFont' => true,
-            'ignore_invalid_utf8' => true,
-            'showImageErrors' => true,
-            'use_kwt' => true, // Keep-with-table
-            'keep_table_proportions' => true,
-            'shrink_tables_to_fit' => 1,
-        ]);
-
-        // Set PDF metadata
-        $mpdf->SetTitle('Distributorship Agreement - ' . ($application->entityDetails->firm_name ?? 'N/A'));
-        //$mpdf->SetAuthor('VNR Seeds Private Limited');
-
-        // No watermark for any type - removed as per requirement
-
-        // Set footer with page numbers
-        // $mpdf->SetFooter('Page {PAGENO} of {nb}|Generated on ' . date('d-m-Y H:i:s') . ' | VNR Seeds Private Limited');
-
-        \Log::info('Writing HTML to mPDF');
-
-        // Write HTML
-        $mpdf->WriteHTML($html);
-
-        \Log::info('PDF generation completed successfully');
-
-        $fileName = 'Distributorship-Agreement-' . ($type === 'stamp' ? 'Stamp-Paper' : 'E-Stamp') . '-' . $application->id . '.pdf';
-
-        return response($mpdf->Output($fileName, 'S'), 200, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-            'Cache-Control' => 'no-cache, no-store, must-revalidate',
-            'Pragma' => 'no-cache',
-            'Expires' => '0'
-        ]);
-    } catch (\Exception $e) {
-        \Log::error('mPDF Generation Error: ' . $e->getMessage());
-        \Log::error('mPDF Trace: ' . $e->getTraceAsString());
-
-        return back()->with('error', 'Unable to generate PDF at the moment. Please try again or contact support.');
-    }
-}
-    /**
-     * Clean HTML for mPDF compatibility
-     */
-    private function cleanHtmlForMpdf($html)
-    {
-        // Remove any problematic characters or tags
-        $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-        $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
-        $html = preg_replace('/<!--(.*?)-->/is', '', $html);
-
-        // Fix any unclosed tags
-        $html = $this->closeUnclosedTags($html);
-
-        return $html;
-    }
-
-    /**
-     * Close any unclosed HTML tags
-     */
-    private function closeUnclosedTags($html)
-    {
-        preg_match_all('#<([a-z]+)(?: .*)?(?<![/| ])>#iU', $html, $result);
-        $openedtags = $result[1];
-
-        preg_match_all('#</([a-z]+)>#iU', $html, $result);
-        $closedtags = $result[1];
-
-        $len_opened = count($openedtags);
-
-        if (count($closedtags) == $len_opened) {
-            return $html;
-        }
-
-        $openedtags = array_reverse($openedtags);
-
-        for ($i = 0; $i < $len_opened; $i++) {
-            if (!in_array($openedtags[$i], $closedtags)) {
-                $html .= '</' . $openedtags[$i] . '>';
-            } else {
-                unset($closedtags[array_search($openedtags[$i], $closedtags)]);
-            }
-        }
-
-        return $html;
-    }
     /**
      * List applications eligible for security cheque management (MIS only)
      */

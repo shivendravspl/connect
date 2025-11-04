@@ -310,22 +310,6 @@ $isApprover = $isCurrentApprover || $isHistoricalApprover;
                    data-key="t-analytics">Onboarding</a>
             </li>
             
-            <!-- Show approval section for current approvers -->
-            @if($isCurrentApprover)
-            <li class="nav-item">
-                <a href="{{ route('applications.pending-approval') }}" 
-                   class="nav-link {{ request()->routeIs('applications.pending-approval') ? 'active' : '' }}">
-                    <i class="nav-icon ri-checkbox-circle-line"></i>
-                    <p>
-                        Pending Approval
-                        @if($pendingApprovalCount > 0)
-                            <span class="badge bg-danger ms-1">{{ $pendingApprovalCount }}</span>
-                        @endif
-                    </p>
-                </a>
-            </li>
-            @endif
-            
             @if(auth()->user()->hasAnyRole(['Mis Admin', 'Mis User']))
                 <li class="nav-item">
                     <a href="{{ route('mis.list-security-cheques') }}" 

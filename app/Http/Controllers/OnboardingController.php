@@ -3158,7 +3158,7 @@ class OnboardingController extends Controller
         try {
             if ($user->hasAnyRole(['Mis User', 'Admin', 'Super Admin', 'Mis Admin'])) {
                 $application->update([
-                    'status' => 'approved',
+                    'status' => 'mis_processing',
                     'current_approver_id' => $user->emp_id,
                     'approval_level' => 'MIS Auto Approval',
                     'updated_at' => now()

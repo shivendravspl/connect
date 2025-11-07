@@ -4,166 +4,284 @@
         <p class="text-muted mt-2 small">No documents found for {{ $entityTypes[$entityType] ?? $entityType }}.</p>
     </div>
 @else
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="mb-0">Document Checklist for {{ $entityTypes[$entityType] ?? $entityType }}</h6>
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h5 class="mb-1">Document Checklist</h5>
+            <p class="text-muted small mb-0">{{ $entityTypes[$entityType] ?? $entityType }}</p>
+        </div>
         <div class="btn-group">
-            <button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadExcel()">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="downloadExcel()" 
+                    title="Download as Excel (Table Format)">
                 <i class="ri-download-line me-1"></i>Excel
             </button>
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="downloadPDF()">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="downloadPDF()" 
+                    title="Download as PDF (Table Format)">
                 <i class="ri-file-pdf-line me-1"></i>PDF
             </button>
-            {{--<button type="button" class="btn btn-sm btn-outline-success" onclick="saveChecklist()">
-                <i class="ri-save-line me-1"></i>Save
-            </button>--}}
         </div>
     </div>
 
-    <div class="document-checklist-content">
+    <!-- Stats Summary -->
+    <div class="row g-2 mb-4">
+        @php
+            $allDocuments = $documents->flatten();
+            $mandatoryCount = $allDocuments->where('applicability', 'Mandatory')->count();
+            $optionalCount = $allDocuments->where('applicability', 'Optional')->count();
+            $conditionalCount = $allDocuments->where('applicability', 'Conditional')->count();
+            $totalCount = $allDocuments->count();
+        @endphp
+        
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 bg-danger bg-opacity-10">
+                <div class="card-body text-center py-3">
+                    <h4 class="text-danger mb-1">{{ $mandatoryCount }}</h4>
+                    <small class="text-muted">Mandatory</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 bg-warning bg-opacity-10">
+                <div class="card-body text-center py-3">
+                    <h4 class="text-warning mb-1">{{ $optionalCount }}</h4>
+                    <small class="text-muted">Optional</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 bg-info bg-opacity-10">
+                <div class="card-body text-center py-3">
+                    <h4 class="text-info mb-1">{{ $conditionalCount }}</h4>
+                    <small class="text-muted">Conditional</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card border-0 bg-success bg-opacity-10">
+                <div class="card-body text-center py-3">
+                    <h4 class="text-success mb-1">{{ $totalCount }}</h4>
+                    <small class="text-muted">Total Documents</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accordion Layout -->
+    <div class="accordion document-checklist-content" id="documentAccordion">
         @foreach($documents as $category => $categoryDocuments)
-            <div class="category-section mb-4">
-                <h6 class="category-header bg-light p-2 rounded small fw-semibold mb-2">
-                    <i class="ri-folder-line me-1"></i>{{ $category }}
-                </h6>
-                
-                @php
-                    $subCategories = $categoryDocuments->groupBy('sub_category');
-                @endphp
-                
-                @foreach($subCategories as $subCategory => $subCategoryDocuments)
-                    @if($subCategory)
-                        <h7 class="sub-category-header ps-3 py-1 small fw-medium text-muted">
-                            <i class="ri-subtract-line me-1"></i>{{ $subCategory }}
-                        </h7>
-                    @endif
-                    
-                    @php
-                        $sortedDocuments = $subCategoryDocuments->sortBy(function($doc) {
-                            return $doc->applicability == 'Mandatory' ? 0 : 
-                                  ($doc->applicability == 'Optional' ? 1 : 2);
-                        });
-                    @endphp
-                    
-                    @foreach($sortedDocuments as $index => $document)
-                        <div class="document-item border-bottom pb-2 mb-2">
-                            <div class="d-flex align-items-start">
-                                <div class="flex-grow-1">
-                                    <div class="d-flex align-items-center mb-1">
-                                        <span class="badge 
-                                            @if($document->applicability == 'Mandatory') bg-danger
-                                            @elseif($document->applicability == 'Optional') bg-warning text-dark
-                                            @else bg-info
-                                            @endif me-2" 
-                                            style="font-size: 0.6rem; padding: 0.2rem 0.4rem;">
-                                            {{ $document->applicability }}
-                                        </span>
-                                        <strong class="small">{{ $document->document_name }}</strong>
-                                    </div>
-                                    
-                                    @if($document->checkpoints)
-                                        <p class="small text-muted mb-1" style="font-size: 0.7rem; line-height: 1.3;">
-                                            <strong>Checkpoints:</strong> {{ $document->checkpoints }}
-                                        </p>
-                                    @endif
-                                    
-                                    @if($document->applicability_justification)
-                                        <p class="small text-muted mb-0" style="font-size: 0.7rem; line-height: 1.3;">
-                                            <strong>Justification:</strong> {{ $document->applicability_justification }}
-                                        </p>
-                                    @endif
-                                </div>
+            @php
+                $categorySlug = \Illuminate\Support\Str::slug($category);
+            @endphp
+            
+            <div class="accordion-item border-0 mb-3">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed shadow-none" type="button" data-bs-toggle="collapse" 
+                            data-bs-target="#collapse{{ $categorySlug }}" aria-expanded="false" 
+                            aria-controls="collapse{{ $categorySlug }}">
+                        <div class="d-flex align-items-center w-100">
+                            <i class="ri-folder-2-line text-primary me-3"></i>
+                            <div class="flex-grow-1 text-start">
+                                <strong class="text-dark">{{ $category }}</strong>
+                                <small class="text-muted ms-2">
+                                    ({{ $categoryDocuments->count() }} documents)
+                                </small>
+                            </div>
+                            <div class="flex-shrink-0">
+                                @if($category == 'Address Proof')
+                                    <span class="badge bg-info">Conditional</span>
+                                @elseif($category == 'Credit Worthiness')
+                                    <span class="badge bg-warning text-dark">Any One Required</span>
+                                @elseif($category == 'Declarations')
+                                    <span class="badge bg-secondary">In Agreement</span>
+                                @endif
                             </div>
                         </div>
-                    @endforeach
-                @endforeach
+                    </button>
+                </h2>
+                
+                <div id="collapse{{ $categorySlug }}" class="accordion-collapse collapse" 
+                     data-bs-parent="#documentAccordion">
+                    <div class="accordion-body p-0">
+                        @foreach($categoryDocuments->groupBy('sub_category') as $subCategory => $subDocs)
+                            @if($subCategory)
+                                <div class="subcategory-header bg-light px-4 py-2 border-bottom">
+                                    <h6 class="mb-0 small fw-semibold text-dark">
+                                        <i class="ri-subtract-line me-2 text-muted"></i>{{ $subCategory }}
+                                    </h6>
+                                </div>
+                            @endif
+                            
+                            @php
+                                $sortedDocuments = $subDocs->sortBy(function($doc) {
+                                    return $doc->applicability == 'Mandatory' ? 0 : 
+                                          ($doc->applicability == 'Optional' ? 1 : 2);
+                                });
+                            @endphp
+                            
+                            @foreach($sortedDocuments as $document)
+                                <div class="document-item px-4 py-3 border-bottom">
+                                    <div class="d-flex align-items-start">
+                                        <!-- Status Indicator -->
+                                        <div class="document-status me-3 flex-shrink-0">
+                                            @if($document->applicability == 'Mandatory')
+                                                <div class="mandatory-indicator bg-danger rounded-circle d-flex align-items-center justify-content-center" 
+                                                     style="width: 24px; height: 24px;" title="Mandatory Document">
+                                                    <i class="ri-alert-line text-white" style="font-size: 12px;"></i>
+                                                </div>
+                                            @elseif($document->applicability == 'Optional')
+                                                <div class="optional-indicator bg-warning rounded-circle d-flex align-items-center justify-content-center" 
+                                                     style="width: 24px; height: 24px;" title="Optional Document">
+                                                    <i class="ri-information-line text-dark" style="font-size: 12px;"></i>
+                                                </div>
+                                            @else
+                                                <div class="conditional-indicator bg-info rounded-circle d-flex align-items-center justify-content-center" 
+                                                     style="width: 24px; height: 24px;" title="Conditional Document">
+                                                    <i class="ri-checkbox-circle-line text-white" style="font-size: 12px;"></i>
+                                                </div>
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Document Content -->
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <h6 class="mb-0 me-2">{{ $document->document_name }}</h6>
+                                                <span class="badge 
+                                                    @if($document->applicability == 'Mandatory') bg-danger
+                                                    @elseif($document->applicability == 'Optional') bg-warning text-dark
+                                                    @else bg-info
+                                                    @endif small">
+                                                    {{ $document->applicability }}
+                                                </span>
+                                            </div>
+                                            
+                                            @if($document->checkpoints)
+                                                <div class="checkpoints mb-2">
+                                                    <strong class="small text-muted d-block mb-1">Checkpoints:</strong>
+                                                    <p class="small text-dark mb-0" style="line-height: 1.4;">{{ $document->checkpoints }}</p>
+                                                </div>
+                                            @endif
+                                            
+                                            @if($document->applicability_justification)
+                                                <div class="justification">
+                                                    <strong class="small text-muted d-block mb-1">Notes:</strong>
+                                                    <p class="small text-dark mb-0" style="line-height: 1.4;">{{ $document->applicability_justification }}</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        @endforeach
+                    </div>
+                </div>
             </div>
         @endforeach
     </div>
+@endif
 
-    <script>
-    function downloadExcel() {
-        const entityType = '{{ $entityType }}';
-        window.location.href = `{{ route('document-checklist.download-excel') }}?entity_type=${entityType}`;
+<style>
+.document-checklist-content {
+    max-height: calc(100vh - 300px);
+    overflow-y: auto;
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.accordion-button:focus {
+    box-shadow: none;
+    border-color: #dee2e6;
+}
+
+.document-item {
+    transition: background-color 0.2s ease;
+}
+
+.document-item:hover {
+    background-color: #f8f9fa;
+}
+
+.subcategory-header {
+    background-color: #f8f9fa !important;
+}
+
+/* Custom scrollbar */
+.document-checklist-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.document-checklist-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.document-checklist-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.document-checklist-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Ensure proper spacing */
+.accordion-body {
+    background-color: #fff;
+}
+
+.document-item:last-child {
+    border-bottom: none !important;
+}
+</style>
+
+<script>
+function downloadExcel() {
+    const entityType = '{{ $entityType }}';
+    const url = `{{ route('document-checklist.download-excel') }}?entity_type=${encodeURIComponent(entityType)}`;
+    window.location.href = url;
+}
+
+function downloadPDF() {
+    const entityType = '{{ $entityType }}';
+    const url = `{{ route('document-checklist.download-pdf') }}?entity_type=${encodeURIComponent(entityType)}`;
+    window.location.href = url;
+}
+
+// Initialize tooltips and enhance UX
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Auto-expand first category if only one exists
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    if (accordionItems.length === 1) {
+        const firstButton = accordionItems[0].querySelector('.accordion-button');
+        if (firstButton) {
+            firstButton.click();
+        }
     }
+    
+    // Add click tracking for analytics (optional)
+    document.querySelectorAll('.accordion-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const category = this.querySelector('strong').textContent;
+            console.log('Category opened:', category);
+        });
+    });
+});
 
-    function downloadPDF() {
-        const entityType = '{{ $entityType }}';
-        window.location.href = `{{ route('document-checklist.download-pdf') }}?entity_type=${entityType}`;
-    }
-
-    function saveChecklist() {
-        // Collect all document IDs
-        const documentIds = []; 
-        
-        // You can implement checkboxes later to collect specific document IDs
-        @foreach($documents as $category => $categoryDocuments)
-            @foreach($categoryDocuments as $document)
-                documentIds.push({{ $document->id }});
-            @endforeach
-        @endforeach
-        
-        fetch('{{ route("document-checklist.save") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                entity_type: '{{ $entityType }}',
-                document_ids: documentIds,
-                status: 'saved'
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showToast('Checklist saved successfully!', 'success');
-            } else {
-                showToast('Error saving checklist', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            showToast('Error saving checklist', 'error');
+// Optional: Add keyboard navigation
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        // Collapse all accordions when Escape is pressed
+        document.querySelectorAll('.accordion-button:not(.collapsed)').forEach(button => {
+            button.click();
         });
     }
-
-    function showToast(message, type = 'info') {
-        // You can use a proper toast library here
-        const toast = document.createElement('div');
-        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-        toast.style.top = '20px';
-        toast.style.right = '20px';
-        toast.style.zIndex = '9999';
-        toast.innerHTML = `
-            ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        `;
-        document.body.appendChild(toast);
-        
-        setTimeout(() => {
-            toast.remove();
-        }, 3000);
-    }
-    </script>
-
-    <style>
-    .document-checklist-content {
-        max-height: calc(100vh - 200px);
-        overflow-y: auto;
-    }
-    .category-header {
-        border-left: 3px solid #0d6efd;
-        font-size: 0.8rem;
-    }
-    .sub-category-header {
-        border-left: 2px solid #6c757d;
-        font-size: 0.75rem;
-    }
-    .document-item:last-child {
-        border-bottom: none !important;
-        margin-bottom: 0 !important;
-        padding-bottom: 0 !important;
-    }
-    </style>
-@endif
+});
+</script>

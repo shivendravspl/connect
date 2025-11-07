@@ -8,9 +8,13 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Color;
 
-class DocumentChecklistExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle
+class DocumentChecklistExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithTitle, ShouldAutoSize
 {
     protected $entityType;
     protected $entityTypeName;
@@ -34,7 +38,7 @@ class DocumentChecklistExport implements FromCollection, WithHeadings, WithMappi
     {
         return [
             'Category',
-            'Sub Category',
+            'Sub Category', 
             'Document Name',
             'Checkpoints',
             'Applicability/Justification',
@@ -56,80 +60,205 @@ class DocumentChecklistExport implements FromCollection, WithHeadings, WithMappi
 
     public function styles(Worksheet $sheet)
     {
-        // Set column widths
-        $sheet->getColumnDimension('A')->setWidth(20);
-        $sheet->getColumnDimension('B')->setWidth(15);
-        $sheet->getColumnDimension('C')->setWidth(30);
-        $sheet->getColumnDimension('D')->setWidth(40);
-        $sheet->getColumnDimension('E')->setWidth(40);
-        $sheet->getColumnDimension('F')->setWidth(15);
-
-        // Style the header row
-        $sheet->getStyle('A1:F1')->applyFromArray([
+        // Get all data
+        $documents = $this->collection();
+        $totalRows = $documents->count() + 4; // +4 for title, header, and extra rows
+        
+        // Add title row
+        $sheet->insertNewRowBefore(1, 3);
+        $sheet->mergeCells('A1:F1');
+        $sheet->setCellValue('A1', 'DOCUMENT CHECKLIST');
+        $sheet->mergeCells('A2:F2');
+        $sheet->setCellValue('A2', 'Entity Type: ' . $this->entityTypeName);
+        $sheet->mergeCells('A3:F3');
+        $sheet->setCellValue('A3', 'Generated on: ' . date('F j, Y'));
+        
+        // Style title rows
+        $sheet->getStyle('A1:F3')->applyFromArray([
+            'font' => [
+                'bold' => true,
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+            ],
+            'borders' => [
+                'bottom' => [
+                    'borderStyle' => Border::BORDER_MEDIUM,
+                    'color' => ['rgb' => '333333'],
+                ],
+            ],
+        ]);
+        
+        $sheet->getStyle('A1')->getFont()->setSize(16);
+        $sheet->getStyle('A2:A3')->getFont()->setSize(12);
+        
+        // Style header row (row 4)
+        $sheet->getStyle('A4:F4')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
             ],
             'fill' => [
-                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                'startColor' => ['rgb' => '2C3E50'],
+                'fillType' => Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '2C3E50'], // Dark blue-gray like PDF header
             ],
             'borders' => [
                 'allBorders' => [
-                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'borderStyle' => Border::BORDER_THIN,
                     'color' => ['rgb' => '000000'],
+                ],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+        ]);
+
+        // Apply borders to all data cells
+        $sheet->getStyle("A4:F{$totalRows}")->applyFromArray([
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'DDDDDD'],
                 ],
             ],
         ]);
 
-        // Add title row
-        $sheet->insertNewRowBefore(1, 2);
-        $sheet->mergeCells('A1:F1');
-        $sheet->setCellValue('A1', 'Document Checklist - ' . $this->entityTypeName);
-        $sheet->getStyle('A1')->applyFromArray([
+        // Style data rows with category grouping and colors
+        $currentRow = 5;
+        $currentCategory = null;
+        
+        foreach ($documents as $index => $document) {
+            $rowStyle = [];
+            
+            // Category grouping - light blue background for category changes
+            if ($currentCategory !== $document->category) {
+                $currentCategory = $document->category;
+                $rowStyle['fill'] = [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E8F4FD'], // Light blue like PDF category headers
+                ];
+                $rowStyle['font'] = [
+                    'bold' => true,
+                ];
+            }
+            
+            // Applicability colors - matching PDF badge colors
+            $applicabilityStyle = [];
+            if ($document->applicability === 'Mandatory') {
+                $applicabilityStyle['fill'] = [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'FFE6E6'], // Light red
+                ];
+                $applicabilityStyle['font'] = [
+                    'color' => ['rgb' => 'DC3545'], // Red text
+                    'bold' => true,
+                ];
+            } elseif ($document->applicability === 'Optional') {
+                $applicabilityStyle['fill'] = [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'FFF9E6'], // Light yellow
+                ];
+                $applicabilityStyle['font'] = [
+                    'color' => ['rgb' => '856404'], // Dark yellow text
+                    'bold' => true,
+                ];
+            } elseif ($document->applicability === 'Conditional' || $document->applicability === 'On Applicability') {
+                $applicabilityStyle['fill'] = [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => 'E6F7FF'], // Light blue
+                ];
+                $applicabilityStyle['font'] = [
+                    'color' => ['rgb' => '0C5460'], // Dark blue text
+                    'bold' => true,
+                ];
+            }
+            
+            // Apply category style to entire row
+            if (!empty($rowStyle)) {
+                $sheet->getStyle("A{$currentRow}:F{$currentRow}")->applyFromArray($rowStyle);
+            }
+            
+            // Apply applicability style only to the applicability column
+            if (!empty($applicabilityStyle)) {
+                $sheet->getStyle("F{$currentRow}")->applyFromArray($applicabilityStyle);
+            }
+            
+            $currentRow++;
+        }
+
+        // Auto-wrap text for better readability
+        $sheet->getStyle("A5:F{$totalRows}")->getAlignment()->setWrapText(true);
+        
+        // Set row heights for better visibility
+        $sheet->getRowDimension(1)->setRowHeight(30);
+        $sheet->getRowDimension(4)->setRowHeight(25);
+        
+        for ($i = 5; $i <= $totalRows; $i++) {
+            $sheet->getRowDimension($i)->setRowHeight(20);
+        }
+
+        // Add footer
+        $footerRow = $totalRows + 1;
+        $sheet->mergeCells("A{$footerRow}:F{$footerRow}");
+        $sheet->setCellValue("A{$footerRow}", 'Document Checklist generated on ' . date('F j, Y \a\t g:i A'));
+        $sheet->getStyle("A{$footerRow}")->applyFromArray([
             'font' => [
-                'bold' => true,
-                'size' => 16,
+                'italic' => true,
+                'color' => ['rgb' => '666666'],
             ],
             'alignment' => [
                 'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
             ],
+            'borders' => [
+                'top' => [
+                    'borderStyle' => Border::BORDER_THIN,
+                    'color' => ['rgb' => 'DDDDDD'],
+                ],
+            ],
         ]);
 
-        // Style for mandatory documents
-        $row = 3; // Start after header and title
-        foreach ($this->collection() as $document) {
-            $styleArray = [];
-            
-            if ($document->applicability === 'Mandatory') {
-                $styleArray['fill'] = [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'FFE6E6'], // Light red
-                ];
-            } elseif ($document->applicability === 'Optional') {
-                $styleArray['fill'] = [
-                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
-                    'startColor' => ['rgb' => 'FFF9E6'], // Light yellow
-                ];
-            }
-            
-            if (!empty($styleArray)) {
-                $sheet->getStyle("A{$row}:F{$row}")->applyFromArray($styleArray);
-            }
-            $row++;
-        }
-
-        // Auto-wrap text for better readability
-        $sheet->getStyle('A3:F' . ($row - 1))->getAlignment()->setWrapText(true);
-
         return [
-            1 => ['font' => ['bold' => true, 'size' => 16]],
-            3 => ['font' => ['bold' => true]],
+            // Title styles
+            1 => [
+                'font' => [
+                    'bold' => true,
+                    'size' => 16,
+                    'color' => ['rgb' => '2C3E50'],
+                ],
+            ],
+            2 => [
+                'font' => [
+                    'bold' => true,
+                    'size' => 12,
+                    'color' => ['rgb' => '666666'],
+                ],
+            ],
+            3 => [
+                'font' => [
+                    'bold' => true,
+                    'size' => 11,
+                    'color' => ['rgb' => '666666'],
+                ],
+            ],
+            // Header row
+            4 => [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['rgb' => 'FFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => Fill::FILL_SOLID,
+                    'startColor' => ['rgb' => '2C3E50'],
+                ],
+            ],
         ];
     }
 
     public function title(): string
     {
-        return 'Document Checklist';
+        // Clean title for Excel sheet name (max 31 characters, no special chars)
+        $title = 'Checklist_' . substr(str_replace(' ', '_', $this->entityTypeName), 0, 20);
+        return preg_replace('/[\/:*?"<>|]/', '', $title);
     }
 }

@@ -14,7 +14,7 @@
         .badge { display: inline-block; padding: 2px 6px; font-size: 9px; border-radius: 3px; margin-right: 5px; }
         .badge-mandatory { background-color: #dc3545; color: white; }
         .badge-optional { background-color: #ffc107; color: black; }
-        .badge-applicability { background-color: #0dcaf0; color: black; }
+        .badge-on-applicability { background-color: #0dcaf0; color: black; }
         .checkpoint, .justification { font-size: 10px; color: #666; margin-bottom: 2px; }
         .page-break { page-break-after: always; }
         .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 10px; color: #666; }

@@ -48,8 +48,18 @@ class DocumentChecklistExport implements FromCollection, WithHeadings, WithMappi
 
     public function map($document): array
     {
+        // Add category notes for special categories
+        $categoryWithNote = $document->category;
+        if ($document->category == 'Address Proof') {
+            $categoryWithNote = $document->category . ' (Conditional)';
+        } elseif ($document->category == 'Credit Worthiness') {
+            $categoryWithNote = $document->category . ' (Any One Required)';
+        } elseif ($document->category == 'Declarations') {
+            $categoryWithNote = $document->category . ' (In Agreement)';
+        }
+
         return [
-            $document->category,
+            $categoryWithNote,
             $document->sub_category ?? '',
             $document->document_name,
             $document->checkpoints ?? '',
@@ -141,6 +151,29 @@ class DocumentChecklistExport implements FromCollection, WithHeadings, WithMappi
                 $rowStyle['font'] = [
                     'bold' => true,
                 ];
+                
+                // Apply special category colors
+                $categoryColorStyle = [];
+                if ($document->category == 'Address Proof') {
+                    $categoryColorStyle['fill'] = [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'E6F7FF'], // Light blue for Conditional
+                    ];
+                } elseif ($document->category == 'Credit Worthiness') {
+                    $categoryColorStyle['fill'] = [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'FFF9E6'], // Light yellow for Any One Required
+                    ];
+                } elseif ($document->category == 'Declarations') {
+                    $categoryColorStyle['fill'] = [
+                        'fillType' => Fill::FILL_SOLID,
+                        'startColor' => ['rgb' => 'F8F9FA'], // Light gray for In Agreement
+                    ];
+                }
+                
+                if (!empty($categoryColorStyle)) {
+                    $sheet->getStyle("A{$currentRow}:F{$currentRow}")->applyFromArray($categoryColorStyle);
+                }
             }
             
             // Applicability colors - matching PDF badge colors

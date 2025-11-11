@@ -1032,13 +1032,17 @@ class OnboardingController extends Controller
                 ->with('error', 'You can only edit draft or reverted applications');
         }
 
-        $initialFrontendStep = $application->current_progress_step ?? 1;
-        if ($step && $step <= $initialFrontendStep) {
-            $initialFrontendStep = (int) $step; // Cast to int to be safe
-        }
-        $totalSteps = 8; // Define your total number of steps
-        if ($initialFrontendStep > $totalSteps) {
-            $initialFrontendStep = $totalSteps;
+        // With this:
+        $initialFrontendStep = (int) $step; // Use the URL parameter directly
+        $totalSteps = 8;
+
+        // Validate and constrain the step
+        if ($initialFrontendStep < 1) $initialFrontendStep = 1;
+        if ($initialFrontendStep > $totalSteps) $initialFrontendStep = $totalSteps;
+
+        // If step is 1 but application has progressed further, use the higher step
+        if ($initialFrontendStep === 1 && $application->current_progress_step > 1) {
+            $initialFrontendStep = min($application->current_progress_step, $totalSteps);
         }
 
         // Ensure all relationships are loaded for editing
@@ -1327,21 +1331,20 @@ class OnboardingController extends Controller
         }
         // Pass $initialFrontendStep as $currentStep
         return view('applications.edit', compact(
-            'application',
-            'bu_list',
-            'vertical_list',
-            'zone_list',
-            'region_list',
-            'territory_list',
-            'preselected',
-            'crop_type',
-            'states',
-            'step',
-            'initialFrontendStep',
-            'crops',
-            'financialYears',
-            'completedStepsData'
-        ))->with('currentStep', $initialFrontendStep);
+    'application',
+    'bu_list',
+    'vertical_list',
+    'zone_list',
+    'region_list',
+    'territory_list',
+    'preselected',
+    'crop_type',
+    'states',
+    'initialFrontendStep', // Keep this for the hidden field if needed
+    'crops',
+    'financialYears',
+    'completedStepsData'
+))->with('currentStep', $initialFrontendStep);
     }
 
     // Main save step function that routes to specific step handlers
@@ -1690,7 +1693,7 @@ class OnboardingController extends Controller
                     'pan_file' => 'A PAN document is required.',
                     'gst_file' => 'A GST document is required when GST is applicable.',
                     'entity_proof_file' => 'An entity proof document is required.',
-                    'ownership_info_file' => 'An ownership information document is required.',
+                    //'ownership_info_file' => 'An ownership information document is required.',
                     'bank_statement_file' => 'A bank statement document is required.',
                     'itr_acknowledgement_file' => 'An ITR acknowledgement document is required.',
                 ];

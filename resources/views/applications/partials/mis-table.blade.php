@@ -11,7 +11,6 @@ use App\Models\Status;
                 <th>Zone</th>
                 <th>Submission Date</th>
                 <th>Initiator</th>
-                <th>Current Stage</th>
                 <th>Status</th>
                 <th>Actions</th>
             </tr>
@@ -37,24 +36,6 @@ use App\Models\Status;
                 <td>{{ $application->createdBy->emp_name ?? 'N/A' }}</td>
                 <td>
                     @php
-                    $stage = $statuses->where('name', $application->status)->first();
-                    
-                    if ($stage) {
-                        $stageDisplay = $stage->display_name;
-                    } else {
-                        $stageMap = [
-                            'Area Coordinator' => 'ABM',
-                            'Regional Business Manager' => 'RBM', 
-                            'Zonal Business Manager' => 'ZBM',
-                            'General Manager' => 'GM',
-                        ];
-                        $stageDisplay = $stageMap[$application->approval_level] ?? 'N/A';
-                    }
-                    @endphp
-                    {{ $stageDisplay }}
-                </td>
-                <td>
-                    @php
                     $badgeColor = Status::getBadgeColorForStatus($application->status);
                     $displayStatus = Status::getDisplayName($application->status);
                     @endphp
@@ -73,7 +54,20 @@ use App\Models\Status;
                                     <i class="ri-eye-fill align-bottom me-2 text-muted"></i> View
                                 </a>
                             </li>
-                            
+                             @if(($application->status !== 'draft') && $application->created_by === Auth::user()->emp_id)
+                                <li>
+                                        <a href="{{ route('dispatch.show', $application->id) }}" 
+                                        class="dropdown-item    " 
+                                        title="Fill Dispatch Details">
+                                            <i class="ri-truck-line"></i>
+                                        </a>
+                                </li>
+                            @endif
+                            @if(($application->status === 'reverted' || $application->status === 'draft') && $application->created_by === Auth::user()->emp_id)
+                               <li> <a href="{{ route('applications.edit', $application->id) }}" class="dropdown-item" title="Edit">
+                                    <i class="ri-edit-line align-bottom me-2 text-muted"></i>
+                                </a></li>
+                            @endif
                             {{-- MIS Processing Actions --}}
                             @if (in_array($application->status, ['mis_processing', 'documents_pending', 'documents_resubmitted']))
                             <li>

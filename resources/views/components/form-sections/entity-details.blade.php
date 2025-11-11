@@ -3373,6 +3373,13 @@ function removeSignatory(button) {
                 const bankNameInput = document.getElementById('bank_name');
                 const accountHolderInput = document.getElementById('account_holder');
 
+                  // Update bank details section fields
+                const bankDetailsAccountNumber = document.getElementById('bank_details_account_number');
+                const bankDetailsIfscCode = document.getElementById('bank_details_ifsc_code');
+                const bankDetailsBankName = document.getElementById('bank_details_bank_name');
+                const bankDetailsAccountHolder = document.getElementById('bank_details_account_holder');
+
+
                 if (accountNumberInput) accountNumberInput.value = result.data.accountNumber || '';
                 if (ifscCodeInput) ifscCodeInput.value = result.data.verification?.ifsc_details?.ifsc || '';
                 if (bankNameInput) {
@@ -3383,6 +3390,17 @@ function removeSignatory(button) {
                     accountHolderInput.value = result.data.verification?.beneficiary_name || '';
                     accountHolderInput.readOnly = true;
                 }
+
+                // Set values for bank details section
+                if (bankDetailsAccountNumber) bankDetailsAccountNumber.value = result.data.accountNumber || '';
+                if (bankDetailsIfscCode) bankDetailsIfscCode.value = result.data.verification?.ifsc_details?.ifsc || '';
+                if (bankDetailsBankName) {
+                    bankDetailsBankName.value = result.data.verification?.ifsc_details?.name || '';
+                }
+                if (bankDetailsAccountHolder) {
+                    bankDetailsAccountHolder.value = result.data.verification?.beneficiary_name || '';
+                }
+
 
                 const s3BaseUrl = 'https://s3.ap-south-1.amazonaws.com/developerinvnr.bkt/';
                 const fileUrl = s3BaseUrl + `Connect/Distributor/bank/${result.data.filename}`;

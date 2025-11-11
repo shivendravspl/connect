@@ -102,30 +102,29 @@
                         </div>
 
                         <div class="step-content" data-step="8" style="display:none;">
-                            <div class="card p-3">
-                                <h5 class="mb-3">Final Review</h5>
-                                @if($application_id || (isset($application) && $application->id))
-                                    <iframe src="{{ route('application.preview', ($application_id ?? $application->id)) }}"
-                                        style="width:100%; height:70vh; border:1px solid #ccc;"></iframe>
-                                    <div class="mt-3">
-                                        <a href="{{ route('application.download', ($application_id ?? $application->id)) }}"
-                                            class="btn btn-sm btn-primary" download>
-                                            <i class="fas fa-download"></i> Download PDF
-                                        </a>
-                                    </div>
-                                @else
-                                    <p class="text-danger">Please save the application to enable preview.</p>
-                                @endif
+                        <div class="card p-3">
+                            <h5 class="mb-3">Final Review</h5>
+                            
+                            {{-- Always show iframe, let JavaScript handle the source --}}
+                            <iframe src="about:blank"
+                                    style="width:100%; height:70vh; border:1px solid #ccc;"
+                                    id="preview-iframe"></iframe>
+                            
+                            <div class="mt-3">
+                                <a href="#" class="btn btn-sm btn-primary" id="download-pdf" download style="display:none;">
+                                    <i class="fas fa-download"></i> Download PDF
+                                </a>
+                            </div>
 
-                                <div class="mt-4 form-check">
-                                    <input type="checkbox" class="form-check-input" id="confirm_accuracy" name="confirm_accuracy" required>
-                                    <label class="form-check-label" for="confirm_accuracy">
-                                        I confirm that all the information provided above is accurate and complete to the best of my knowledge.
-                                    </label>
-                                    <div class="invalid-feedback text-danger">Please confirm the accuracy before submitting.</div>
-                                </div>
+                            <div class="mt-4 form-check">
+                                <input type="checkbox" class="form-check-input" id="confirm_accuracy" name="confirm_accuracy" required>
+                                <label class="form-check-label" for="confirm_accuracy">
+                                    I confirm that all the information provided above is accurate and complete to the best of my knowledge.
+                                </label>
+                                <div class="invalid-feedback text-danger">Please confirm the accuracy before submitting.</div>
                             </div>
                         </div>
+                    </div>
 
                         <div class="form-navigation mt-3 d-flex justify-content-between align-items-center sticky-bottom bg-white p-2 border-top">
                             <button type="button" class="btn btn-sm btn-secondary previous" style="display:none; min-width:80px;">

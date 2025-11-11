@@ -61,11 +61,33 @@ $(document).ready(function() {
     const steps = $('.step');
     const totalSteps = steps.length;
 
-    let currentStep = parseInt($('.stepper-wrapper').data('current-step')) || 1;
+    // Get step from URL parameter if available
+function getStepFromURL() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlStep = urlParams.get('step');
+        if (urlStep && !isNaN(urlStep)) {
+            const step = parseInt(urlStep);
+            if (step >= 1 && step <= totalSteps) {
+                console.log('Using step from URL parameter:', step);
+                return step;
+            }
+        }
+        return null;
+    }
+
+     // Update URL with current step
+    function updateURLWithStep(step) {
+        if (window.location.pathname.includes('/edit')) {
+            const newUrl = `${window.location.pathname}?step=${step}`;
+            window.history.pushState({}, '', newUrl);
+            console.log('Updated URL with step:', step);
+        }
+    }
+    let currentStep = getStepFromURL() || parseInt($('.stepper-wrapper').data('current-step')) || 1;
     let completedSteps = {};
 
     // Initialize completedSteps based on completedStepsData
-    try {
+      try {
         for (let step = 1; step <= totalSteps; step++) {
             completedSteps[step] = completedStepsData[step] || false;
         }
@@ -225,68 +247,53 @@ $(document).on('change', '#crop_vertical', function() {
 
     // 🔒 Block navigation only if NEW mode (not edit)
     if (!isEditMode) {
-        for (let i = 1; i < stepNumber; i++) {
-            if (!completedSteps[i]) {
-                console.log(`Step ${i} is incomplete. Blocking jump to step ${stepNumber}.`);
-                showSidebarNotification(
-                    `Please complete step ${i} before moving to step ${stepNumber}`,
-                    'error'
-                );
-                return;
+            for (let i = 1; i < stepNumber; i++) {
+                if (!completedSteps[i]) {
+                    console.log(`Step ${i} is incomplete. Blocking jump to step ${stepNumber}.`);
+                    showSidebarNotification(
+                        `Please complete step ${i} before moving to step ${stepNumber}`,
+                        'error'
+                    );
+                    return;
+                }
             }
         }
-    }
 
-    // ✅ If navigating within steps
-    if (stepNumber < totalSteps) {
+          // Update current step and URL
         currentStep = stepNumber;
+        updateURLWithStep(currentStep);
         showStep(currentStep);
         updateButtons();
         updateStepper(currentStep);
         scrollToTop();
-    } 
-    // ✅ If navigating to final Review & Submit step
-    else {
-        console.log('Attempting to access Review & Submit, validating all steps...');
-        if (validateAllSteps()) {
-            currentStep = stepNumber;
-            showStep(currentStep);
-            updateButtons();
-            updateStepper(currentStep);
-            scrollToTop();
-            if (applicationId) {
-                refreshReviewPreview();
-            }
-        } else {
-            const firstIncompleteStep = getFirstIncompleteStep();
-            console.log('Redirecting to incomplete step:', firstIncompleteStep);
-            currentStep = firstIncompleteStep;
-            showStep(currentStep);
-            updateButtons();
-            updateStepper(currentStep);
-            scrollToTop();
-            showSidebarNotification(
-                `Please complete step ${firstIncompleteStep} before accessing Review & Submit`,
-                'error'
-            );
+        
+        // Special handling for step 8
+        if (stepNumber === 8 && applicationId) {
+            refreshReviewPreview();
         }
-    }
 });
 
 
 
-    nextBtn.click(function() {
+        nextBtn.click(function() {
         console.log('Next button clicked, validating step:', currentStep);
         if (validateStep(currentStep)) {
             saveStep(currentStep)
                 .then((response) => {
                     completedSteps[currentStep] = true;
                     console.log('Step saved, updated completedSteps:', completedSteps);
+                    
+                    // Move to next step
                     currentStep++;
+                    
+                    // Update URL with new step
+                    updateURLWithStep(currentStep);
+                    
                     showStep(currentStep);
                     updateButtons();
                     updateStepper(currentStep);
                     scrollToTop();
+                    
                     if (currentStep === totalSteps && applicationId) {
                         refreshReviewPreview();
                     }
@@ -303,9 +310,14 @@ $(document).on('change', '#crop_vertical', function() {
         }
     });
 
+    // --- Enhanced Previous Button ---
     prevBtn.click(function() {
         console.log('Previous button clicked, moving to step:', currentStep - 1);
         currentStep--;
+        
+        // Update URL with new step
+        updateURLWithStep(currentStep);
+        
         showStep(currentStep);
         updateButtons();
         updateStepper(currentStep);
@@ -353,24 +365,53 @@ $(document).on('change', '#crop_vertical', function() {
     });
 
     function refreshReviewPreview() {
-        const iframe = $('.step-content[data-step="8"] iframe');
-        if (iframe.length && applicationId) {
-            iframe.attr('src', `/application/${applicationId}/preview`);
-            console.log('Refreshing iframe with application_id:', applicationId);
-        } else {
-            console.warn('Iframe or application_id missing for preview refresh');
-        }
+    const applicationId = $('#application_id').val();
+    console.log('refreshReviewPreview called, application_id:', applicationId);
+    
+    if (!applicationId) {
+        console.warn('No application_id found for preview refresh');
+        return;
     }
+
+    // Try multiple selectors to find the iframe
+    let iframe = $('.step-content[data-step="8"] iframe');
+    if (iframe.length === 0) {
+        iframe = $('#preview-iframe');
+    }
+    
+    if (iframe.length && applicationId) {
+        const previewUrl = `/application/${applicationId}/preview?t=${Date.now()}`; // Cache bust
+        iframe.attr('src', previewUrl);
+        console.log('Refreshing iframe with URL:', previewUrl);
+        
+        // Add load event to check if iframe loaded successfully
+        iframe.on('load', function() {
+            console.log('Iframe loaded successfully');
+        }).on('error', function() {
+            console.error('Iframe failed to load');
+        });
+    } else {
+        console.warn('Iframe not found for preview refresh. Selectors tried:',
+            '.step-content[data-step="8"] iframe, #preview-iframe');
+    }
+}
 
     function showStep(step) {
         stepContents.hide();
         $(`.step-content[data-step="${step}"]`).show();
-         if (step === 6) {
-            loadBankDetails();
-        }
+        
         if (step === 4) {
             loadCropsForBusinessPlan();
         }
+        
+        // Special handling for step 8 in edit mode
+        if (step === 8 && applicationId) {
+            // Small delay to ensure DOM is ready
+            setTimeout(() => {
+                refreshReviewPreview();
+            }, 100);
+        }
+        
         console.log('Showing step:', step);
     }
 
@@ -611,11 +652,11 @@ $(document).on('change', '#crop_vertical', function() {
     }
 
     function saveStep(step, isFinalSubmission = false) {
-        return new Promise((resolve, reject) => {
-            const formData = new FormData();
-            const currentFields = $(`.step-content[data-step="${step}"]`).find('input:not(:disabled), select:not(:disabled), textarea:not(:disabled)');
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        const currentFields = $(`.step-content[data-step="${step}"]`).find('input:not(:disabled), select:not(:disabled), textarea:not(:disabled)');
 
-            if (step === 6) {
+        if (step === 6) {
             // Include all bank details
             const bankFields = [
                 'bank_name', 'account_holder', 'account_number', 'ifsc_code',
@@ -629,53 +670,53 @@ $(document).on('change', '#crop_vertical', function() {
                 console.log(`Bank field ${field}:`, value);
             });
         } else if (step === 1) {
-                formData.append('territory', $('#territory').val() || '');
-                formData.append('region', $('#region_id').val() || '');
-                formData.append('zone', $('#zone_id').val() || '');
-                formData.append('business_unit', $('#bu_id').val() || '');
-                formData.append('crop_vertical', $('#crop_vertical').val() || '');
-                formData.append('district', $('#district').val() || '');
-                formData.append('state', $('#state').val() || '');
-            } else if (step === 2) {
-                const fileFields = ['bank_file', 'seed_license_file', 'pan_file', 'gst_file'];
-                currentFields.each(function() {
-                    const field = $(this);
-                    const name = field.attr('name');
-                    if (field.attr('type') === 'file' && name.endsWith('[]') && field[0].files.length > 0) {
-                        return;
-                    } else if (field.attr('type') === 'file' && fileFields.includes(name) && field[0].files.length > 0) {
-                        formData.append(name, field[0].files[0]);
-                    } else if (name === 'area_covered[]') {
-                        (field.val() || []).forEach((val, i) => formData.append(`area_covered[${i}]`, val));
-                    } else if (field.attr('type') === 'checkbox') {
-                        formData.append(name, field.is(':checked') ? '1' : '0');
-                    } else {
-                        formData.append(name, field.val() || '');
+            formData.append('territory', $('#territory').val() || '');
+            formData.append('region', $('#region_id').val() || '');
+            formData.append('zone', $('#zone_id').val() || '');
+            formData.append('business_unit', $('#bu_id').val() || '');
+            formData.append('crop_vertical', $('#crop_vertical').val() || '');
+            formData.append('district', $('#district').val() || '');
+            formData.append('state', $('#state').val() || '');
+        } else if (step === 2) {
+            const fileFields = ['bank_file', 'seed_license_file', 'pan_file', 'gst_file'];
+            currentFields.each(function() {
+                const field = $(this);
+                const name = field.attr('name');
+                if (field.attr('type') === 'file' && name.endsWith('[]') && field[0].files.length > 0) {
+                    return;
+                } else if (field.attr('type') === 'file' && fileFields.includes(name) && field[0].files.length > 0) {
+                    formData.append(name, field[0].files[0]);
+                } else if (name === 'area_covered[]') {
+                    (field.val() || []).forEach((val, i) => formData.append(`area_covered[${i}]`, val));
+                } else if (field.attr('type') === 'checkbox') {
+                    formData.append(name, field.is(':checked') ? '1' : '0');
+                } else {
+                    formData.append(name, field.val() || '');
+                }
+            });
+
+            const authTable = $(`.step-content[data-step="2"]`).find('#authorized_persons_table');
+            if (authTable.length) {
+                authTable.find('.authorized-person-entry').each(function(index) {
+                    const $row = $(this);
+                    const letterInput = $row.find('input[name="auth_person_letter[]"]')[0];
+                    const aadharInput = $row.find('input[name="auth_person_aadhar[]"]')[0];
+
+                    if (letterInput && letterInput.files.length > 0) {
+                        formData.append(`auth_person_letter[${index}]`, letterInput.files[0]);
+                    }
+                    if (aadharInput && aadharInput.files.length > 0) {
+                        formData.append(`auth_person_aadhar[${index}]`, aadharInput.files[0]);
                     }
                 });
+            }
 
-                const authTable = $(`.step-content[data-step="2"]`).find('#authorized_persons_table');
-                if (authTable.length) {
-                    authTable.find('.authorized-person-entry').each(function(index) {
-                        const $row = $(this);
-                        const letterInput = $row.find('input[name="auth_person_letter[]"]')[0];
-                        const aadharInput = $row.find('input[name="auth_person_aadhar[]"]')[0];
-
-                        if (letterInput && letterInput.files.length > 0) {
-                            formData.append(`auth_person_letter[${index}]`, letterInput.files[0]);
-                        }
-                        if (aadharInput && aadharInput.files.length > 0) {
-                            formData.append(`auth_person_aadhar[${index}]`, aadharInput.files[0]);
-                        }
-                    });
+            for (const [key, value] of Object.entries(removedDocuments)) {
+                if (fileFields.includes(key) || key.startsWith('auth_person_letter[') || key.startsWith('auth_person_aadhar[')) {
+                    formData.append(`removed_${key}`, value ? '1' : '0');
                 }
-
-                for (const [key, value] of Object.entries(removedDocuments)) {
-                    if (fileFields.includes(key) || key.startsWith('auth_person_letter[') || key.startsWith('auth_person_aadhar[')) {
-                        formData.append(`removed_${key}`, value ? '1' : '0');
-                    }
-                }
-            } else if (step === 4) {
+            }
+        } else if (step === 4) {
             // Special handling for Step 4 - Business Plans
             const businessPlanRows = $('.business-plan-row');
             
@@ -702,188 +743,203 @@ $(document).on('change', '#crop_vertical', function() {
                 data: Array.from(formData.entries()).filter(([key]) => key.includes('business_plans'))
             });
         } else {
-                currentFields.each(function() {
-                    const field = $(this);
-                    const name = field.attr('name');
-                    if (field.attr('type') === 'file' && field[0].files.length > 0) {
-                        formData.append(name, field[0].files[0]);
-                    } else if (name === 'area_covered[]') {
-                        (field.val() || []).forEach((val, i) => formData.append(`area_covered[${i}]`, val));
-                    } else if (field.attr('type') === 'checkbox') {
-                        formData.append(name, field.is(':checked') ? '1' : '0');
-                    } else {
-                        formData.append(name, field.val() || '');
-                    }
-                });
-            }
+            currentFields.each(function() {
+                const field = $(this);
+                const name = field.attr('name');
+                if (field.attr('type') === 'file' && field[0].files.length > 0) {
+                    formData.append(name, field[0].files[0]);
+                } else if (name === 'area_covered[]') {
+                    (field.val() || []).forEach((val, i) => formData.append(`area_covered[${i}]`, val));
+                } else if (field.attr('type') === 'checkbox') {
+                    formData.append(name, field.is(':checked') ? '1' : '0');
+                } else {
+                    formData.append(name, field.val() || '');
+                }
+            });
+        }
 
-            formData.append('current_step', step);
-            formData.append('application_id', applicationId || $('#application_id').val() || '');
+        formData.append('current_step', step);
+        
+        // Always include application_id if available
+        const currentAppId = applicationId || $('#application_id').val() || '';
+        formData.append('application_id', currentAppId);
 
-            console.log('FormData for Step', step);
-            for (let pair of formData.entries()) {
-                console.log(`${pair[0]}: ${pair[1]}`);
-            }
+        console.log('FormData for Step', step);
+        console.log('Application ID being sent:', currentAppId);
+        for (let pair of formData.entries()) {
+            console.log(`${pair[0]}: ${pair[1]}`);
+        }
 
-            const button = isFinalSubmission ? submitBtn : nextBtn;
-            button.prop('disabled', true).html(
-                `<i class="fas fa-spinner fa-spin"></i> ${isFinalSubmission ? 'Submitting...' : 'Saving...'}`
-            );
+        const button = isFinalSubmission ? submitBtn : nextBtn;
+        button.prop('disabled', true).html(
+            `<i class="fas fa-spinner fa-spin"></i> ${isFinalSubmission ? 'Submitting...' : 'Saving...'}`
+        );
 
-            $.ajax({
-                url: `/applications/save-step/${step}`,
-                method: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-                success(response) {
-                    if (response.success) {
-                         if (!window.location.pathname.includes('/edit')) {
-                                const newUrl = `/applications/${response.application_id}/edit`;
-                                // Update URL without reload
-                                window.history.pushState({}, '', newUrl);
-                                // Also update hidden application_id field
-                                if (!$('#application_id').length) {
-                                    form.append(`<input type="hidden" id="application_id" name="application_id" value="${response.application_id}">`);
-                                } else {
-                                    $('#application_id').val(response.application_id);
-                                }
-                                console.log('Switched to edit mode, new URL:', newUrl);
-                            }
-
-                        if (response.application_id) {
-                            applicationId = response.application_id;
-                            if (!$('#application_id').length) {
-                                form.append(`<input type="hidden" id="application_id" name="application_id" value="${response.application_id}">`);
-                            } else {
-                                $('#application_id').val(response.application_id);
-                            }
-                            console.log('Updated application_id:', applicationId);
-                        }
-
-                        completedSteps[step] = true;
-                        console.log('Step saved, updated completedSteps:', completedSteps);
-                        showSidebarNotification(response.message, 'success');
-                        updateStepper(response.current_step);
-
-                        if (step === 8 && response.redirect) {
-                            $.post('/clear-application-id', {
-                                _token: $('meta[name="csrf-token"]').attr('content')
-                            });
-                            console.log('Redirecting to:', response.redirect);
-                            window.location.href = response.redirect;
-                            return;
-                        }
-                        resolve(response);
-                    } else {
-                        console.log('Save failed for step', step, response);
-                        showSidebarNotification(response.error || 'Failed to save data', 'error');
-                        if (response.missing_steps) {
-                            console.log('Missing steps:', response.missing_steps);
-                            showSidebarNotification('Missing data in steps: ' + response.missing_steps.join(', '), 'error');
-                        }
-                        reject(response);
-                    }
-                },
-                error(xhr) {
-                    const response = xhr.responseJSON || {};
-                    let errorMessage = 'Failed to save data.';
-                    if (response.error && typeof response.error === 'object') {
-                        if (step === 5) {
-                            // Special handling for step 5
-                            // Clear errors
-                            $('.step-content[data-step="5"]').find('.form-control, .form-select').removeClass('is-invalid');
-                            $('.step-content[data-step="5"]').find('.invalid-feedback').remove();
-                            $('#annual-turnover-error').hide().empty();
-                            $('.step-content[data-step="5"] tbody tr').removeClass('table-danger');
-
-                            let hasTurnoverError = false;
-
-                            // Handle turnover amount error
-                            if (response.error['annual_turnover.amount']) {
-                                const message = Array.isArray(response.error['annual_turnover.amount']) ? response.error['annual_turnover.amount'][0] : response.error['annual_turnover.amount'];
-                                $('#annual-turnover-error').text(message).show();
-                                $('.step-content[data-step="5"] input[name^="annual_turnover[amount]"]').addClass('is-invalid');
-                                $('.step-content[data-step="5"] input[name^="annual_turnover[amount]"]').closest('tr').addClass('table-danger');
-                                hasTurnoverError = true;
-                            }
-
-                            // Handle turnover year error if any
-                            if (response.error['annual_turnover.year']) {
-                                const messages = Array.isArray(response.error['annual_turnover.year']) ? response.error['annual_turnover.year'] : [response.error['annual_turnover.year']];
-                                let message = messages.join(', ');
-                                let currentError = $('#annual-turnover-error').text();
-                                if (currentError) {
-                                    currentError += ' ' + message;
-                                } else {
-                                    currentError = message;
-                                }
-                                $('#annual-turnover-error').text(currentError).show();
-                                $('.step-content[data-step="5"] .table-responsive table tbody tr').addClass('table-danger');
-                                hasTurnoverError = true;
-                            }
-
-                            // Handle other fields in step 5
-                            const step5Fields = ['net_worth', 'shop_ownership', 'shop_uom', 'shop_area', 'godown_uom', 'godown_area', 'godown_ownership', 'years_in_business'];
-                            $.each(response.error, function(field, messages) {
-                                if (step5Fields.includes(field)) {
-                                    const message = Array.isArray(messages) ? messages[0] : messages;
-                                    let $input = $('.step-content[data-step="5"] [name="' + field + '"]');
-                                    if ($input.length) {
-                                        $input.addClass('is-invalid');
-                                        $input.after('<div class="invalid-feedback d-block">' + message + '</div>');
-                                    }
-                                }
-                            });
-
-                            // Scroll to errors
-                            if (hasTurnoverError) {
-                                $('html, body').animate({
-                                    scrollTop: $('.step-content[data-step="5"] .table-responsive').offset().top - 100
-                                }, 500);
-                            } else {
-                                $('html, body').animate({
-                                    scrollTop: $('.step-content[data-step="5"]').offset().top - 100
-                                }, 500);
-                            }
-
-                            errorMessage = Object.values(response.error).flat().join(' ');
+        $.ajax({
+            url: `/applications/save-step/${step}`,
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
+            success(response) {
+                if (response.success) {
+                    // CRITICAL: Always update application_id when received from server
+                    if (response.application_id) {
+                        applicationId = response.application_id;
+                        
+                        // Ensure the hidden field exists and is updated
+                        let $appIdField = $('#application_id');
+                        if ($appIdField.length === 0) {
+                            // Create the hidden field if it doesn't exist
+                            form.append(`<input type="hidden" id="application_id" name="application_id" value="${response.application_id}">`);
+                            console.log('Created application_id hidden field:', response.application_id);
                         } else {
-                            // General handling for other steps
-                            errorMessage = Object.values(response.error).flat().join(' ');
-                            $('.form-group').find('.invalid-feedback').remove();
-                            $('.form-control, .form-select, .input-group').removeClass('is-invalid');
-                            for (const key in response.error) {
-                                let selector = `[name="${key}"]`;
-                                   if (key.includes('.')) {
-                                    const parts = key.split('.');
-                                    if (parts[0] === 'business_plans' && parts.length === 3) {
-                                        const index = parts[1];
-                                        const field = parts[2];
-                                        selector = `[name="business_plans[${index}][${field}]"]`;
-                                        const pairedFields = {
-                                            'current_financial_year_mt': 'current_financial_year_amount',
-                                            'current_financial_year_amount': 'current_financial_year_mt',
-                                            'next_financial_year_mt': 'next_financial_year_amount',
-                                            'next_financial_year_amount': 'next_financial_year_mt'
-                                        };
-                                        const pairedField = pairedFields[field];
-                                        if (pairedField) {
-                                            const pairedSelector = `[name="business_plans[${index}][${pairedField}]"]`;
-                                            $(pairedSelector).addClass('is-invalid'); // Highlight both for "either/or"
-                                        }
-                                    } else if (parts.length === 2) {
-                                        // Simple array: e.g., "array.0" -> array[0]
-                                        selector = `[name="${parts[0]}[${parts[1]}]"]`;
-                                    } else {
-                                        // Deeper nesting: join all but last with [ ], last as is
-                                        const nestedName = parts.slice(0, -1).reduce((acc, part, i) => acc + (i === 0 ? part : `[${part}]`), '') + `[${parts[parts.length - 1]}]`;
-                                        selector = `[name="${nestedName}"]`;
-                                    }
+                            // Update existing field
+                            $appIdField.val(response.application_id);
+                            console.log('Updated application_id hidden field:', response.application_id);
+                        }
+                        
+                        // Also update URL for new applications (first step save)
+                        if (step === 1 && !window.location.pathname.includes('/edit')) {
+                                const nextStep = 2; // Always go to step 2 after saving step 1
+                                const newUrl = `/applications/${response.application_id}/edit?step=${nextStep}`;
+                                window.location.href = newUrl;
+                                console.log('Switched to edit mode, redirecting to step:', nextStep);
+                                return; // Stop execution since page will reload
+                        }
+                    }
+
+                    completedSteps[step] = true;
+                    console.log('Step saved, updated completedSteps:', completedSteps);
+                    console.log('Current application_id:', applicationId);
+                    showSidebarNotification(response.message, 'success');
+                    updateStepper(response.current_step);
+
+                    // Refresh preview when step 8 is saved
+                    if (step === 8 && applicationId) {
+                        setTimeout(() => {
+                            refreshReviewPreview();
+                        }, 500);
+                    }
+
+                    if (step === 8 && response.redirect) {
+                        $.post('/clear-application-id', {
+                            _token: $('meta[name="csrf-token"]').attr('content')
+                        });
+                        console.log('Redirecting to:', response.redirect);
+                        window.location.href = response.redirect;
+                        return;
+                    }
+                    resolve(response);
+                } else {
+                    console.log('Save failed for step', step, response);
+                    showSidebarNotification(response.error || 'Failed to save data', 'error');
+                    if (response.missing_steps) {
+                        console.log('Missing steps:', response.missing_steps);
+                        showSidebarNotification('Missing data in steps: ' + response.missing_steps.join(', '), 'error');
+                    }
+                    reject(response);
+                }
+            },
+            error(xhr) {
+                const response = xhr.responseJSON || {};
+                let errorMessage = 'Failed to save data.';
+                if (response.error && typeof response.error === 'object') {
+                    if (step === 5) {
+                        // Special handling for step 5
+                        // Clear errors
+                        $('.step-content[data-step="5"]').find('.form-control, .form-select').removeClass('is-invalid');
+                        $('.step-content[data-step="5"]').find('.invalid-feedback').remove();
+                        $('#annual-turnover-error').hide().empty();
+                        $('.step-content[data-step="5"] tbody tr').removeClass('table-danger');
+
+                        let hasTurnoverError = false;
+
+                        // Handle turnover amount error
+                        if (response.error['annual_turnover.amount']) {
+                            const message = Array.isArray(response.error['annual_turnover.amount']) ? response.error['annual_turnover.amount'][0] : response.error['annual_turnover.amount'];
+                            $('#annual-turnover-error').text(message).show();
+                            $('.step-content[data-step="5"] input[name^="annual_turnover[amount]"]').addClass('is-invalid');
+                            $('.step-content[data-step="5"] input[name^="annual_turnover[amount]"]').closest('tr').addClass('table-danger');
+                            hasTurnoverError = true;
+                        }
+
+                        // Handle turnover year error if any
+                        if (response.error['annual_turnover.year']) {
+                            const messages = Array.isArray(response.error['annual_turnover.year']) ? response.error['annual_turnover.year'] : [response.error['annual_turnover.year']];
+                            let message = messages.join(', ');
+                            let currentError = $('#annual-turnover-error').text();
+                            if (currentError) {
+                                currentError += ' ' + message;
+                            } else {
+                                currentError = message;
+                            }
+                            $('#annual-turnover-error').text(currentError).show();
+                            $('.step-content[data-step="5"] .table-responsive table tbody tr').addClass('table-danger');
+                            hasTurnoverError = true;
+                        }
+
+                        // Handle other fields in step 5
+                        const step5Fields = ['net_worth', 'shop_ownership', 'shop_uom', 'shop_area', 'godown_uom', 'godown_area', 'godown_ownership', 'years_in_business'];
+                        $.each(response.error, function(field, messages) {
+                            if (step5Fields.includes(field)) {
+                                const message = Array.isArray(messages) ? messages[0] : messages;
+                                let $input = $('.step-content[data-step="5"] [name="' + field + '"]');
+                                if ($input.length) {
+                                    $input.addClass('is-invalid');
+                                    $input.after('<div class="invalid-feedback d-block">' + message + '</div>');
                                 }
-                                const input = $(selector);
-                                if (input.length) {
+                            }
+                        });
+
+                        // Scroll to errors
+                        if (hasTurnoverError) {
+                            $('html, body').animate({
+                                scrollTop: $('.step-content[data-step="5"] .table-responsive').offset().top - 100
+                            }, 500);
+                        } else {
+                            $('html, body').animate({
+                                scrollTop: $('.step-content[data-step="5"]').offset().top - 100
+                            }, 500);
+                        }
+
+                        errorMessage = Object.values(response.error).flat().join(' ');
+                    } else {
+                        // General handling for other steps
+                        errorMessage = Object.values(response.error).flat().join(' ');
+                        $('.form-group').find('.invalid-feedback').remove();
+                        $('.form-control, .form-select, .input-group').removeClass('is-invalid');
+                        for (const key in response.error) {
+                            let selector = `[name="${key}"]`;
+                            if (key.includes('.')) {
+                                const parts = key.split('.');
+                                if (parts[0] === 'business_plans' && parts.length === 3) {
+                                    const index = parts[1];
+                                    const field = parts[2];
+                                    selector = `[name="business_plans[${index}][${field}]"]`;
+                                    const pairedFields = {
+                                        'current_financial_year_mt': 'current_financial_year_amount',
+                                        'current_financial_year_amount': 'current_financial_year_mt',
+                                        'next_financial_year_mt': 'next_financial_year_amount',
+                                        'next_financial_year_amount': 'next_financial_year_mt'
+                                    };
+                                    const pairedField = pairedFields[field];
+                                    if (pairedField) {
+                                        const pairedSelector = `[name="business_plans[${index}][${pairedField}]"]`;
+                                        $(pairedSelector).addClass('is-invalid'); // Highlight both for "either/or"
+                                    }
+                                } else if (parts.length === 2) {
+                                    // Simple array: e.g., "array.0" -> array[0]
+                                    selector = `[name="${parts[0]}[${parts[1]}]"]`;
+                                } else {
+                                    // Deeper nesting: join all but last with [ ], last as is
+                                    const nestedName = parts.slice(0, -1).reduce((acc, part, i) => acc + (i === 0 ? part : `[${part}]`), '') + `[${parts[parts.length - 1]}]`;
+                                    selector = `[name="${nestedName}"]`;
+                                }
+                            }
+                            const input = $(selector);
+                            if (input.length) {
                                 // Add is-invalid to input and visible parent (e.g., input-group or button)
                                 input.addClass('is-invalid');
                                 input.closest('.input-group').addClass('is-invalid');  // Highlights the whole upload group
@@ -914,16 +970,16 @@ $(document).on('change', '#crop_vertical', function() {
                 }
                 reject(response);
             },
-                complete() {
-                    button.prop('disabled', false).html(
-                        isFinalSubmission ?
-                            `<span class="d-none d-sm-inline">Submit</span><i class="fas fa-check d-sm-none"></i>` :
-                            `<span class="d-none d-sm-inline">Next</span><i class="fas fa-arrow-right d-sm-none"></i>`
-                    );
-                }
-            });
+            complete() {
+                button.prop('disabled', false).html(
+                    isFinalSubmission ?
+                        `<span class="d-none d-sm-inline">Submit</span><i class="fas fa-check d-sm-none"></i>` :
+                        `<span class="d-none d-sm-inline">Next</span><i class="fas fa-arrow-right d-sm-none"></i>`
+                );
+            }
         });
-    }
+    });
+}
 
     // Debug submit button click
     $('#submit-application').on('click', function() {

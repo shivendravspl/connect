@@ -50,14 +50,13 @@
         
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
     <div class="form-group mb-2">
-        <label for="bank_name" class="form-label small">Bank Name *</label>
+        <label for="bank_details_bank_name" class="form-label small">Bank Name *</label>
         <input type="text" 
                class="form-control form-control-sm" 
-               id="bank_name" 
+               id="bank_details_bank_name" 
                name="bank_name" 
                value="{{ old('bank_name', $bankData['bank_name']) }}" 
-               required
-               {{ $bankData['bank_name'] ? 'readonly' : '' }}>
+               required>
         @error('bank_name')
         <div class="text-danger small">{{ $message }}</div>
         @enderror
@@ -73,14 +72,13 @@
         
       <div class="col-12 col-sm-6 col-md-4 col-lg-3">
         <div class="form-group mb-2">
-            <label for="account_holder" class="form-label small">Account Holder Name *</label>
+            <label for="bank_details_account_holder" class="form-label small">Account Holder Name *</label>
             <input type="text" 
                 class="form-control form-control-sm" 
-                id="account_holder" 
+                id="bank_details_account_holder" 
                 name="account_holder" 
                 value="{{ old('account_holder', $bankData['account_holder_name']) }}" 
-                required
-                {{ $bankData['account_holder_name'] ? 'readonly' : '' }}>
+                required>
             @error('account_holder')
             <div class="text-danger small">{{ $message }}</div>
             @enderror
@@ -92,14 +90,13 @@
     <div class="row g-2">
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
     <div class="form-group mb-2">
-        <label for="account_number" class="form-label small">Account Number *</label>
+        <label for="bank_details_account_number" class="form-label small">Account Number *</label>
         <input type="text" 
                class="form-control form-control-sm" 
-               id="account_number" 
+               id="bank_details_account_number" 
                name="account_number" 
                value="{{ old('account_number', $bankData['account_number']) }}" 
-               required
-               {{ $bankData['account_number'] ? 'readonly' : '' }}>
+               required>
         @error('account_number')
         <div class="text-danger small">{{ $message }}</div>
         @enderror
@@ -108,14 +105,13 @@
 
 <div class="col-12 col-sm-6 col-md-4 col-lg-3">
     <div class="form-group mb-2">
-        <label for="ifsc_code" class="form-label small">IFSC Code *</label>
+        <label for="bank_details_ifsc_code" class="form-label small">IFSC Code *</label>
         <input type="text" 
                class="form-control form-control-sm" 
-               id="ifsc_code" 
+               id="bank_details_ifsc_code" 
                name="ifsc_code" 
                value="{{ old('ifsc_code', $bankData['ifsc_code']) }}" 
-               required
-               {{ $bankData['ifsc_code'] ? 'readonly' : '' }}>
+               required>
         @error('ifsc_code')
         <div class="text-danger small">{{ $message }}</div>
         @enderror

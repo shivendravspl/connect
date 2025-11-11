@@ -8,26 +8,27 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Font;
-use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-class DistributorReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithColumnWidths, WithEvents
+class DistributorReportExport implements FromCollection, WithHeadings, WithMapping, WithStyles, WithEvents, ShouldAutoSize
 {
     protected $distributors;
     protected $reportType;
+    protected $filters;
 
-    public function __construct($distributors, $reportType = 'summary')
+    public function __construct($distributors, $reportType = 'summary', $filters = [])
     {
         $this->distributors = $distributors;
         $this->reportType = $reportType;
+        $this->filters = $filters;
     }
 
     public function collection()
@@ -37,270 +38,201 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
 
     public function headings(): array
     {
-        switch ($this->reportType) {
-            case 'approval':
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Current Approval Level',
-                    'Current Approver',
-                    'Status',
-                    'Last Updated',
-                    'Remarks'
-                ];
+        $baseHeadings = [
+            'Application Code',
+            'Focus Code',
+            'Establishment Name',
+            'Authorized Person',
+            'Vertical',
+            'App Date',
+            'Appointment Date',
+            'Status'
+        ];
 
-            case 'verification':
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Document Verification Status',
-                    'MIS Verified At',
-                    'Physical Document Status',
-                    'Verified By'
-                ];
-
-            case 'dispatch':
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Dispatch Mode',
-                    'Transport/Company Name',
-                    'Driver/Person Name',
-                    'Contact Number',
-                    'Docket Number',
-                    'Dispatch Date',
-                    'Receive Date',
-                    'Created By'
-                ];
-
-            case 'lifecycle':
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Application Created',
-                    'Approval Level 1 (RBM)',
-                    'Approval Level 2 (GM)',
-                    'Approval Level 3 (SE)',
-                    'MIS Verification',
-                    'Physical Docs Status',
-                    'Agreement Status',
-                    'Final Status'
-                ];
-
-            case 'pending':
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Pending Step',
-                    'Documents Pending',
-                    'Created By',
-                    'Created At'
-                ];
-
-            case 'rejected':
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Rejected By',
-                    'Rejection Reason',
-                    'Rejection Date',
-                    'Follow Up Date'
-                ];
-            case 'tat':
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Vertical',
-                    'Region',
-                    'Application Date',
-                    'Current Status',
-                    'RBM Approval TAT (Days)',
-                    'GM Approval TAT (Days)',
-                    'SE Approval TAT (Days)',
-                    'MIS Verification TAT (Days)',
-                    'Physical Docs TAT (Days)',
-                    'Total TAT (Days)',
-                    'Status'
-                ];
-
-            default: // summary
-                return [
-                    'Application Code',
-                    'Establishment Name',
-                    'Authorized Person',
-                    'Vertical',
-                    'Region',
-                    'Status',
-                    'Created By',
-                    'Date of Appointment'
-                ];
+        if ($this->reportType === 'tat') {
+            return array_merge($baseHeadings, [
+                'RBM TAT',
+                'GM TAT', 
+                'SE TAT',
+                'MIS TAT',
+                'Physical TAT',
+                'Total TAT',
+                'TAT Status'
+            ]);
         }
+
+        // Default headings for other report types
+        return [
+            'Application Code',
+            'Focus Code',
+            'Establishment Name',
+            'Authorized Person',
+            'Vertical',
+            'Business Unit',
+            'Zone', 
+            'Region',
+            'Territory',
+            'Date of Appointment',
+            'Status',
+            'Created By',
+            'Created Date'
+        ];
     }
 
     public function map($distributor): array
     {
-        switch ($this->reportType) {
-            case 'approval':
-                return [
-                    $distributor->application_code ?? 'N/A',
-                    $distributor->entityDetails->establishment_name ?? 'N/A',
-                    $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-                    ucfirst($distributor->approval_level),
-                    $distributor->currentApprover?->name ?? 'N/A',
-                    ucfirst(str_replace('_', ' ', $distributor->status)),
-                    $distributor->updated_at?->format('d-m-Y H:i') ?? 'N/A',
-                    $distributor->approvalLogs->last()?->remarks ?? 'N/A'
-                ];
-            case 'tat':
-                return $this->mapTatData($distributor);
+        if ($this->reportType === 'tat') {
+            return $this->mapTatData($distributor);
+        }
 
-            case 'verification':
-                return [
-                    $distributor->application_code ?? 'N/A',
-                    $distributor->entityDetails->establishment_name ?? 'N/A',
-                    $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-                    $distributor->doc_verification_status ?? 'N/A',
-                    $distributor->mis_verified_at?->format('d-m-Y') ?? 'N/A',
-                    $distributor->physical_docs_status ?? 'N/A',
-                    $distributor->documentVerifications->last()?->user?->name ?? 'N/A'
-                ];
+        // Default mapping for other report types
+        return [
+            $distributor->application_code ?? 'N/A',
+            $distributor->distributor_code ?? 'N/A',
+            $distributor->establishment_name ?? 'N/A',
+            $this->getAuthorizedPersonName($distributor),
+            $distributor->vertical?->vertical_name ?? 'N/A',
+            $distributor->buDetail?->bu_name ?? 'N/A',
+            $distributor->zone_name ?? 'N/A',
+            $distributor->region_name ?? 'N/A', 
+            $distributor->territory_name ?? 'N/A',
+            $distributor->date_of_appointment ? \Carbon\Carbon::parse($distributor->date_of_appointment)->format('d-m-Y') : 'N/A',
+            ucfirst(str_replace('_', ' ', $distributor->status)),
+            $distributor->created_by_name ?? 'N/A',
+            $distributor->created_at?->format('d-m-Y H:i') ?? 'N/A'
+        ];
+    }
 
-            case 'dispatch':
-                $dispatch = $distributor->physicalDispatch;
+    private function mapTatData($distributor): array
+    {
+        // Calculate TAT values using the same logic as the view
+        $rbmTat = $this->calculateRbmTat($distributor);
+        $gmTat = $this->calculateGmTat($distributor);
+        $seTat = $this->calculateSeTat($distributor);
+        $misTat = $this->calculateMisTat($distributor);
+        $physicalTat = $this->calculatePhysicalTat($distributor);
+        $totalTat = $this->calculateTotalTat($distributor);
+        $tatStatus = $this->getTatStatus($totalTat);
 
-                // Determine transport/company name based on mode
-                $transportCompany = 'N/A';
-                if ($dispatch?->mode == 'transport') {
-                    $transportCompany = $dispatch?->transport_name ?? 'N/A';
-                } elseif ($dispatch?->mode == 'courier') {
-                    $transportCompany = $dispatch?->courier_company_name ?? 'N/A';
-                }
+        return [
+            $distributor->application_code ?? 'N/A',
+            $distributor->distributor_code ?? 'N/A',
+            $distributor->establishment_name ?? 'N/A',
+            $this->getAuthorizedPersonName($distributor),
+            $distributor->vertical?->vertical_name ?? 'N/A',
+            $distributor->created_at?->format('d-m-Y') ?? 'N/A',
+            $distributor->date_of_appointment ? \Carbon\Carbon::parse($distributor->date_of_appointment)->format('d-m-Y') : 'N/A',
+            ucfirst(str_replace('_', ' ', $distributor->status)),
+            $rbmTat,
+            $gmTat,
+            $seTat,
+            $misTat,
+            $physicalTat,
+            $totalTat,
+            $tatStatus
+        ];
+    }
 
-                // Determine person name based on mode
-                $personName = 'N/A';
-                if ($dispatch?->mode == 'transport') {
-                    $personName = $dispatch?->driver_name ?? 'N/A';
-                } elseif ($dispatch?->mode == 'by_hand') {
-                    $personName = $dispatch?->person_name ?? 'N/A';
-                }
+    private function calculateRbmTat($distributor): string
+    {
+        $rbmLog = $distributor->approvalLogs->where('role', 'Regional Business Manager')->first();
+        $rbmTat = $rbmLog ? ceil($distributor->created_at->diffInDays($rbmLog->created_at)) : 'Pending';
+        return is_numeric($rbmTat) ? $rbmTat . ($rbmTat != 1 ? '' : '') : $rbmTat;
+    }
 
-                // Determine contact number based on mode
-                $contactNumber = 'N/A';
-                if ($dispatch?->mode == 'transport') {
-                    $contactNumber = $dispatch?->driver_contact ?? 'N/A';
-                } elseif ($dispatch?->mode == 'by_hand') {
-                    $contactNumber = $dispatch?->person_contact ?? 'N/A';
-                }
+    private function calculateGmTat($distributor): string
+    {
+        $gmLog = $distributor->approvalLogs->where('role', 'General Manager')->first();
+        if ($gmLog) {
+            $prev = $distributor->approvalLogs->where('created_at', '<', $gmLog->created_at)->sortByDesc('created_at')->first();
+            $gmTat = $prev ? ceil($prev->created_at->diffInDays($gmLog->created_at)) : 'N/A';
+        } else {
+            $gmTat = 'Pending';
+        }
+        return is_numeric($gmTat) ? $gmTat . ($gmTat != 1 ? '' : '') : $gmTat;
+    }
 
-                return [
-                    $distributor->application_code ?? 'N/A',
-                    $distributor->entityDetails->establishment_name ?? 'N/A',
-                    $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-                    $dispatch?->mode ? ucwords(str_replace('_', ' ', $dispatch->mode)) : 'N/A',
-                    $transportCompany,
-                    $personName,
-                    $contactNumber,
-                    $dispatch?->docket_number ?? 'N/A',
-                    $dispatch?->dispatch_date?->format('d-m-Y') ?? 'N/A',
-                    $dispatch?->receive_date?->format('d-m-Y') ?? 'N/A',
-                    $dispatch?->createdBy?->emp_name ?? 'N/A'
-                ];
+    private function calculateSeTat($distributor): string
+    {
+        $seLog = $distributor->approvalLogs->where('role', 'Senior Executive')->first();
+        if ($seLog) {
+            $prev = $distributor->approvalLogs->where('created_at', '<', $seLog->created_at)->sortByDesc('created_at')->first();
+            $seTat = $prev ? ceil($prev->created_at->diffInDays($seLog->created_at)) : 'N/A';
+        } else {
+            $seTat = 'Pending';
+        }
+        return is_numeric($seTat) ? $seTat . ($seTat != 1 ? '' : '') : $seTat;
+    }
 
-            case 'lifecycle':
-                // Get approval logs by role
-                $level1 = $distributor->approvalLogs->where('role', 'Regional Business Manager')->last();
-                $level2 = $distributor->approvalLogs->where('role', 'General Manager')->last();
-                $level3 = $distributor->approvalLogs->where('role', 'Senior Executive')->last();
+    private function calculateMisTat($distributor): string
+    {
+        if ($distributor->mis_verified_at) {
+            $finalApp = $distributor->approvalLogs->where('action', 'approved')->last();
+            $misTat = $finalApp ? ceil($finalApp->created_at->diffInDays($distributor->mis_verified_at)) : 'N/A';
+            return is_numeric($misTat) ? $misTat . ($misTat != 1 ? '' : '') : $misTat;
+        }
+        return 'Pending';
+    }
 
-                return [
-                    $distributor->application_code ?? 'N/A',
-                    $distributor->entityDetails->establishment_name ?? 'N/A',
-                    $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-                    $distributor->created_at?->format('d-m-Y') ?? 'N/A',
-                    $level1 ? ucfirst($level1->action) . ' (' . $level1->created_at?->format('d-m-Y') . ')' : 'Pending',
-                    $level2 ? ucfirst($level2->action) . ' (' . $level2->created_at?->format('d-m-Y') . ')' : 'Pending',
-                    $level3 ? ucfirst(str_replace('_', ' ', $level3->action)) . ' (' . $level3->created_at?->format('d-m-Y') . ')' : 'Pending',
-                    $distributor->mis_verified_at?->format('d-m-Y') ?? 'N/A',
-                    $distributor->physical_docs_status ?? 'N/A',
-                    $distributor->agreement_status ?? 'N/A',
-                    $distributor->final_status ?? 'N/A'
-                ];
+    private function calculatePhysicalTat($distributor): string
+    {
+        $dispatch = $distributor->physicalDispatch;
+        if ($dispatch && $dispatch->dispatch_date && $distributor->mis_verified_at) {
+            $physTat = ceil($distributor->mis_verified_at->diffInDays($dispatch->dispatch_date));
+            return $physTat . ($physTat != 1 ? '' : '');
+        }
+        return 'Pending';
+    }
 
+    private function calculateTotalTat($distributor): string
+    {
+        $endDate = null;
+        if (in_array($distributor->status, ['completed', 'distributorship_created'])) {
+            $endDate = $distributor->physicalDispatch?->dispatch_date ?? $distributor->updated_at;
+        } elseif ($distributor->mis_verified_at) {
+            $endDate = $distributor->mis_verified_at;
+        } elseif ($distributor->approvalLogs->isNotEmpty()) {
+            $endDate = $distributor->approvalLogs->last()->created_at;
+        } else {
+            $endDate = now();
+        }
+        
+        $totalTatDays = ceil($distributor->created_at->diffInDays($endDate));
+        return $totalTatDays . ($totalTatDays != 1 ? '' : '');
+    }
 
-            case 'pending':
-                return [
-                    $distributor->application_code ?? 'N/A',
-                    $distributor->entityDetails->establishment_name ?? 'N/A',
-                    $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-                    $distributor->current_progress_step ?? 'N/A',
-                    $distributor->doc_verification_status ?? 'N/A',
-                    $distributor->createdBy?->emp_name ?? 'N/A',
-                    $distributor->created_at?->format('d-m-Y') ?? 'N/A'
-                ];
-
-            case 'rejected':
-                $lastRejection = $distributor->approvalLogs->where('action', 'rejected')->last();
-                return [
-                    $distributor->application_code ?? 'N/A',
-                    $distributor->entityDetails->establishment_name ?? 'N/A',
-                    $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-                    $lastRejection?->user?->name ?? 'N/A',
-                    $lastRejection?->remarks ?? 'N/A',
-                    $lastRejection?->created_at?->format('d-m-Y') ?? 'N/A',
-                    $lastRejection?->follow_up_date?->format('d-m-Y') ?? 'N/A'
-                ];
-
-
-            default: // summary
-                return [
-                    $distributor->application_code ?? 'N/A',
-                    $distributor->entityDetails->establishment_name ?? 'N/A',
-                    $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-                    $distributor->vertical?->vertical_name ?? 'N/A',
-                    $distributor->regionDetail?->region_name ?? 'N/A',
-                    ucfirst(str_replace('_', ' ', $distributor->status)),
-                    $distributor->createdBy?->emp_name ?? 'N/A',
-                    $distributor->date_of_appointment?->format('d-m-Y') ?? 'N/A'
-                ];
+    private function getTatStatus($totalTat): string
+    {
+        // Extract numeric value from string (e.g., "26" from "26")
+        $tatDays = is_numeric($totalTat) ? $totalTat : (int) preg_replace('/[^0-9]/', '', $totalTat);
+        
+        if ($tatDays <= 7) {
+            return 'On Time';
+        } elseif ($tatDays <= 14) {
+            return 'Delayed';
+        } else {
+            return 'Overdue';
         }
     }
 
-    public function columnWidths(): array
+    private function getAuthorizedPersonName($distributor)
     {
-        // Dynamic widths based on report type (adjust as needed for content length)
-        $baseWidths = [10, 25, 20, 15, 15, 12, 15, 30]; // Default for longest (e.g., remarks)
-
-        switch ($this->reportType) {
-            case 'approval':
-            case 'verification':
-            case 'dispatch':
-            case 'rejected':
-                return array_combine(range('A', chr(64 + count($baseWidths))), $baseWidths);
-
-            case 'lifecycle':
-            case 'pending':
-            case 'summary':
-                // Shorter for some columns
-                return array_combine(range('A', chr(64 + count($baseWidths) - 1)), array_slice($baseWidths, 0, -1));
-
-            default:
-                return [];
+        // Try to get from authorized persons relationship
+        if ($distributor->authorizedPersons && $distributor->authorizedPersons->isNotEmpty()) {
+            $primaryPerson = $distributor->authorizedPersons->first();
+            return $primaryPerson->name ?? 'N/A';
         }
+        
+        // Fallback to establishment name
+        return $distributor->establishment_name ?? 'N/A';
     }
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getRowDimension(1)->setRowHeight(20); // Increase header height
+        $sheet->getRowDimension(1)->setRowHeight(25);
 
         return [
-            // Header row: Bold, centered, gray background
+            // Header row
             1 => [
                 'font' => ['bold' => true, 'size' => 12],
                 'alignment' => [
@@ -318,7 +250,7 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
                     ],
                 ],
             ],
-            // All data rows: Thin borders, wrap text for long content
+            // Data rows
             '2:' . $sheet->getHighestRow() => [
                 'borders' => [
                     'allBorders' => [
@@ -331,13 +263,12 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
                     'vertical' => Alignment::VERTICAL_CENTER,
                 ],
             ],
-            // Specific columns: Left align for text, center for status/dates
-            // Assuming common columns; adjust indices per type if needed
-            'A:A' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT]], // Codes
-            'B:B' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT]], // Names
-            'C:C' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT]], // Persons
-            'F:F' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]], // Status
-            'G:G' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]], // Dates
+            // Text alignment
+            'A:D' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_LEFT]],
+            'E:E' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
+            'F:G' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
+            'H:H' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
+            'I:O' => ['alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER]],
         ];
     }
 
@@ -347,157 +278,69 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
             AfterSheet::class => function (AfterSheet $event) {
                 $sheet = $event->sheet->getDelegate();
 
-                // Auto-size all columns (handles >26 columns safely)
-                $highestColumn = $sheet->getHighestColumn();
-                $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
-                for ($col = 1; $col <= $highestColumnIndex; ++$col) {
-                    $columnLetter = Coordinate::stringFromColumnIndex($col);
-                    $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
-                }
-
-                // Freeze first row for better scrolling
+                // Freeze header row
                 $sheet->freezePane('A2');
 
-                // Add a subtle alternating row color for readability
+                // Add alternating row colors
                 $highestRow = $sheet->getHighestRow();
                 for ($row = 2; $row <= $highestRow; $row += 2) {
                     $sheet->getStyle("A$row:" . $sheet->getHighestColumn() . $row)->applyFromArray([
                         'fill' => [
                             'fillType' => Fill::FILL_SOLID,
-                            'startColor' => ['argb' => 'FFF8F9FA'], // Very light gray
+                            'startColor' => ['argb' => 'FFF8F9FA'],
                         ],
                     ]);
+                }
+
+                // Add filter information if available
+                if (!empty($this->filters)) {
+                    $filterInfo = $this->getFilterInfo();
+                    if ($filterInfo) {
+                        $sheet->insertNewRowBefore(1, 2);
+                        $sheet->setCellValue('A1', 'Report Filters: ' . $filterInfo);
+                        $sheet->mergeCells('A1:' . $sheet->getHighestColumn() . '1');
+                        $sheet->getStyle('A1')->applyFromArray([
+                            'font' => ['bold' => true, 'color' => ['argb' => 'FF666666']],
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['argb' => 'FFF0F0F0'],
+                            ],
+                        ]);
+                    }
                 }
             },
         ];
     }
 
-
-    private function mapTatData($distributor): array
+    private function getFilterInfo()
     {
-        // Calculate TAT for each stage
-        $rbmTat = $this->calculateApprovalTat($distributor, 'Regional Business Manager');
-        $gmTat = $this->calculateApprovalTat($distributor, 'General Manager');
-        $seTat = $this->calculateApprovalTat($distributor, 'Senior Executive');
-        $misTat = $this->calculateMisTat($distributor);
-        $physicalDocsTat = $this->calculatePhysicalDocsTat($distributor);
-        $totalTat = $this->calculateTotalTat($distributor);
-
-        return [
-            $distributor->application_code ?? 'N/A',
-            $distributor->entityDetails->establishment_name ?? 'N/A',
-            $distributor->getAuthorizedOrEntityName() ?? 'N/A',
-            $distributor->vertical?->vertical_name ?? 'N/A',
-            $distributor->regionDetail?->region_name ?? 'N/A',
-            $distributor->created_at?->format('d-m-Y') ?? 'N/A',
-            ucfirst(str_replace('_', ' ', $distributor->status)),
-            $rbmTat,
-            $gmTat,
-            $seTat,
-            $misTat,
-            $physicalDocsTat,
-            $totalTat,
-            $this->getTatStatus($totalTat)
-        ];
-    }
-
-    private function calculateApprovalTat($distributor, $role): string
-    {
-        $approvalLogs = $distributor->approvalLogs->where('role', $role);
-
-        if ($approvalLogs->isEmpty()) {
-            return 'Pending';
+        $filters = [];
+        
+        if (!empty($this->filters['search'])) {
+            $filters[] = 'Search: ' . $this->filters['search'];
+        }
+        if (!empty($this->filters['bu']) && $this->filters['bu'] !== 'All') {
+            $filters[] = 'BU: ' . $this->filters['bu'];
+        }
+        if (!empty($this->filters['zone']) && $this->filters['zone'] !== 'All') {
+            $filters[] = 'Zone: ' . $this->filters['zone'];
+        }
+        if (!empty($this->filters['region']) && $this->filters['region'] !== 'All') {
+            $filters[] = 'Region: ' . $this->filters['region'];
+        }
+        if (!empty($this->filters['territory']) && $this->filters['territory'] !== 'All') {
+            $filters[] = 'Territory: ' . $this->filters['territory'];
+        }
+        if (!empty($this->filters['status']) && $this->filters['status'] !== 'All') {
+            $filters[] = 'Status: ' . $this->filters['status'];
+        }
+        if (!empty($this->filters['date_from'])) {
+            $filters[] = 'From: ' . $this->filters['date_from'];
+        }
+        if (!empty($this->filters['date_to'])) {
+            $filters[] = 'To: ' . $this->filters['date_to'];
         }
 
-        $approvalLog = $approvalLogs->sortBy('created_at')->first();
-
-        // Find the previous approval log or creation date
-        $previousLog = $distributor->approvalLogs
-            ->where('created_at', '<', $approvalLog->created_at)
-            ->sortByDesc('created_at')
-            ->first();
-
-        $startDate = $previousLog ? $previousLog->created_at : $distributor->created_at;
-        $endDate = $approvalLog->created_at;
-
-        $tat = $startDate->diffInDays($endDate);
-        return $tat > 0 ? $tat . ' days' : 'Same day';
-    }
-
-    private function calculateMisTat($distributor): string
-    {
-        if (!$distributor->mis_verified_at) {
-            return 'Pending';
-        }
-
-        // MIS verification starts after final approval
-        $finalApproval = $distributor->approvalLogs
-            ->where('action', 'approved')
-            ->sortByDesc('created_at')
-            ->first();
-
-        if (!$finalApproval) {
-            return 'N/A';
-        }
-
-        $startDate = $finalApproval->created_at;
-        $endDate = $distributor->mis_verified_at;
-
-        $tat = $startDate->diffInDays($endDate);
-        return $tat > 0 ? $tat . ' days' : 'Same day';
-    }
-
-    private function calculatePhysicalDocsTat($distributor): string
-    {
-        $dispatch = $distributor->physicalDispatch;
-
-        if (!$dispatch || !$dispatch->dispatch_date) {
-            return 'Pending';
-        }
-
-        // Physical docs start after MIS verification
-        $startDate = $distributor->mis_verified_at;
-
-        if (!$startDate) {
-            return 'N/A';
-        }
-
-        $endDate = $dispatch->dispatch_date;
-        $tat = $startDate->diffInDays($endDate);
-        return $tat > 0 ? $tat . ' days' : 'Same day';
-    }
-
-    private function calculateTotalTat($distributor): string
-    {
-        $startDate = $distributor->created_at;
-        $endDate = null;
-
-        // Determine end date based on current status
-        if (in_array($distributor->status, ['completed', 'distributorships_created'])) {
-            // For completed applications, use physical dispatch date or last update
-            $endDate = $distributor->physicalDispatch?->dispatch_date ?? $distributor->updated_at;
-        } elseif ($distributor->mis_verified_at) {
-            $endDate = $distributor->mis_verified_at;
-        } elseif ($distributor->approvalLogs->isNotEmpty()) {
-            $endDate = $distributor->approvalLogs->last()->created_at;
-        } else {
-            $endDate = now(); // Still in process
-        }
-
-        $tat = $startDate->diffInDays($endDate);
-        return $tat . ' days';
-    }
-
-    private function getTatStatus($totalTat): string
-    {
-        $days = (int) $totalTat;
-
-        if ($days <= 7) {
-            return 'Within SLA';
-        } elseif ($days <= 14) {
-            return 'Moderate Delay';
-        } else {
-            return 'Critical Delay';
-        }
+        return implode(' | ', $filters);
     }
 }

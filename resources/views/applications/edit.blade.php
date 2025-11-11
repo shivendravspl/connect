@@ -10,7 +10,7 @@
                 </div>
 
                 <div class="card-body p-2">
-                    <div class="stepper-wrapper" data-current-step="{{ $initialFrontendStep }}">
+                    <div class="stepper-wrapper" data-current-step="{{ $currentStep  }}">
                         <div class="stepper d-flex flex-wrap justify-content-between mb-3">
                         @php
 $steps = ['Basic Details', 'Entity Details', 'Distribution Details', 'Business Plan', 'Financial & Distributorships', 'Financial Status & Banking Information', 'Declarations', 'Review & Submit'];
@@ -111,20 +111,21 @@ Log::info('completedStepsData for application_id: ' . ($application->id ?? 'unkn
                     <div class="step-content" data-step="8" style="display:none;">
                         <div class="card p-3">
                             <h5 class="mb-3">Final Review</h5>
-
+                            
+                            {{-- Remove the condition or ensure iframe is always present in edit mode --}}
                             @if($application->id)
                             <iframe src="{{ route('application.preview', $application->id) }}"
-                                style="width:100%; height:70vh; border:1px solid #ccc;"></iframe>
+                                    style="width:100%; height:70vh; border:1px solid #ccc;"
+                                    id="preview-iframe"></iframe>
                             <div class="mt-3">
                                 <a href="{{ route('application.download', $application->id) }}"
-                                    class="btn btn-sm btn-primary" download>
+                                class="btn btn-sm btn-primary" download>
                                     <i class="fas fa-download"></i> Download PDF
                                 </a>
                             </div>
                             @else
                             <p class="text-danger">Please save the application before reviewing.</p>
                             @endif
-
                             <div class="mt-4 form-check">
                                 <input type="checkbox" class="form-check-input" id="confirm_accuracy" required>
                                 <label class="form-check-label" for="confirm_accuracy">

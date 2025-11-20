@@ -1,14 +1,14 @@
 <div id="financial-info" class="form-section p-2">
     @php
-        $financialInfo = $application->financialInfo ?? null;
-        $turnover = [];
-        if (isset($financialInfo->annual_turnover)) {
-            $turnover = json_decode($financialInfo->annual_turnover, true) ?? [];
-        }
-        $turnover = old('annual_turnover', $turnover);
-        
-        // Get all validation errors
-        $errors = $errors ?? session()->get('errors');
+    $financialInfo = $application->financialInfo ?? null;
+    $turnover = [];
+    if (isset($financialInfo->annual_turnover)) {
+    $turnover = json_decode($financialInfo->annual_turnover, true) ?? [];
+    }
+    $turnover = old('annual_turnover', $turnover);
+
+    // Get all validation errors
+    $errors = $errors ?? session()->get('errors');
     @endphp
 
     <div class="row g-2">
@@ -43,7 +43,7 @@
                 @enderror
             </div>
         </div>
-         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
                 <label for="shop_ownership" class="form-label small">Shop Ownership *</label>
                 <select class="form-select form-select-sm" id="shop_ownership" name="shop_ownership">
@@ -59,9 +59,9 @@
         </div>
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
-                <label for="godown_uom" class="form-label small">Godown UOM *</label>
+                <label for="godown_uom" class="form-label small">Godown UOM <small class="text-muted">(Optional)</small></label>
                 <select class="form-select form-control-sm" id="godown_uom" name="godown_uom">
-                    <option value="">Select UOM</option>
+                    <option value="">Select UOM (if applicable)</option>
                     <option value="sq_ft" {{ old('godown_uom', $financialInfo->godown_uom ?? '') == 'sq_ft' ? 'selected' : '' }}>Square Feet</option>
                     <option value="sq_m" {{ old('godown_uom', $financialInfo->godown_uom ?? '') == 'sq_m' ? 'selected' : '' }}>Square Meter</option>
                 </select>
@@ -70,20 +70,23 @@
                 @enderror
             </div>
         </div>
+
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
-                <label for="godown_area" class="form-label small">Godown Area *</label>
-                <input type="number" step="0.01" class="form-control form-control-sm" id="godown_area" name="godown_area" value="{{ old('godown_area', $financialInfo->godown_area ?? '') }}" min="0">
+                <label for="godown_area" class="form-label small">Godown Area <small class="text-muted">(Optional)</small></label>
+                <input type="number" step="0.01" class="form-control form-control-sm" id="godown_area" name="godown_area"
+                    value="{{ old('godown_area', $financialInfo->godown_area ?? '') }}" min="0" placeholder="e.g. 500">
                 @error('godown_area')
                 <div class="text-danger small">{{ $message }}</div>
                 @enderror
             </div>
         </div>
+
         <div class="col-12 col-sm-6 col-md-4 col-lg-3">
             <div class="form-group mb-2">
-                <label for="godown_ownership" class="form-label small">Godown Ownership *</label>
+                <label for="godown_ownership" class="form-label small">Godown Ownership <small class="text-muted">(Optional)</small></label>
                 <select class="form-select form-select-sm" id="godown_ownership" name="godown_ownership">
-                    <option value="">Select Ownership</option>
+                    <option value="">Select Ownership (if applicable)</option>
                     <option value="owned" {{ old('godown_ownership', $financialInfo->godown_ownership ?? '') == 'owned' ? 'selected' : '' }}>Owned</option>
                     <option value="rented" {{ old('godown_ownership', $financialInfo->godown_ownership ?? '') == 'rented' ? 'selected' : '' }}>Rented</option>
                 </select>
@@ -118,8 +121,8 @@
                         <tbody>
                             @foreach($financialYears as $year)
                             @php
-                                $yearKey = $year->period;
-                                $errorKey = "annual_turnover.amount.{$yearKey}";
+                            $yearKey = $year->period;
+                            $errorKey = "annual_turnover.amount.{$yearKey}";
                             @endphp
                             <tr>
                                 <td>
@@ -127,11 +130,11 @@
                                     <input type="hidden" name="annual_turnover[year][]" value="{{ $yearKey }}">
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" 
-                                           class="form-control {{ $errors->has($errorKey) ? 'is-invalid' : '' }}" 
-                                           name="annual_turnover[amount][{{ $yearKey }}]" 
-                                           value="{{ old("annual_turnover.amount.{$yearKey}", $turnover[$yearKey] ?? '') }}" 
-                                           placeholder="Enter turnover (₹)">
+                                    <input type="number" step="0.01"
+                                        class="form-control {{ $errors->has($errorKey) ? 'is-invalid' : '' }}"
+                                        name="annual_turnover[amount][{{ $yearKey }}]"
+                                        value="{{ old("annual_turnover.amount.{$yearKey}", $turnover[$yearKey] ?? '') }}"
+                                        placeholder="Enter turnover (₹)">
                                     @error($errorKey)
                                     <div class="invalid-feedback d-block">{{ $message }}</div>
                                     @enderror
@@ -154,31 +157,31 @@
 </div>
 
 <style>
-.text-danger.small {
-    font-size: 0.875em;
-    color: #dc3545;
-    margin-top: 0.5rem;
-    display: block;
-    padding: 8px 12px;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    border-radius: 4px;
-    font-weight: 500;
-}
+    .text-danger.small {
+        font-size: 0.875em;
+        color: #dc3545;
+        margin-top: 0.5rem;
+        display: block;
+        padding: 8px 12px;
+        background-color: #f8d7da;
+        border: 1px solid #f5c6cb;
+        border-radius: 4px;
+        font-weight: 500;
+    }
 
-.invalid-feedback.d-block {
-    display: block !important;
-    width: 100%;
-    margin-top: 0.25rem;
-    font-size: 0.875em;
-    color: #dc3545;
-}
+    .invalid-feedback.d-block {
+        display: block !important;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
 
-.is-invalid {
-    border-color: #dc3545 !important;
-}
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
 
-.table-danger td {
-    background-color: #f8d7da !important;
-}
+    .table-danger td {
+        background-color: #f8d7da !important;
+    }
 </style>

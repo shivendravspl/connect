@@ -2453,7 +2453,7 @@ class OnboardingController extends Controller
             // Validation rules
             $rules = [
                 'area_covered' => 'required|array|min:1',
-                'area_covered.*' => 'string|max:255|exists:core_district,district_name',
+                'area_covered.*' => 'string|max:255',
                 'appointment_type' => 'required|in:new_area,replacement,addition',
             ];
 
@@ -2744,19 +2744,19 @@ class OnboardingController extends Controller
                 'shop_ownership' => 'required|string|in:owned,rented,lease',
                 'shop_uom' => 'required|string|in:sq_ft,sq_m',
                 'shop_area' => 'required|numeric|min:0',
-                'godown_uom' => 'required|string|in:sq_ft,sq_m',
-                'godown_area' => 'required|numeric|min:0',
-                'godown_ownership' => 'required|string|in:owned,rented',
+                'godown_uom' => 'nullable|string|in:sq_ft,sq_m',
+                'godown_area' => 'nullable|numeric|min:0',
+                'godown_ownership' => 'nullable|string|in:owned,rented',
                 'years_in_business' => 'required|integer|min:0',
             ];
 
             $messages = [
-                'godown_uom.required' => 'Godown UOM is required.',
+                //'godown_uom.required' => 'Godown UOM is required.',
                 'godown_uom.in' => 'Godown UOM must be Square Feet or Square Meter.',
-                'godown_area.required' => 'Godown area is required.',
+                //'godown_area.required' => 'Godown area is required.',
                 'godown_area.numeric' => 'Godown area must be a valid number.',
                 'godown_area.min' => 'Godown area cannot be negative.',
-                'godown_ownership.required' => 'Godown ownership is required.',
+                //'godown_ownership.required' => 'Godown ownership is required.',
                 'godown_ownership.in' => 'Godown ownership must be Owned or Rented.',
                 'shop_uom.in' => 'Shop UOM must be Square Feet or Square Meter.',
                 'shop_area.numeric' => 'Shop area must be a valid number.',
@@ -4136,7 +4136,7 @@ class OnboardingController extends Controller
     private function createNotification($userid, $title, $description, $notification_read = false)
     {
         try {
-            DB::table('notifications')->insert([
+            DB::table('notification')->insert([
                 'userid' => $userid,
                 'title' => $title,
                 'description' => $description,

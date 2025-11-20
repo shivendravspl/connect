@@ -128,11 +128,11 @@
     $(document).ready(function() {
         // Initialize Select2 for the area field
         $('#area_covered').select2({
-            tags: false, // Restrict to core_district values only
+            tags: true, // Restrict to core_district values only
             placeholder: "Select one or more districts",
             allowClear: true,
             multiple: true,
-            tokenSeparators: [], // Disable comma-based tokenization
+            tokenSeparators: [','], // Disable comma-based tokenization
             minimumInputLength: 0 // Allow immediate selection
         });
 
@@ -175,6 +175,17 @@
         } else if (appointmentType === 'new_area') {
             $('#new-area-details').show();
         }
+
+
+        let selectedAreas = @json($selectedAreas);
+
+        selectedAreas.forEach(function(item) {
+            if (!$("#area_covered option[value='" + item + "']").length) {
+                $("#area_covered").append(new Option(item, item, true, true));
+            }
+        });
+
+        $("#area_covered").trigger('change');
     });
 </script>
 @endpush

@@ -275,6 +275,9 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
                 $highestRow = $sheet->getHighestRow();
                 $highestColumn = $sheet->getHighestColumn();
 
+                // Store original highest column before any modifications
+                $originalHighestColumn = $highestColumn;
+
                 // Freeze header row for all report types
                 $sheet->freezePane('A2');
 
@@ -287,12 +290,14 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
                 }
 
                 // Add filter information if available (for all report types)
+                $hasFilters = false;
                 if (!empty($this->filters)) {
                     $filterInfo = $this->getFilterInfo();
                     if ($filterInfo) {
+                        $hasFilters = true;
                         $sheet->insertNewRowBefore(1, 2);
                         $sheet->setCellValue('A1', 'Report Filters: ' . $filterInfo);
-                        $sheet->mergeCells("A1:{$highestColumn}1");
+                        $sheet->mergeCells("A1:{$originalHighestColumn}1");
                         $sheet->getStyle('A1')->applyFromArray([
                             'font' => ['bold' => true, 'color' => ['argb' => 'FF666666']],
                             'fill' => [
@@ -311,8 +316,11 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
                 }
 
                 // Auto-size all columns for all report types
-                foreach (range('A', $highestColumn) as $column) {
-                    $sheet->getColumnDimension($column)->setAutoSize(true);
+                // Use the original highest column to avoid multi-byte character issues
+                $lastColumnIndex = Coordinate::columnIndexFromString($originalHighestColumn);
+                for ($col = 1; $col <= $lastColumnIndex; $col++) {
+                    $columnLetter = Coordinate::stringFromColumnIndex($col);
+                    $sheet->getColumnDimension($columnLetter)->setAutoSize(true);
                 }
             },
         ];
@@ -335,7 +343,7 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
             ]);
         }
 
-        // Set specific column widths for TAT report
+        // Set specific column widths for TAT report using column indices
         $sheet->getColumnDimension('A')->setWidth(8);  // Sr No
         $sheet->getColumnDimension('B')->setWidth(12); // App Date
         $sheet->getColumnDimension('C')->setWidth(20); // App Code
@@ -344,10 +352,12 @@ class DistributorReportExport implements FromCollection, WithHeadings, WithMappi
         $sheet->getColumnDimension('F')->setWidth(20); // Authorized Person
         $sheet->getColumnDimension('G')->setWidth(15); // Crop Vertical
         
-        // TAT columns
-        for ($col = 18; $col <= 31; $col++) { // R to AE
-            $columnLetter = Coordinate::stringFromColumnIndex($col);
-            $sheet->getColumnDimension($columnLetter)->setWidth(12);
+        // TAT columns (R to AE)
+        $tatColumns = ['R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'AA', 'AB', 'AC', 'AD', 'AE'];
+        foreach ($tatColumns as $column) {
+            if (Coordinate::columnIndexFromString($column) <= Coordinate::columnIndexFromString($highestColumn)) {
+                $sheet->getColumnDimension($column)->setWidth(12);
+            }
         }
     }
 

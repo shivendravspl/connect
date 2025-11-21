@@ -56,11 +56,11 @@ use App\Models\Status;
                             </li>
                              @if(($application->status !== 'draft') && $application->created_by === Auth::user()->emp_id)
                                 <li>
-                                        <a href="{{ route('dispatch.show', $application->id) }}" 
-                                        class="dropdown-item    " 
+                                    <a href="{{ route('dispatch.show', $application->id) }}" 
+                                        class="dropdown-item"
                                         title="Fill Dispatch Details">
-                                            <i class="ri-truck-line"></i>
-                                        </a>
+                                            <i class="ri-truck-line align-bottom me-2 text-muted"></i> Dispatch
+                                    </a>
                                 </li>
                             @endif
                             @if(($application->status === 'reverted' || $application->status === 'draft') && $application->created_by === Auth::user()->emp_id)

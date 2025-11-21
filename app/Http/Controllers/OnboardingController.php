@@ -90,6 +90,7 @@ class OnboardingController extends Controller
                 'physical_docs_verified',
                 'agreement_created'
             ],
+            'security_deposit_not_received' => ['security_deposit_not_received'],
             'completed' => ['distributorship_created'],
             'reverted' => ['reverted'],
             'rejected' => ['rejected'],
@@ -115,7 +116,6 @@ class OnboardingController extends Controller
                 $statusGroups[$status] = [$status];
             }
         }
-
         // Determine user capabilities
         $userCapabilities = $this->getUserCapabilities($user, $employee_details);
 
@@ -310,6 +310,7 @@ class OnboardingController extends Controller
             $statusGroups['draft'],
             $statusGroups['sales_approval'],
             $statusGroups['mis_verification'],
+            $statusGroups['security_deposit_not_received'], 
             $statusGroups['completed'],
             $statusGroups['reverted'],
             $statusGroups['rejected'],
@@ -392,26 +393,27 @@ class OnboardingController extends Controller
             
             -- Medium Priority: Documents ready for verification
             WHEN onboardings.status = 'documents_verified' THEN 6
-            WHEN onboardings.status = 'physical_docs_verified' THEN 7
-            WHEN onboardings.status = 'agreement_created' THEN 8
+            WHEN onboardings.status = 'security_deposit_not_received' THEN 7
+            WHEN onboardings.status = 'physical_docs_verified' THEN 8
+            WHEN onboardings.status = 'agreement_created' THEN 9
             
             -- Completed applications
-            WHEN onboardings.status = 'distributorship_created' THEN 9
+            WHEN onboardings.status = 'distributorship_created' THEN 10
             
             -- Sales approval pending (should be visible to MIS for tracking)
-            WHEN onboardings.status IN ('under_level1_review', 'under_level2_review', 'under_level3_review') THEN 10
-            WHEN onboardings.status = 'approved' THEN 11
+            WHEN onboardings.status IN ('under_level1_review', 'under_level2_review', 'under_level3_review') THEN 11
+            WHEN onboardings.status = 'approved' THEN 12
             
             -- Special statuses
-            WHEN onboardings.status = 'reverted' THEN 12
-            WHEN onboardings.status = 'on_hold' THEN 13
-            WHEN onboardings.status = 'rejected' THEN 14
+            WHEN onboardings.status = 'reverted' THEN 13
+            WHEN onboardings.status = 'on_hold' THEN 14
+            WHEN onboardings.status = 'rejected' THEN 15
             
             -- Low priority: Draft applications
-            WHEN onboardings.status = 'draft' THEN 15
+            WHEN onboardings.status = 'draft' THEN 16
             
             -- Fallback for any other statuses
-            ELSE 16
+            ELSE 17
         END ASC,
         onboardings.updated_at DESC,
         onboardings.created_at DESC
@@ -456,42 +458,44 @@ class OnboardingController extends Controller
     }
 
     protected function getSalesPriorityOrder()
-    {
-        return "
-        CASE 
-            -- High Priority: Active sales approval processes
-            -- Draft applications (needs attention)
-            WHEN onboardings.status = 'draft' THEN 1
-            WHEN onboardings.status IN ('under_level1_review', 'under_level2_review', 'under_level3_review') THEN 2
-            WHEN onboardings.status = 'reverted' THEN 3
-            WHEN onboardings.status = 'on_hold' THEN 4
-            
-            -- Approved but in MIS processing
-            WHEN onboardings.status = 'approved' THEN 5
-            WHEN onboardings.status = 'mis_processing' THEN 6
-            WHEN onboardings.status = 'documents_pending' THEN 7
-            WHEN onboardings.status = 'documents_resubmitted' THEN 8
-            WHEN onboardings.status = 'physical_docs_pending' THEN 9
-            WHEN onboardings.status = 'physical_docs_redispatched' THEN 10
-            
-            -- Documents verified and agreement stages
-            WHEN onboardings.status = 'documents_verified' THEN 11
-            WHEN onboardings.status = 'physical_docs_verified' THEN 12
-            WHEN onboardings.status = 'agreement_created' THEN 13
-            
-            -- Completed applications
-            WHEN onboardings.status = 'distributorship_created' THEN 14
-            
-            -- Rejected applications
-            WHEN onboardings.status = 'rejected' THEN 15
-            
-            -- Fallback for any other statuses
-            ELSE 16
-        END ASC,
-        onboardings.updated_at DESC,
-        onboardings.created_at DESC
-    ";
-    }
+{
+    return "
+    CASE 
+        -- High Priority: Security deposit not received (new high priority)
+        WHEN onboardings.status = 'security_deposit_not_received' THEN 1
+        
+        -- Active sales approval processes
+        WHEN onboardings.status = 'draft' THEN 2
+        WHEN onboardings.status IN ('under_level1_review', 'under_level2_review', 'under_level3_review') THEN 3
+        WHEN onboardings.status = 'reverted' THEN 4
+        WHEN onboardings.status = 'on_hold' THEN 5
+        
+        -- Approved but in MIS processing
+        WHEN onboardings.status = 'approved' THEN 6
+        WHEN onboardings.status = 'mis_processing' THEN 7
+        WHEN onboardings.status = 'documents_pending' THEN 8
+        WHEN onboardings.status = 'documents_resubmitted' THEN 9
+        WHEN onboardings.status = 'physical_docs_pending' THEN 10
+        WHEN onboardings.status = 'physical_docs_redispatched' THEN 11
+        
+        -- Documents verified and agreement stages
+        WHEN onboardings.status = 'documents_verified' THEN 12
+        WHEN onboardings.status = 'physical_docs_verified' THEN 13
+        WHEN onboardings.status = 'agreement_created' THEN 14
+        
+        -- Completed applications
+        WHEN onboardings.status = 'distributorship_created' THEN 15
+        
+        -- Rejected applications
+        WHEN onboardings.status = 'rejected' THEN 16
+        
+        -- Fallback for any other statuses
+        ELSE 17
+    END ASC,
+    onboardings.updated_at DESC,
+    onboardings.created_at DESC
+";
+}
 
     // Helper method to apply access level filters
     protected function applyAccessLevelFilters($query, $capabilities)

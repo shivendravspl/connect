@@ -41,7 +41,7 @@
 						  <a href="{{ route('dispatch.show', $application->id) }}" 
                            class="btn btn-sm btn-info" 
                            title="Fill Dispatch Details">
-                            <i class="ri-truck-line"></i>
+                            <i class="ri-truck-line"></i>Dispatch
                         </a>
 						@endif
                         @if(($application->status === 'reverted' || $application->status === 'draft') && $application->created_by === Auth::user()->emp_id)

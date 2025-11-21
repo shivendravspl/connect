@@ -103,6 +103,7 @@ use App\Models\Status;
                                 <option value="draft" {{ $filters['status'] == 'draft' ? 'selected' : '' }}>Draft</option>
                                 <option value="sales_approval" {{ $filters['status'] == 'sales_approval' ? 'selected' : '' }}>Sales Approval</option>
                                 <option value="mis_verification" {{ $filters['status'] == 'mis_verification' ? 'selected' : '' }}>MIS Verification</option>
+                                <option value="security_deposit_not_received" {{ $filters['status'] == 'security_deposit_not_received' ? 'selected' : '' }}>Security Deposit Not Received</option>
                                 <option value="completed" {{ $filters['status'] == 'completed' ? 'selected' : '' }}>Completed</option>
                             </optgroup>
                             <optgroup label="Individual Statuses">

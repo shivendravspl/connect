@@ -1,5 +1,6 @@
 @php
 use App\Models\Status;
+use App\Http\Controllers\DistributorReportController;
 @endphp
 @extends('layouts.app')
 
@@ -26,7 +27,7 @@ use App\Models\Status;
                             <div class="col-md-2">
                                 <label class="form-label small mb-0">Search</label>
                                 <input type="text" name="search" class="form-control form-control-sm" 
-                                       placeholder="Code or Name" 
+                                       placeholder="Code, Name, or Person" 
                                        value="{{ request('search') }}">
                             </div>
                             
@@ -113,6 +114,9 @@ use App\Models\Status;
                                         <option value="reverted" {{ $filters['status'] == 'reverted' ? 'selected' : '' }}>Reverted</option>
                                         <option value="rejected" {{ $filters['status'] == 'rejected' ? 'selected' : '' }}>Rejected</option>
                                         <option value="on_hold" {{ $filters['status'] == 'on_hold' ? 'selected' : '' }}>On Hold</option>
+                                        <option value="security_deposit_not_received" {{ $filters['status'] == 'security_deposit_not_received' ? 'selected' : '' }}>
+                                            Security Deposit Not Received
+                                        </option>
                                         @foreach($statuses as $status)
                                             @if(in_array($status->status_name, ['mis_processing', 'documents_pending', 'documents_resubmitted', 'documents_verified', 'physical_docs_pending', 'physical_docs_redispatched', 'physical_docs_verified', 'agreement_created', 'distributorship_created']))
                                                 <option value="{{ $status->status_name }}" {{ $filters['status'] == $status->status_name ? 'selected' : '' }}>
@@ -168,149 +172,196 @@ use App\Models\Status;
                     </form>
 
                     <!-- Table -->
-                    <div class="table-responsive" style="font-size: 11px;">
+                    <div class="table-responsive" style="font-size: 9px;">
                         <table class="table table-bordered table-striped table-sm mb-1">
                             <thead class="small">
                                 <tr>
-                                    <th>App Code</th>
-                                    <th>Focus Code</th>
-                                    <th>Establishment</th>
-                                    <th>Authorized Person</th>
-                                    <th>Vertical</th>
+                                    <th>Sr No</th>
                                     <th>App Date</th>
-                                    <th>Appointment Date</th>
-                                    <th>Status</th>
+                                    <th>App Code</th>
+                                    <th>Initiated By</th>
+                                    <th>Establishment Name</th>
+                                    <th>Authorized Person</th>
+                                    <th>Crop Vertical</th>
+                                    <th>Application Status</th>
+                                    <th>RBM Approval Date</th>
+                                    <th>ZBM Approval Date</th>
+                                    <th>GM Approval Date</th>
+                                    <th>Revert Date</th>
+                                    <th>Reply Date</th>
+                                    <th>Dispatch Date</th>
+                                    <th>Physical Receive Date</th>
+                                    <th>MIS Verification Date</th>
+                                    <th>Final Creation Date</th>
                                     <th>RBM TAT</th>
+                                    <th>ZBM TAT</th>
                                     <th>GM TAT</th>
-                                    <th>SE TAT</th>
+                                    <th>MIS Doc Verification</th>
+                                    <th>Reply/Revert TAT</th>
+                                    <th>Dispatch/Physical TAT</th>
                                     <th>MIS TAT</th>
-                                    <th>Physical TAT</th>
+                                    <th>Physical Doc Pendency</th>
+                                    <th>Deposit TAT</th>
+                                    <th>Distributor Finalisation</th>
                                     <th>Total TAT</th>
                                     <th>TAT Status</th>
+                                    <th>Pending Level</th>
+                                    <th>Days Pending</th>
+                                    <th>Remarks/Comments</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($distributors as $distributor)
+                                @forelse($distributors as $index => $distributor)
+                                @php
+                                    $tatData = DistributorReportController::calculateTATData($distributor);
+                                @endphp
                                 <tr>
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $distributor->created_at->format('d-m-Y') }}</td>
                                     <td>{{ $distributor->application_code ?? 'N/A' }}</td>
-                                    <td>{{ $distributor->distributor_code ?? 'N/A' }}</td>
+                                    <td>{{ $distributor->created_by_name ?? 'N/A' }}</td>
                                     <td>{{ $distributor->establishment_name ?? 'N/A' }}</td>
                                     <td>{{ $distributor->getAuthorizedOrEntityName() ?? 'N/A' }}</td>
-                                    <td>{{ $distributor->vertical?->vertical_name ?? 'N/A' }}</td>
-                                    <td>{{ $distributor->created_at?->format('d-m-Y') ?? 'N/A' }}</td>
+                                    <td>{{ $distributor->vertical_name ?? 'N/A' }}</td>
                                     <td>
-                                        @if($distributor->date_of_appointment)
-                                            {{ \Carbon\Carbon::parse($distributor->date_of_appointment)->format('d-m-Y') }}
-                                        @else
-                                            N/A
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ \App\Helpers\Helpers::getStatusBadgeColor($distributor->status) }}" style="font-size: 9px;">
+                                        <span class="badge bg-{{ \App\Helpers\Helpers::getStatusBadgeColor($distributor->status) }}" style="font-size: 8px;">
                                             {{ ucfirst(str_replace('_', ' ', $distributor->status)) }}
                                         </span>
                                     </td>
-
-                                    <!-- TAT Columns -->
-                                    <td>
-                                        @php
-                                        $rbmLog = $distributor->approvalLogs->where('role', 'Regional Business Manager')->first();
-                                        $rbmTat = $rbmLog ? ceil($distributor->created_at->diffInDays($rbmLog->created_at)) : 'Pending';
-                                        $rbmTat = is_numeric($rbmTat) ? $rbmTat . ($rbmTat != 1 ? '' : '') : $rbmTat;
-                                        @endphp
-                                        {{ $rbmTat }}
-                                    </td>
-                                    <td>
-                                        @php
-                                        $gmLog = $distributor->approvalLogs->where('role', 'General Manager')->first();
-                                        if ($gmLog) {
-                                            $prev = $distributor->approvalLogs->where('created_at', '<', $gmLog->created_at)->sortByDesc('created_at')->first();
-                                            $gmTat = $prev ? ceil($prev->created_at->diffInDays($gmLog->created_at)) : 'N/A';
-                                        } else {
-                                            $gmTat = 'Pending';
-                                        }
-                                        $gmTat = is_numeric($gmTat) ? $gmTat . ($gmTat != 1 ? '' : '') : $gmTat;
-                                        @endphp
-                                        {{ $gmTat }}
-                                    </td>
-                                    <td>
-                                        @php
-                                        $seLog = $distributor->approvalLogs->where('role', 'Senior Executive')->first();
-                                        if ($seLog) {
-                                            $prev = $distributor->approvalLogs->where('created_at', '<', $seLog->created_at)->sortByDesc('created_at')->first();
-                                            $seTat = $prev ? ceil($prev->created_at->diffInDays($seLog->created_at)) : 'N/A';
-                                        } else {
-                                            $seTat = 'Pending';
-                                        }
-                                        $seTat = is_numeric($seTat) ? $seTat . ($seTat != 1 ? '' : '') : $seTat;
-                                        @endphp
-                                        {{ $seTat }}
-                                    </td>
-                                    <td>
-                                        @if($distributor->mis_verified_at)
-                                        @php
-                                        $finalApp = $distributor->approvalLogs->where('action', 'approved')->last();
-                                        $misTat = $finalApp ? ceil($finalApp->created_at->diffInDays($distributor->mis_verified_at)) : 'N/A';
-                                        $misTat = is_numeric($misTat) ? $misTat . ($misTat != 1 ? '' : '') : $misTat;
-                                        @endphp
-                                        {{ $misTat }}
+                                    
+                                    <!-- Approval Dates -->
+                                    <td>{{ $tatData['rbm_approval_date'] ? $tatData['rbm_approval_date']->format('d-m-Y') : 'Pending' }}</td>
+                                    <td>{{ $tatData['zbm_approval_date'] ? $tatData['zbm_approval_date']->format('d-m-Y') : 'Pending' }}</td>
+                                    <td>{{ $tatData['gm_approval_date'] ? $tatData['gm_approval_date']->format('d-m-Y') : 'Pending' }}</td>
+                                    <td>{{ $tatData['revert_date'] ? $tatData['revert_date']->format('d-m-Y') : 'N/A' }}</td>
+                                    <td>{{ $tatData['reply_date'] ? $tatData['reply_date']->format('d-m-Y') : 'N/A' }}</td>
+                                    <td>{{ $tatData['dispatch_date'] ? \Carbon\Carbon::parse($tatData['dispatch_date'])->format('d-m-Y') : 'N/A' }}</td>
+                                    <td>{{ $tatData['physical_receive_date'] ? \Carbon\Carbon::parse($tatData['physical_receive_date'])->format('d-m-Y') : 'N/A' }}</td>
+                                    <td>{{ $tatData['mis_verification_date'] ? $tatData['mis_verification_date']->format('d-m-Y') : 'Pending' }}</td>
+                                    <td>{{ $tatData['final_creation_date'] ? $tatData['final_creation_date']->format('d-m-Y') : 'Pending' }}</td>
+                                    
+                                    <!-- TAT Values -->
+                                    <td class="text-center">
+                                        @if($tatData['rbm_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['rbm_tat'] <= 2 ? 'success' : ($tatData['rbm_tat'] <= 3 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['rbm_tat'] }} days
+                                            </span>
                                         @else
-                                        Pending
+                                            <span class="badge bg-secondary">Pending</span>
                                         @endif
                                     </td>
-                                    <td>
-                                        @php
-                                        $dispatch = $distributor->physicalDispatch;
-                                        if ($dispatch && $dispatch->dispatch_date && $distributor->mis_verified_at) {
-                                            $physTat = ceil($distributor->mis_verified_at->diffInDays($dispatch->dispatch_date));
-                                            $physTat = $physTat . ($physTat != 1 ? '' : '');
-                                        } else {
-                                            $physTat = 'Pending';
-                                        }
-                                        @endphp
-                                        {{ $physTat }}
+                                    <td class="text-center">
+                                        @if($tatData['zbm_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['zbm_tat'] <= 2 ? 'success' : ($tatData['zbm_tat'] <= 3 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['zbm_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
                                     </td>
-                                    <td>
-                                        @php
-                                        $endDate = null;
-                                        if (in_array($distributor->status, ['completed', 'distributorship_created'])) {
-                                            $endDate = $distributor->physicalDispatch?->dispatch_date ?? $distributor->updated_at;
-                                        } elseif ($distributor->mis_verified_at) {
-                                            $endDate = $distributor->mis_verified_at;
-                                        } elseif ($distributor->approvalLogs->isNotEmpty()) {
-                                            $endDate = $distributor->approvalLogs->last()->created_at;
-                                        } else {
-                                            $endDate = now();
-                                        }
-                                        $totalTatDays = ceil($distributor->created_at->diffInDays($endDate));
-                                        $totalTat = $totalTatDays . ($totalTatDays != 1 ? '' : '');
-                                        @endphp
-                                        {{ $totalTat }}
+                                    <td class="text-center">
+                                        @if($tatData['gm_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['gm_tat'] <= 3 ? 'success' : ($tatData['gm_tat'] <= 5 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['gm_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
                                     </td>
-                                    <td>
-                                        @php
-                                        $tatDays = ceil($distributor->created_at->diffInDays($endDate ?? now()));
-
-                                        if ($tatDays <= 7) {
-                                            $status='On Time' ;
-                                            $badgeColor='success' ;
-                                        } elseif ($tatDays <=14) {
-                                            $status='Delayed' ;
-                                            $badgeColor='warning' ;
-                                        } else {
-                                            $status='Overdue' ;
-                                            $badgeColor='danger' ;
-                                        }
-                                        @endphp
-
-                                        <span class="badge bg-{{ $badgeColor }}" style="font-size: 9px;">
-                                            {{ $status }}
+                                    <td class="text-center">
+                                        @if($tatData['mis_doc_verification_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['mis_doc_verification_tat'] <= 1 ? 'success' : ($tatData['mis_doc_verification_tat'] <= 2 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['mis_doc_verification_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($tatData['revert_reply_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['revert_reply_tat'] <= 1 ? 'success' : ($tatData['revert_reply_tat'] <= 2 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['revert_reply_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($tatData['dispatch_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['dispatch_tat'] <= 7 ? 'success' : ($tatData['dispatch_tat'] <= 11 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['dispatch_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($tatData['mis_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['mis_tat'] <= 1 ? 'success' : ($tatData['mis_tat'] <= 2 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['mis_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($tatData['physical_pendency_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['physical_pendency_tat'] <= 1 ? 'success' : ($tatData['physical_pendency_tat'] <= 2 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['physical_pendency_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($tatData['deposit_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['deposit_tat'] <= 1 ? 'success' : ($tatData['deposit_tat'] <= 2 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['deposit_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($tatData['distributor_finalisation_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['distributor_finalisation_tat'] <= 2 ? 'success' : ($tatData['distributor_finalisation_tat'] <= 3 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['distributor_finalisation_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($tatData['total_tat'] !== null)
+                                            <span class="badge bg-{{ $tatData['total_tat'] <= 20 ? 'success' : ($tatData['total_tat'] <= 33 ? 'warning' : 'danger') }}">
+                                                {{ (int)$tatData['total_tat'] }} days
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary">Pending</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{{ $tatData['tat_status'] == 'Within SLA' ? 'success' : ($tatData['tat_status'] == 'Moderate Delay' ? 'warning' : 'danger') }}" style="font-size: 8px;">
+                                            {{ $tatData['tat_status'] }}
                                         </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-info" style="font-size: 8px;">
+                                            {{ $tatData['pending_level'] }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-{{ $tatData['days_pending'] <= 3 ? 'success' : ($tatData['days_pending'] <= 7 ? 'warning' : 'danger') }}">
+                                            {{ (int)$tatData['days_pending'] }} days
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">-</small>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="15" class="text-center py-2">No data found</td>
+                                    <td colspan="31" class="text-center py-2">No data found</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -333,7 +384,6 @@ use App\Models\Status;
 </div>
 @endsection
 
-<!-- Add JavaScript for cascade filtering using your existing functions -->
 @push('scripts')
 <script>
     let isInitializingFromUrl = false;
@@ -590,10 +640,10 @@ use App\Models\Status;
 .page-title { font-size: 16px !important; font-weight: 600; }
 .form-control-sm { font-size: 11px; height: 28px; }
 .btn-sm { font-size: 11px; padding: 4px 8px; }
-.table th, .table td { padding: 4px 6px; font-size: 11px; }
-.badge { font-size: 9px; }
+.table th, .table td { padding: 3px 4px; font-size: 9px; }
+.badge { font-size: 8px; }
 .form-label { font-size: 10px; font-weight: 500; margin-bottom: 2px; }
 .card-body { padding: 8px !important; }
-.small { font-size: 10px !important; }
+.small { font-size: 9px !important; }
 </style>
 @endpush

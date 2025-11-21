@@ -53,7 +53,8 @@ class DistributorReportController extends Controller
             'completed' => ['distributorship_created'],
             'reverted' => ['reverted'],
             'rejected' => ['rejected'],
-            'on_hold' => ['on_hold']
+            'on_hold' => ['on_hold'],
+            'security_deposit_not_received' => ['security_deposit_not_received']
         ];
 
         // Add individual statuses that MIS users should be able to filter by
@@ -66,7 +67,8 @@ class DistributorReportController extends Controller
             'physical_docs_redispatched',
             'physical_docs_verified',
             'agreement_created',
-            'distributorship_created'
+            'distributorship_created',
+            'security_deposit_not_received'
         ];
 
         // Add these to status groups for individual filtering
@@ -132,7 +134,8 @@ class DistributorReportController extends Controller
             'completed' => ['distributorship_created'],
             'reverted' => ['reverted'],
             'rejected' => ['rejected'],
-            'on_hold' => ['on_hold']
+            'on_hold' => ['on_hold'],
+            'security_deposit_not_received' => ['security_deposit_not_received'] 
         ];
 
         // Add individual statuses that MIS users should be able to filter by
@@ -145,7 +148,8 @@ class DistributorReportController extends Controller
             'physical_docs_redispatched',
             'physical_docs_verified',
             'agreement_created',
-            'distributorship_created'
+            'distributorship_created',
+            'security_deposit_not_received'
         ];
 
         // Add these to status groups for individual filtering
@@ -158,8 +162,8 @@ class DistributorReportController extends Controller
         // Get common filter data
         $filterData = $this->getFilterData($user);
 
-        // Build query for TAT report with role-based access, passing status groups for filtering logic
-        $query = $this->buildReportQuery($filters, 'tat', $statusGroups);
+        // Build query for TAT report with role-based access
+        $query = $this->buildTATReportQuery($filters);
 
         // Export functionality
         if ($request->has('export') && $request->export === 'excel') {
@@ -176,6 +180,245 @@ class DistributorReportController extends Controller
         ));
     }
 
+    protected function buildTATReportQuery($filters)
+{
+    $user = Auth::user();
+
+    $query = Onboarding::query()
+        ->with([
+            'entityDetails', 
+            'createdBy', 
+            'currentApprover', 
+            'approvalLogs' => function($q) {
+                $q->orderBy('created_at', 'asc');
+            },
+            'physicalDispatch',
+            'vertical',
+            'authorizedPersons',
+            'individualDetails',
+            'proprietorDetails', 
+            'partnershipPartners',
+            'llpPartners',
+            'directors',
+            'committeeMembers',
+            'trustees'
+        ])
+        ->select([
+            'onboardings.*',
+            'core_region.region_name',
+            'core_zone.zone_name',
+            'core_territory.territory_name',
+            'core_employee.emp_name as created_by_name',
+            'ca.emp_name as current_approver_name',
+            'entity_details.establishment_name',
+            'core_vertical.vertical_name'
+        ])
+        ->leftJoin('core_territory', 'onboardings.territory', '=', 'core_territory.id')
+        ->leftJoin('core_region', 'onboardings.region', '=', 'core_region.id')
+        ->leftJoin('core_zone', 'onboardings.zone', '=', 'core_zone.id')
+        ->leftJoin('core_employee', 'onboardings.created_by', '=', 'core_employee.employee_id')
+        ->leftJoin('core_employee as ca', 'onboardings.current_approver_id', '=', 'ca.employee_id')
+        ->leftJoin('entity_details', 'onboardings.id', '=', 'entity_details.application_id')
+        ->leftJoin('core_vertical', 'onboardings.crop_vertical', '=', 'core_vertical.id');
+
+    // Apply role-based data access
+    $this->applyRoleBasedAccess($query, $user);
+
+    // Apply comprehensive filters
+    $this->applyComprehensiveFilters($query, $filters);
+
+    $query->orderBy('onboardings.created_at', 'desc');
+
+    return $query;
+}
+
+     public static function calculateTATData($distributor)
+    {
+        $approvalLogs = $distributor->approvalLogs;
+        $physicalDispatch = $distributor->physicalDispatch;
+
+        // Get approval dates
+        $rbmApproval = $approvalLogs->where('role', 'Regional Business Manager')->where('action', 'approved')->first();
+        $zbmApproval = $approvalLogs->where('role', 'Zonal Business Manager')->where('action', 'approved')->first();
+        $gmApproval = $approvalLogs->where('role', 'General Manager')->where('action', 'approved')->first();
+        
+        // Get revert and reply dates (first instance)
+        $revertLog = $approvalLogs->where('action', 'reverted')->first();
+        $replyAfterRevert = $approvalLogs->where('action', 'resubmitted')->first();
+
+        // MIS verification date (assuming this is when status changed to documents_verified)
+        $misVerificationDate = null;
+        if (in_array($distributor->status, ['documents_verified', 'physical_docs_verified', 'agreement_created', 'distributorship_created','security_deposit_not_received'])) {
+            $misVerificationDate = $distributor->updated_at;
+        }
+
+        // Physical document dates
+        $dispatchDate = $physicalDispatch?->dispatch_date;
+        $physicalReceiveDate = $physicalDispatch?->received_date;
+
+        // Final creation date (when distributorship is created)
+        $finalCreationDate = $distributor->status === 'distributorship_created' ? $distributor->updated_at : null;
+
+        // Deposit date (you'll need to add this field to your database)
+        $depositDate = $distributor->deposit_received_date ?? null;
+        if ($distributor->status === 'security_deposit_not_received') {
+            $depositDate = null; // Still pending
+        }
+        // Calculate TATs
+        $appDate = $distributor->created_at;
+
+        // RBM TAT: RBM approval date - App date
+        $rbmTat = $rbmApproval ? $appDate->diffInDays($rbmApproval->created_at) : null;
+
+        // ZBM TAT: ZBM approval date - RBM approval date
+        $zbmTat = null;
+        if ($zbmApproval && $rbmApproval) {
+            $zbmTat = $rbmApproval->created_at->diffInDays($zbmApproval->created_at);
+        }
+
+        // GM TAT: GM approval date - ZBM approval date
+        $gmTat = null;
+        if ($gmApproval && $zbmApproval) {
+            $gmTat = $zbmApproval->created_at->diffInDays($gmApproval->created_at);
+        } elseif ($gmApproval && $rbmApproval) {
+            // If no ZBM, calculate from RBM
+            $gmTat = $rbmApproval->created_at->diffInDays($gmApproval->created_at);
+        }
+
+        // MIS Doc Verification TAT: Verification date - GM Approval date
+        $misDocVerificationTat = null;
+        if ($misVerificationDate && $gmApproval) {
+            $misDocVerificationTat = $gmApproval->created_at->diffInDays($misVerificationDate);
+        }
+
+        // Revert and Reply TAT: Reply date - Revert date
+        $revertReplyTat = null;
+        if ($replyAfterRevert && $revertLog) {
+            $revertReplyTat = $revertLog->created_at->diffInDays($replyAfterRevert->created_at);
+        }
+
+        // Dispatch/Physical TAT: Receipt date - Dispatch date
+        $dispatchTat = null;
+        if ($physicalReceiveDate && $dispatchDate) {
+            $dispatchTat = Carbon::parse($dispatchDate)->diffInDays(Carbon::parse($physicalReceiveDate));
+        }
+
+        // MIS TAT: Verification date - Receipt date
+        $misTat = null;
+        if ($misVerificationDate && $physicalReceiveDate) {
+            $misTat = Carbon::parse($physicalReceiveDate)->diffInDays($misVerificationDate);
+        }
+
+        // Physical doc pendency clearance TAT: Reply date - Revert/Dispatch date
+        $physicalPendencyTat = null;
+        if ($replyAfterRevert && $dispatchDate) {
+            $physicalPendencyTat = Carbon::parse($dispatchDate)->diffInDays($replyAfterRevert->created_at);
+        }
+
+        // Deposit TAT: Deposit date - Physical receive date
+        $depositTat = null;
+        if ($depositDate && $physicalReceiveDate) {
+            $depositTat = Carbon::parse($physicalReceiveDate)->diffInDays(Carbon::parse($depositDate));
+        }
+
+        // Distributor Finalisation TAT: Final creation date - Verification date
+        $distributorFinalisationTat = null;
+        if ($finalCreationDate && $misVerificationDate) {
+            $distributorFinalisationTat = $misVerificationDate->diffInDays($finalCreationDate);
+        }
+
+        // Total TAT: Final approval date - App date
+        $totalTat = null;
+        $endDate = $finalCreationDate ?? $misVerificationDate ?? $gmApproval?->created_at ?? $zbmApproval?->created_at ?? $rbmApproval?->created_at;
+       
+        if ($distributor->status === 'security_deposit_not_received') {
+             $endDate = now();
+        }
+         if ($endDate) {
+            $totalTat = $appDate->diffInDays($endDate);
+        }
+
+        // Determine TAT Status based on SLA
+        $tatStatus = self::getTATStatus($totalTat);
+
+        // Pending Level
+        $pendingLevel = self::getPendingLevel($distributor);
+
+        // Days Pending
+        $daysPending = self::getDaysPending($distributor);
+
+        return [
+            'app_date' => $appDate,
+            'rbm_approval_date' => $rbmApproval?->created_at,
+            'zbm_approval_date' => $zbmApproval?->created_at,
+            'gm_approval_date' => $gmApproval?->created_at,
+            'revert_date' => $revertLog?->created_at,
+            'reply_date' => $replyAfterRevert?->created_at,
+            'dispatch_date' => $dispatchDate,
+            'physical_receive_date' => $physicalReceiveDate,
+            'mis_verification_date' => $misVerificationDate,
+            'final_creation_date' => $finalCreationDate,
+            'deposit_date' => $depositDate,
+            
+            'rbm_tat' => $rbmTat,
+            'zbm_tat' => $zbmTat,
+            'gm_tat' => $gmTat,
+            'mis_doc_verification_tat' => $misDocVerificationTat,
+            'revert_reply_tat' => $revertReplyTat,
+            'dispatch_tat' => $dispatchTat,
+            'mis_tat' => $misTat,
+            'physical_pendency_tat' => $physicalPendencyTat,
+            'deposit_tat' => $depositTat,
+            'distributor_finalisation_tat' => $distributorFinalisationTat,
+            'total_tat' => $totalTat,
+            
+            'tat_status' => $tatStatus,
+            'pending_level' => $pendingLevel,
+            'days_pending' => $daysPending,
+        ];
+    }
+
+    protected static function getTATStatus($totalTat)
+    {
+        if ($totalTat === null) return 'Pending';
+        
+        if ($totalTat <= 20) return 'Within SLA';
+        if ($totalTat <= 33) return 'Moderate Delay';
+        return 'Extreme Delay';
+    }
+
+    protected static function getPendingLevel($distributor)
+    {
+        $status = $distributor->status;
+        $statusMap = [
+            'draft' => 'Sales Level',
+            'under_level1_review' => 'RBM Level',
+            'under_level2_review' => 'ZBM Level', 
+            'under_level3_review' => 'GM Level',
+            'mis_processing' => 'MIS Level',
+            'documents_pending' => 'Sales Level',
+            'documents_resubmitted' => 'MIS Level',
+            'documents_verified' => 'MIS Level',
+            'physical_docs_pending' => 'Sales Level',
+            'physical_docs_redispatched' => 'MIS Level',
+            'physical_docs_verified' => 'MIS Level',
+            'agreement_created' => 'MIS Level',
+            'distributorship_created' => 'Completed',
+            'reverted' => 'Sales Level',
+            'rejected' => 'Completed',
+            'on_hold' => 'On Hold',
+            'security_deposit_not_received' => 'Security Deposit Pending'
+        ];
+
+        return $statusMap[$status] ?? 'Unknown';
+    }
+
+    // Get days pending at current level
+    protected static function getDaysPending($distributor)
+    {
+        $lastActionDate = $distributor->approvalLogs->last()?->created_at ?? $distributor->created_at;
+        return $lastActionDate->diffInDays(now());
+    }
     // Get common filter data
     protected function getFilterData($user)
     {
@@ -278,50 +521,75 @@ class DistributorReportController extends Controller
 
     // Apply comprehensive filters
     protected function applyComprehensiveFilters($query, $filters)
-    {
-        // Apply search filter
-        if (!empty($filters['search'])) {
-            $query->where(function ($q) use ($filters) {
-                $q->where('onboardings.application_code', 'like', "%{$filters['search']}%")
-                    ->orWhere('onboardings.distributor_code', 'like', "%{$filters['search']}%")
-                    ->orWhere('entity_details.establishment_name', 'like', "%{$filters['search']}%");
-            });
-        }
-
-        // Apply BU filter - use correct column name 'business_unit'
-        if (isset($filters['bu']) && $filters['bu'] !== 'All') {
-            $query->where('onboardings.business_unit', $filters['bu']);
-        }
-
-        // Apply Zone filter - use correct column name 'zone'
-        if (isset($filters['zone']) && $filters['zone'] !== 'All') {
-            $query->where('onboardings.zone', $filters['zone']);
-        }
-
-        // Apply Region filter - use correct column name 'region'
-        if (isset($filters['region']) && $filters['region'] !== 'All') {
-            $query->where('onboardings.region', $filters['region']);
-        }
-
-        // Apply Territory filter - use correct column name 'territory'
-        if (isset($filters['territory']) && $filters['territory'] !== 'All') {
-            $query->where('onboardings.territory', $filters['territory']);
-        }
-
-        // Apply date range filter
-        if (!empty($filters['date_from'])) {
-            $query->whereDate('onboardings.created_at', '>=', $filters['date_from']);
-        }
-        if (!empty($filters['date_to'])) {
-            $query->whereDate('onboardings.created_at', '<=', $filters['date_to']);
-        }
-
-        // Apply status filter
-        $this->applyStatusFilter($query, $filters);
+{
+    // Apply search filter
+    if (!empty($filters['search'])) {
+        $query->where(function ($q) use ($filters) {
+            $q->where('onboardings.application_code', 'like', "%{$filters['search']}%")
+                ->orWhere('onboardings.distributor_code', 'like', "%{$filters['search']}%")
+                ->orWhere('entity_details.establishment_name', 'like', "%{$filters['search']}%")
+                // Remove the direct column search and use relationship-based search
+                ->orWhereHas('authorizedPersons', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                })
+                ->orWhereHas('individualDetails', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                })
+                ->orWhereHas('proprietorDetails', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                })
+                ->orWhereHas('partnershipPartners', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                })
+                ->orWhereHas('llpPartners', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                })
+                ->orWhereHas('directors', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                })
+                ->orWhereHas('committeeMembers', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                })
+                ->orWhereHas('trustees', function ($subQuery) use ($filters) {
+                    $subQuery->where('name', 'like', "%{$filters['search']}%");
+                });
+        });
     }
 
+    // Apply BU filter
+    if (isset($filters['bu']) && $filters['bu'] !== 'All') {
+        $query->where('onboardings.business_unit', $filters['bu']);
+    }
+
+    // Apply Zone filter
+    if (isset($filters['zone']) && $filters['zone'] !== 'All') {
+        $query->where('onboardings.zone', $filters['zone']);
+    }
+
+    // Apply Region filter
+    if (isset($filters['region']) && $filters['region'] !== 'All') {
+        $query->where('onboardings.region', $filters['region']);
+    }
+
+    // Apply Territory filter
+    if (isset($filters['territory']) && $filters['territory'] !== 'All') {
+        $query->where('onboardings.territory', $filters['territory']);
+    }
+
+    // Apply date range filter
+    if (!empty($filters['date_from'])) {
+        $query->whereDate('onboardings.created_at', '>=', $filters['date_from']);
+    }
+    if (!empty($filters['date_to'])) {
+        $query->whereDate('onboardings.created_at', '<=', $filters['date_to']);
+    }
+
+    // Apply status filter
+    $this->applyStatusFilter($query, $filters);
+}
+
     // Apply role-based data access (copy from your onboarding controller)
-    protected function applyRoleBasedAccess($query, $user)
+   protected function applyRoleBasedAccess($query, $user)
     {
         // Super Admin, Admin, MIS users can see all data
         if ($user->hasAnyRole(['Super Admin', 'Admin', 'Mis Admin', 'Mis User', 'Management'])) {
@@ -391,7 +659,8 @@ class DistributorReportController extends Controller
                 'agreement_created'
             ],
             'completed' => ['distributorship_created'],
-            'rejected' => ['rejected']
+            'rejected' => ['rejected'],
+            'security_deposit_not_received' => ['security_deposit_not_received']
         ];
     }
 
@@ -416,7 +685,7 @@ class DistributorReportController extends Controller
         }
         // Approvers based on designation
         elseif ($this->isApprover($user)) {
-            $capabilities['access_level'] = 'region'; // or appropriate level
+            $capabilities['access_level'] = 'region';
             $capabilities['can_approve'] = true;
         }
         // Sales users - restricted access

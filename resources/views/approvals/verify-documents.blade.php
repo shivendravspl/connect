@@ -233,39 +233,67 @@
                                         @endif
                                     </td>
                                     <td class="text-center align-middle">
-                                        @if($isSubmitted && !$doc['resubmitted'])
-                                            <span class="badge {{ $verifications['main'][$index] ? 'bg-success' : 'bg-danger' }} fs-sm">
-                                                {{ $verifications['main'][$index] ? 'Verified' : 'Not Verified' }}
-                                            </span>
-                                        @else
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input verification-radio" type="radio" 
-                                                           name="document_verifications[main][{{ $index }}]" 
-                                                           id="verify-main{{ $index }}-yes"
-                                                           value="verified"
-                                                           {{ $verifications['main'][$index] ? 'checked' : '' }}
-                                                           data-target="remark-main{{ $index }}"
-                                                           {{ $application->status === 'documents_resubmitted' && !$doc['resubmitted'] ? 'disabled' : '' }}>
-                                                    <label class="form-check-label small" for="verify-main{{ $index }}-yes">
-                                                        <i class="ri-check-line text-success"></i> Verified
-                                                    </label>
-                                                </div>
-                                                <div class="form-check form-check-inline">
-                                                    <input class="form-check-input verification-radio" type="radio" 
-                                                           name="document_verifications[main][{{ $index }}]" 
-                                                           id="verify-main{{ $index }}-no"
-                                                           value="not_verified"
-                                                           {{ !$verifications['main'][$index] ? 'checked' : '' }}
-                                                           data-target="remark-main{{ $index }}"
-                                                           {{ $application->status === 'documents_resubmitted' && !$doc['resubmitted'] ? 'disabled' : '' }}>
-                                                    <label class="form-check-label small" for="verify-main{{ $index }}-no">
-                                                        <i class="ri-close-line text-danger"></i> Not Verified
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        @endif
-                                    </td>
+    @if($isSubmitted && !$doc['resubmitted'])
+        @if(is_null($verifications['main'][$index]))
+            {{-- Show radio buttons when no verification exists --}}
+            <div class="d-flex justify-content-center gap-2">
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input verification-radio" type="radio" 
+                           name="document_verifications[main][{{ $index }}]" 
+                           id="verify-main{{ $index }}-yes"
+                           value="verified"
+                           data-target="remark-main{{ $index }}"
+                           {{ $application->status === 'documents_resubmitted' && !$doc['resubmitted'] ? 'disabled' : '' }}>
+                    <label class="form-check-label small" for="verify-main{{ $index }}-yes">
+                        <i class="ri-check-line text-success"></i> Verified
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input verification-radio" type="radio" 
+                           name="document_verifications[main][{{ $index }}]" 
+                           id="verify-main{{ $index }}-no"
+                           value="not_verified"
+                           data-target="remark-main{{ $index }}"
+                           {{ $application->status === 'documents_resubmitted' && !$doc['resubmitted'] ? 'disabled' : '' }}>
+                    <label class="form-check-label small" for="verify-main{{ $index }}-no">
+                        <i class="ri-close-line text-danger"></i> Not Verified
+                    </label>
+                </div>
+            </div>
+        @else
+            <span class="badge {{ $verifications['main'][$index] ? 'bg-success' : 'bg-danger' }} fs-sm">
+                {{ $verifications['main'][$index] ? 'Verified' : 'Not Verified' }}
+            </span>
+        @endif
+    @else
+        <div class="d-flex justify-content-center gap-2">
+            <div class="form-check form-check-inline">
+                <input class="form-check-input verification-radio" type="radio" 
+                       name="document_verifications[main][{{ $index }}]" 
+                       id="verify-main{{ $index }}-yes"
+                       value="verified"
+                       {{ $verifications['main'][$index] === true ? 'checked' : '' }}
+                       data-target="remark-main{{ $index }}"
+                       {{ $application->status === 'documents_resubmitted' && !$doc['resubmitted'] ? 'disabled' : '' }}>
+                <label class="form-check-label small" for="verify-main{{ $index }}-yes">
+                    <i class="ri-check-line text-success"></i> Verified
+                </label>
+            </div>
+            <div class="form-check form-check-inline">
+                <input class="form-check-input verification-radio" type="radio" 
+                       name="document_verifications[main][{{ $index }}]" 
+                       id="verify-main{{ $index }}-no"
+                       value="not_verified"
+                       {{ $verifications['main'][$index] === false ? 'checked' : '' }}
+                       data-target="remark-main{{ $index }}"
+                       {{ $application->status === 'documents_resubmitted' && !$doc['resubmitted'] ? 'disabled' : '' }}>
+                <label class="form-check-label small" for="verify-main{{ $index }}-no">
+                    <i class="ri-close-line text-danger"></i> Not Verified
+                </label>
+            </div>
+        </div>
+    @endif
+</td>
                                     <td class="align-middle">
                                         <input type="text" 
                                                name="verification_notes[main][{{ $index }}]" 
@@ -291,207 +319,261 @@
         </div>
 
         <!-- Authorized Persons Documents Section -->
-        @if($application->entityDetails->has_authorized_persons === 'yes' && !empty($authorizedDocs))
-        <div class="card mb-3 shadow-sm rounded-3">
-            <div class="card-header bg-light py-2">
-                <h6 class="mb-0 d-flex justify-content-between align-items-center">
-                    <span><i class="ri-user-line me-2"></i> Authorized Persons Documents Verification</span>
-                    <button type="button" class="btn btn-link p-0 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#authDocsCollapse" aria-expanded="true">
-                        <i class="ri-arrow-down-s-line"></i>
-                    </button>
-                </h6>
-            </div>
-            <div class="card-body p-0 collapse show" id="authDocsCollapse">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width:25%">Document Type</th>
-                                <th style="width:20%">Person Name</th>
-                                <th style="width:15%">Relation</th>
-                                <th style="width:10%" class="text-center">View</th>
-                                <th style="width:15%" class="text-center">Verification</th>
-                                <th style="width:15%">Remark</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($authorizedDocs as $authIndex => $authDoc)
-                            <tr class="{{ $authDoc['resubmitted'] ? 'table-warning' : '' }}">
-                                <td class="align-middle small">
-                                    <span class="badge bg-info fs-sm">{{ $authDoc['type'] }}</span>
-                                    @if($authDoc['resubmitted'])
-                                        <span class="badge bg-info fs-sm ms-1">Re-submitted</span>
-                                    @endif
-                                </td>
-                                <td class="align-middle small">{{ htmlspecialchars($authDoc['person_name']) }}</td>
-                                <td class="align-middle small">{{ htmlspecialchars($authDoc['person_relation']) }}</td>
-                                <td class="text-center align-middle">
-                                    @if($authDoc['path'])
-                                    <button type="button" class="btn btn-outline-primary btn-sm view-auth-document" 
-                                            data-modal="{{ $authDoc['doc_type'] === 'letter' ? 'authLetterModal' . $authDoc['person_index'] : 'authAadharModal' . $authDoc['person_index'] }}"
-                                            data-person="{{ $authDoc['person_index'] }}"
-                                            data-person-name="{{ htmlspecialchars($authDoc['person_name']) }}"
-                                            data-doc-type="{{ $authDoc['doc_type'] }}"
-                                            data-path="{{ $authDoc['path'] }}"
-                                            data-s3-folder="{{ $authDoc['s3_folder'] }}"
-                                            title="View {{ $authDoc['type'] }}">
-                                        <i class="ri-eye-line"></i>
-                                    </button>
-                                    @else
-                                    <span class="text-muted small">N/A</span>
-                                    @endif
-                                </td>
-                                <td class="text-center align-middle">
-                                    @if($isSubmitted && !$authDoc['resubmitted'])
-                                        <span class="badge {{ $verifications['authorized'][$authIndex] ? 'bg-success' : 'bg-danger' }} fs-sm">
-                                            {{ $verifications['authorized'][$authIndex] ? 'Verified' : 'Not Verified' }}
-                                        </span>
-                                    @else
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input verification-radio" type="radio" 
-                                                       name="document_verifications[authorized][{{ $authIndex }}]" 
-                                                       id="verify-auth{{ $authIndex }}-yes"
-                                                       value="verified"
-                                                       {{ $verifications['authorized'][$authIndex] ? 'checked' : '' }}
-                                                       data-target="remark-auth{{ $authIndex }}"
-                                                       {{ $application->status === 'documents_resubmitted' && !$authDoc['resubmitted'] ? 'disabled' : '' }}>
-                                                <label class="form-check-label small" for="verify-auth{{ $authIndex }}-yes">
-                                                    <i class="ri-check-line text-success"></i> Verified
-                                                </label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input verification-radio" type="radio" 
-                                                       name="document_verifications[authorized][{{ $authIndex }}]" 
-                                                       id="verify-auth{{ $authIndex }}-no"
-                                                       value="not_verified"
-                                                       {{ !$verifications['authorized'][$authIndex] ? 'checked' : '' }}
-                                                       data-target="remark-auth{{ $authIndex }}"
-                                                       {{ $application->status === 'documents_resubmitted' && !$authDoc['resubmitted'] ? 'disabled' : '' }}>
-                                                <label class="form-check-label small" for="verify-auth{{ $authIndex }}-no">
-                                                    <i class="ri-close-line text-danger"></i> Not Verified
-                                                </label>
-                                            </div>
+@if($application->entityDetails->has_authorized_persons === 'yes' && !empty($authorizedDocs))
+<div class="card mb-3 shadow-sm rounded-3">
+    <div class="card-header bg-light py-2">
+        <h6 class="mb-0 d-flex justify-content-between align-items-center">
+            <span><i class="ri-user-line me-2"></i> Authorized Persons Documents Verification</span>
+            <button type="button" class="btn btn-link p-0 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#authDocsCollapse" aria-expanded="true">
+                <i class="ri-arrow-down-s-line"></i>
+            </button>
+        </h6>
+    </div>
+    <div class="card-body p-0 collapse show" id="authDocsCollapse">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:25%">Document Type</th>
+                        <th style="width:20%">Person Name</th>
+                        <th style="width:15%">Relation</th>
+                        <th style="width:10%" class="text-center">View</th>
+                        <th style="width:15%" class="text-center">Verification</th>
+                        <th style="width:15%">Remark</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($authorizedDocs as $authIndex => $authDoc)
+                    <tr class="{{ $authDoc['resubmitted'] ? 'table-warning' : '' }}">
+                        <td class="align-middle small">
+                            <span class="badge bg-info fs-sm">{{ $authDoc['type'] }}</span>
+                            @if($authDoc['resubmitted'])
+                                <span class="badge bg-info fs-sm ms-1">Re-submitted</span>
+                            @endif
+                        </td>
+                        <td class="align-middle small">{{ htmlspecialchars($authDoc['person_name']) }}</td>
+                        <td class="align-middle small">{{ htmlspecialchars($authDoc['person_relation']) }}</td>
+                        <td class="text-center align-middle">
+                            @if($authDoc['path'])
+                            <button type="button" class="btn btn-outline-primary btn-sm view-auth-document" 
+                                    data-modal="{{ $authDoc['doc_type'] === 'letter' ? 'authLetterModal' . $authDoc['person_index'] : 'authAadharModal' . $authDoc['person_index'] }}"
+                                    data-person="{{ $authDoc['person_index'] }}"
+                                    data-person-name="{{ htmlspecialchars($authDoc['person_name']) }}"
+                                    data-doc-type="{{ $authDoc['doc_type'] }}"
+                                    data-path="{{ $authDoc['path'] }}"
+                                    data-s3-folder="{{ $authDoc['s3_folder'] }}"
+                                    title="View {{ $authDoc['type'] }}">
+                                <i class="ri-eye-line"></i>
+                            </button>
+                            @else
+                            <span class="text-muted small">N/A</span>
+                            @endif
+                        </td>
+                        <td class="text-center align-middle">
+                            @if($isSubmitted && !$authDoc['resubmitted'])
+                                @if(is_null($verifications['authorized'][$authIndex]))
+                                    {{-- Show radio buttons when no verification exists --}}
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input verification-radio" type="radio" 
+                                                   name="document_verifications[authorized][{{ $authIndex }}]" 
+                                                   id="verify-auth{{ $authIndex }}-yes"
+                                                   value="verified"
+                                                   data-target="remark-auth{{ $authIndex }}"
+                                                   {{ $application->status === 'documents_resubmitted' && !$authDoc['resubmitted'] ? 'disabled' : '' }}>
+                                            <label class="form-check-label small" for="verify-auth{{ $authIndex }}-yes">
+                                                <i class="ri-check-line text-success"></i> Verified
+                                            </label>
                                         </div>
-                                    @endif
-                                </td>
-                                <td class="align-middle">
-                                    <input type="text" 
-                                           name="verification_notes[authorized][{{ $authIndex }}]" 
-                                           id="remark-auth{{ $authIndex }}"
-                                           class="form-control form-control-sm remark-input" 
-                                           placeholder="Remark (if not verified)"
-                                           value="{{ $verificationNotes['authorized'][$authIndex] ?? '' }}"
-                                           {{ $isSubmitted && !$authDoc['resubmitted'] ? 'readonly' : '' }}
-                                           style="display: {{ $verifications['authorized'][$authIndex] ? 'none' : 'block' }};">
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input verification-radio" type="radio" 
+                                                   name="document_verifications[authorized][{{ $authIndex }}]" 
+                                                   id="verify-auth{{ $authIndex }}-no"
+                                                   value="not_verified"
+                                                   data-target="remark-auth{{ $authIndex }}"
+                                                   {{ $application->status === 'documents_resubmitted' && !$authDoc['resubmitted'] ? 'disabled' : '' }}>
+                                            <label class="form-check-label small" for="verify-auth{{ $authIndex }}-no">
+                                                <i class="ri-close-line text-danger"></i> Not Verified
+                                            </label>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="badge {{ $verifications['authorized'][$authIndex] ? 'bg-success' : 'bg-danger' }} fs-sm">
+                                        {{ $verifications['authorized'][$authIndex] ? 'Verified' : 'Not Verified' }}
+                                    </span>
+                                @endif
+                            @else
+                                <div class="d-flex justify-content-center gap-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input verification-radio" type="radio" 
+                                               name="document_verifications[authorized][{{ $authIndex }}]" 
+                                               id="verify-auth{{ $authIndex }}-yes"
+                                               value="verified"
+                                               {{ $verifications['authorized'][$authIndex] === true ? 'checked' : '' }}
+                                               data-target="remark-auth{{ $authIndex }}"
+                                               {{ $application->status === 'documents_resubmitted' && !$authDoc['resubmitted'] ? 'disabled' : '' }}>
+                                        <label class="form-check-label small" for="verify-auth{{ $authIndex }}-yes">
+                                            <i class="ri-check-line text-success"></i> Verified
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input verification-radio" type="radio" 
+                                               name="document_verifications[authorized][{{ $authIndex }}]" 
+                                               id="verify-auth{{ $authIndex }}-no"
+                                               value="not_verified"
+                                               {{ $verifications['authorized'][$authIndex] === false ? 'checked' : '' }}
+                                               data-target="remark-auth{{ $authIndex }}"
+                                               {{ $application->status === 'documents_resubmitted' && !$authDoc['resubmitted'] ? 'disabled' : '' }}>
+                                        <label class="form-check-label small" for="verify-auth{{ $authIndex }}-no">
+                                            <i class="ri-close-line text-danger"></i> Not Verified
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+                        </td>
+                        <td class="align-middle">
+                            <input type="text" 
+                                   name="verification_notes[authorized][{{ $authIndex }}]" 
+                                   id="remark-auth{{ $authIndex }}"
+                                   class="form-control form-control-sm remark-input" 
+                                   placeholder="Remark (if not verified)"
+                                   value="{{ $verificationNotes['authorized'][$authIndex] ?? '' }}"
+                                   {{ $isSubmitted && !$authDoc['resubmitted'] ? 'readonly' : '' }}
+                                   style="display: {{ $verifications['authorized'][$authIndex] ? 'none' : 'block' }};">
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-        @endif
+    </div>
+</div>
+@endif
+        
 
-        <!-- Additional Documents Verification -->
         @if($additionalDocs->isNotEmpty())
-        <div class="card mb-3 shadow-sm rounded-3">
-            <div class="card-header bg-light py-2">
-                <h6 class="mb-0 d-flex justify-content-between align-items-center">
-                    <span>Additional Documents Verification</span>
-                    <button type="button" class="btn btn-link p-0 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#additionalDocsVerificationCollapse" aria-expanded="true">
-                        <i class="ri-arrow-down-s-line"></i>
-                    </button>
-                </h6>
-            </div>
-            <div class="card-body p-0 collapse show" id="additionalDocsVerificationCollapse">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-sm mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width:25%">Document Name</th>
-                                <th style="width:25%">Remark</th>
-                                <th style="width:10%" class="text-center">View</th>
-                                <th style="width:20%" class="text-center">Verification</th>
-                                <th style="width:20%">Verification Remark</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($additionalDocs as $index => $doc)
-                            <tr class="{{ $doc->resubmitted ? 'table-warning' : '' }}">
-                                <td class="align-middle small">
-                                    {{ $doc->document_name }}
-                                    @if($doc->resubmitted)
-                                        <span class="badge bg-info fs-sm ms-1">Re-submitted</span>
-                                    @endif
-                                </td>
-                                <td class="align-middle small">{{ $doc->remark ?? 'N/A' }}</td>
-                                <td class="text-center align-middle">
-                                    @if($doc->upload_path)
-                                    <button type="button" class="btn btn-outline-primary btn-sm view-additional-document" 
-                                            data-modal="additionalDocumentModal{{ $index }}"
-                                            data-doc-id="{{ $doc->id }}"
-                                            data-path="{{ $doc->upload_path }}"
-                                            data-s3-folder="additional_documents"
-                                            title="View {{ $doc->document_name }}">
-                                        <i class="ri-eye-line"></i>
-                                    </button>
-                                    @else
-                                    <span class="text-muted small">N/A</span>
-                                    @endif
-                                </td>
-                                <td class="text-center align-middle">
-                                    @if($isSubmitted && !$doc->resubmitted)
-                                        <span class="badge {{ $verifications['additional'][$index] ? 'bg-success' : 'bg-danger' }} fs-sm">
-                                            {{ $verifications['additional'][$index] ? 'Verified' : 'Not Verified' }}
-                                        </span>
-                                    @else
-                                        <div class="d-flex justify-content-center gap-2">
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input verification-radio" type="radio" 
-                                                       name="document_verifications[additional][{{ $index }}]" 
-                                                       id="verify-additional{{ $index }}-yes"
-                                                       value="verified"
-                                                       {{ $verifications['additional'][$index] ? 'checked' : '' }}
-                                                       data-target="remark-additional{{ $index }}">
-                                                <label class="form-check-label small" for="verify-additional{{ $index }}-yes">
-                                                    <i class="ri-check-line text-success"></i> Verified
-                                                </label>
-                                            </div>
-                                            <div class="form-check form-check-inline">
-                                                <input class="form-check-input verification-radio" type="radio" 
-                                                       name="document_verifications[additional][{{ $index }}]" 
-                                                       id="verify-additional{{ $index }}-no"
-                                                       value="not_verified"
-                                                       {{ !$verifications['additional'][$index] ? 'checked' : '' }}
-                                                       data-target="remark-additional{{ $index }}">
-                                                <label class="form-check-label small" for="verify-additional{{ $index }}-no">
-                                                    <i class="ri-close-line text-danger"></i> Not Verified
-                                                </label>
-                                            </div>
+<div class="card mb-3 shadow-sm rounded-3">
+    <div class="card-header bg-light py-2">
+        <h6 class="mb-0 d-flex justify-content-between align-items-center">
+            <span>Additional Documents Verification</span>
+            <button type="button" class="btn btn-link p-0 text-decoration-none" data-bs-toggle="collapse" data-bs-target="#additionalDocsVerificationCollapse" aria-expanded="true">
+                <i class="ri-arrow-down-s-line"></i>
+            </button>
+        </h6>
+    </div>
+    <div class="card-body p-0 collapse show" id="additionalDocsVerificationCollapse">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:25%">Document Name</th>
+                        <th style="width:25%">Remark</th>
+                        <th style="width:10%" class="text-center">View</th>
+                        <th style="width:20%" class="text-center">Verification</th>
+                        <th style="width:20%">Verification Remark</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($additionalDocs as $index => $doc)
+                    <tr class="{{ $doc->resubmitted ? 'table-warning' : '' }}">
+                        <td class="align-middle small">
+                            {{ $doc->document_name }}
+                            @if($doc->resubmitted)
+                                <span class="badge bg-info fs-sm ms-1">Re-submitted</span>
+                            @endif
+                        </td>
+                        <td class="align-middle small">{{ $doc->remark ?? 'N/A' }}</td>
+                        <td class="text-center align-middle">
+                            @if($doc->upload_path)
+                            <button type="button" class="btn btn-outline-primary btn-sm view-additional-document" 
+                                    data-modal="additionalDocumentModal{{ $index }}"
+                                    data-doc-id="{{ $doc->id }}"
+                                    data-path="{{ $doc->upload_path }}"
+                                    data-s3-folder="additional_documents"
+                                    title="View {{ $doc->document_name }}">
+                                <i class="ri-eye-line"></i>
+                            </button>
+                            @else
+                            <span class="text-muted small">N/A</span>
+                            @endif
+                        </td>
+                        <td class="text-center align-middle">
+                            @if($isSubmitted && !$doc->resubmitted)
+                                @if(is_null($verifications['additional'][$index]))
+                                    {{-- Show radio buttons when no verification exists --}}
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input verification-radio" type="radio" 
+                                                   name="document_verifications[additional][{{ $index }}]" 
+                                                   id="verify-additional{{ $index }}-yes"
+                                                   value="verified"
+                                                   data-target="remark-additional{{ $index }}">
+                                            <label class="form-check-label small" for="verify-additional{{ $index }}-yes">
+                                                <i class="ri-check-line text-success"></i> Verified
+                                            </label>
                                         </div>
-                                    @endif
-                                </td>
-                                <td class="align-middle">
-                                    <input type="text" 
-                                           name="verification_notes[additional][{{ $index }}]" 
-                                           id="remark-additional{{ $index }}"
-                                           class="form-control form-control-sm remark-input" 
-                                           placeholder="Remark (if not verified)"
-                                           value="{{ $verificationNotes['additional'][$index] ?? '' }}"
-                                           {{ $isSubmitted && !$doc->resubmitted ? 'readonly' : '' }}
-                                           style="display: {{ $verifications['additional'][$index] ? 'none' : 'block' }};">
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input verification-radio" type="radio" 
+                                                   name="document_verifications[additional][{{ $index }}]" 
+                                                   id="verify-additional{{ $index }}-no"
+                                                   value="not_verified"
+                                                   data-target="remark-additional{{ $index }}">
+                                            <label class="form-check-label small" for="verify-additional{{ $index }}-no">
+                                                <i class="ri-close-line text-danger"></i> Not Verified
+                                            </label>
+                                        </div>
+                                    </div>
+                                @else
+                                    <span class="badge {{ $verifications['additional'][$index] ? 'bg-success' : 'bg-danger' }} fs-sm">
+                                        {{ $verifications['additional'][$index] ? 'Verified' : 'Not Verified' }}
+                                    </span>
+                                @endif
+                            @else
+                                <div class="d-flex justify-content-center gap-2">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input verification-radio" type="radio" 
+                                               name="document_verifications[additional][{{ $index }}]" 
+                                               id="verify-additional{{ $index }}-yes"
+                                               value="verified"
+                                               {{ $verifications['additional'][$index] === true ? 'checked' : '' }}
+                                               data-target="remark-additional{{ $index }}">
+                                        <label class="form-check-label small" for="verify-additional{{ $index }}-yes">
+                                            <i class="ri-check-line text-success"></i> Verified
+                                        </label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input verification-radio" type="radio" 
+                                               name="document_verifications[additional][{{ $index }}]" 
+                                               id="verify-additional{{ $index }}-no"
+                                               value="not_verified"
+                                               {{ $verifications['additional'][$index] === false ? 'checked' : '' }}
+                                               data-target="remark-additional{{ $index }}">
+                                        <label class="form-check-label small" for="verify-additional{{ $index }}-no">
+                                            <i class="ri-close-line text-danger"></i> Not Verified
+                                        </label>
+                                    </div>
+                                </div>
+                            @endif
+                        </td>
+                        <td class="align-middle">
+                            <input type="text" 
+                                   name="verification_notes[additional][{{ $index }}]" 
+                                   id="remark-additional{{ $index }}"
+                                   class="form-control form-control-sm remark-input" 
+                                   placeholder="Remark (if not verified)"
+                                   value="{{ $verificationNotes['additional'][$index] ?? '' }}"
+                                   {{ $isSubmitted && !$doc->resubmitted ? 'readonly' : '' }}
+                                   style="display: {{ $verifications['additional'][$index] ? 'none' : 'block' }};">
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-        @endif
-
+    </div>
+</div>
+@endif
+       
         <!-- Additional Requirements -->
         <div class="card mb-3 shadow-sm rounded-3">
             <div class="card-header bg-light py-2">
@@ -558,12 +640,12 @@
             @endif
         </div>
 
-        @if((!$isSubmitted || $application->status === 'documents_resubmitted' || $application->status === 'documents_pending') && (!empty($mainDocuments) || !empty($authorizedDocs) || !empty($additionalDocs)))
-        <div class="d-flex justify-content-end">
-            <button type="submit" class="btn btn-success btn-sm" id="submitBtn">
-                <i class="ri-check-line me-1"></i> Submit Verification
-            </button>
-        </div>
+        @if((!$isSubmitted || in_array($application->status, ['documents_resubmitted', 'documents_pending', 'mis_processing'])) && (!empty($mainDocuments) || !empty($authorizedDocs) || $additionalDocs->isNotEmpty()))
+            <div class="d-flex justify-content-end">
+                <button type="submit" class="btn btn-success btn-sm" id="submitBtn">
+                    <i class="ri-check-line me-1"></i> Submit Verification
+                </button>
+            </div>
         @endif
     </form>
 
@@ -837,52 +919,59 @@ document.addEventListener('DOMContentLoaded', function() {
     // Entity Details Form Submission
     const entityForm = document.getElementById('entityDetailsForm');
     if (entityForm) {
-        entityForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitBtn = document.getElementById('submitEntityBtn');
-            if (!submitBtn) return;
+    entityForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const submitBtn = document.getElementById('submitEntityBtn');
+        if (!submitBtn) return;
 
-            const notVerifiedRadio = entityForm.querySelector('input[name="entity_verification"]:checked[value="not_verified"]');
-            const hasNotVerifiedFields = !!notVerifiedRadio;
+        // Check if any verification radio is selected
+        const verificationRadios = entityForm.querySelectorAll('input[name="entity_verification"]');
+        const isVerificationSelected = Array.from(verificationRadios).some(radio => radio.checked);
 
-            // Validate required fields
-            const requiredFields = [
-                { selector: 'input[name="entity_fields[establishment_name]"]', message: 'Establishment Name is required.' },
-            ];
+        if (!isVerificationSelected) {
+            alert('Please select a verification status (Verified or Not Verified) before submitting.');
+            return;
+        }
 
-            let hasErrors = false;
-            requiredFields.forEach(field => {
-                const input = entityForm.querySelector(field.selector);
-                if (input && input.value.trim() === '') {
-                    input.classList.add('is-invalid');
-                    alert(field.message);
-                    hasErrors = true;
-                } else {
-                    input.classList.remove('is-invalid');
-                }
-            });
+        const notVerifiedRadio = entityForm.querySelector('input[name="entity_verification"]:checked[value="not_verified"]');
+        const hasNotVerifiedFields = !!notVerifiedRadio;
 
-            // Validate authorized persons if applicable
-            // const hasAuthPersons = entityForm.querySelector('select[name="entity_fields[has_authorized_persons]"]').value === 'yes';
-            // if (hasAuthPersons) {
-            //     const authNameInputs = entityForm.querySelectorAll('input[name$="[name]"]');
-            //     authNameInputs.forEach(input => {
-            //         if (input.value.trim() === '') {
-            //             input.classList.add('is-invalid');
-            //             alert('Authorized Person Name is required.');
-            //             hasErrors = true;
-            //         } else {
-            //             input.classList.remove('is-invalid');
-            //         }
-            //     });
-            // }
+        // Validate required fields
+        const requiredFields = [
+            { selector: 'input[name="entity_fields[establishment_name]"]', message: 'Establishment Name is required.' },
+        ];
 
-            if (hasErrors) return;
-
-            if (hasNotVerifiedFields && !confirm('Entity details are marked as "Not Verified". This will send the application back for corrections. Do you want to continue?')) {
-                return;
+        let hasErrors = false;
+        requiredFields.forEach(field => {
+            const input = entityForm.querySelector(field.selector);
+            if (input && input.value.trim() === '') {
+                input.classList.add('is-invalid');
+                alert(field.message);
+                hasErrors = true;
+            } else {
+                input.classList.remove('is-invalid');
             }
+        });
+
+        if (hasErrors) return;
+
+        // Validate remark for "Not Verified"
+        if (hasNotVerifiedFields) {
+            const remarkInput = document.getElementById('remark-entity');
+            if (!remarkInput.value || remarkInput.value.trim() === '') {
+                remarkInput.classList.add('is-invalid');
+                alert('Remark is required when marking as "Not Verified".');
+                remarkInput.focus();
+                return;
+            } else {
+                remarkInput.classList.remove('is-invalid');
+            }
+        }
+
+        if (hasNotVerifiedFields && !confirm('Entity details are marked as "Not Verified". This will send the application back for corrections. Do you want to continue?')) {
+            return;
+        }
 
             const originalText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="ri-loader-2-line spinner-border spinner-border-sm me-1"></i>Processing...';
@@ -1115,18 +1204,62 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Enhanced form validation for document verification
-    const verifyForm = document.getElementById('verifyForm');
-    if (verifyForm) {
+const verifyForm = document.getElementById('verifyForm');
+if (verifyForm) {
     verifyForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
         const submitBtn = document.getElementById('submitBtn');
         if (!submitBtn) return;
         
+        // Check if ALL documents have verification decisions
+        let missingVerifications = [];
+        
+        // Check main documents
+        const mainDocumentRadios = verifyForm.querySelectorAll('input[name^="document_verifications[main]"]');
+        const mainDocumentGroups = groupRadiosByName(mainDocumentRadios);
+        mainDocumentGroups.forEach((radios, index) => {
+            if (!isRadioGroupChecked(radios) && !isDocumentDisabled(radios[0])) {
+                missingVerifications.push(`Main Document ${index + 1}`);
+            }
+        });
+        
+        // Check authorized documents
+        const authorizedDocumentRadios = verifyForm.querySelectorAll('input[name^="document_verifications[authorized]"]');
+        const authorizedDocumentGroups = groupRadiosByName(authorizedDocumentRadios);
+        authorizedDocumentGroups.forEach((radios, index) => {
+            if (!isRadioGroupChecked(radios) && !isDocumentDisabled(radios[0])) {
+                missingVerifications.push(`Authorized Document ${index + 1}`);
+            }
+        });
+        
+        // Check additional documents
+        const additionalDocumentRadios = verifyForm.querySelectorAll('input[name^="document_verifications[additional]"]');
+        const additionalDocumentGroups = groupRadiosByName(additionalDocumentRadios);
+        additionalDocumentGroups.forEach((radios, index) => {
+            if (!isRadioGroupChecked(radios) && !isDocumentDisabled(radios[0])) {
+                missingVerifications.push(`Additional Document ${index + 1}`);
+            }
+        });
+        
+        // Show error if any documents are missing verification
+        if (missingVerifications.length > 0) {
+            const documentList = missingVerifications.join(', ');
+            alert(`Please make verification decisions for all documents:\n\n${documentList}`);
+            
+            // Scroll to the first missing verification
+            const firstMissingRadio = document.querySelector('input[name^="document_verifications"]:not(:checked):not([disabled])');
+            if (firstMissingRadio) {
+                firstMissingRadio.closest('tr').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+        
+        // Check for missing remarks on "Not Verified" documents
         const notVerifiedRadios = verifyForm.querySelectorAll('input[name^="document_verifications"]:checked[value="not_verified"]');
         let hasMissingRemarks = false;
+        let firstMissingRemark = null;
         
-        // Check if all "Not Verified" documents have remarks
         notVerifiedRadios.forEach(radio => {
             const targetId = radio.dataset.target;
             const remarkInput = document.getElementById(targetId);
@@ -1134,21 +1267,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 hasMissingRemarks = true;
                 remarkInput.classList.add('is-invalid');
                 
-                // Scroll to the first missing remark
-                if (!document.querySelector('.is-invalid:not(.checked)')) {
-                    remarkInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    remarkInput.focus();
+                if (!firstMissingRemark) {
+                    firstMissingRemark = remarkInput;
                 }
-                remarkInput.classList.add('checked');
             } else if (remarkInput) {
                 remarkInput.classList.remove('is-invalid');
-                remarkInput.classList.remove('checked');
             }
         });
+        
+        if (hasMissingRemarks) {
+            alert('Please provide remarks for all documents marked as "Not Verified". Remarks are mandatory when rejecting documents.');
+            if (firstMissingRemark) {
+                firstMissingRemark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstMissingRemark.focus();
+            }
+            return;
+        }
         
         // Validate additional document names
         const additionalNameInputs = verifyForm.querySelectorAll('input[name$="[name]"]');
         let hasInvalidAdditional = false;
+        let firstInvalidAdditional = null;
 
         additionalNameInputs.forEach(input => {
             const row = input.closest('tr');
@@ -1157,9 +1296,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 hasInvalidAdditional = true;
                 input.classList.add('is-invalid');
                 if (remarkInput) remarkInput.classList.add('is-invalid');
+                if (!firstInvalidAdditional) firstInvalidAdditional = input;
             } else if (input.value.trim() === '') {
                 hasInvalidAdditional = true;
                 input.classList.add('is-invalid');
+                if (!firstInvalidAdditional) firstInvalidAdditional = input;
             } else {
                 input.classList.remove('is-invalid');
                 if (remarkInput) remarkInput.classList.remove('is-invalid');
@@ -1168,11 +1309,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (hasInvalidAdditional) {
             alert('Please fill all additional document names or clear the remarks for empty documents.');
-            return;
-        }
-        
-        if (hasMissingRemarks) {
-            alert('Please provide remarks for all documents marked as "Not Verified". Remarks are mandatory when rejecting documents.');
+            if (firstInvalidAdditional) {
+                firstInvalidAdditional.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                firstInvalidAdditional.focus();
+            }
             return;
         }
         
@@ -1256,6 +1396,29 @@ document.addEventListener('DOMContentLoaded', function() {
             submitBtn.disabled = false;
         });
     });
+}
+
+// Helper function to group radios by their name
+function groupRadiosByName(radios) {
+    const groups = {};
+    radios.forEach(radio => {
+        const name = radio.name;
+        if (!groups[name]) {
+            groups[name] = [];
+        }
+        groups[name].push(radio);
+    });
+    return Object.values(groups);
+}
+
+// Helper function to check if a radio group has a selection
+function isRadioGroupChecked(radios) {
+    return radios.some(radio => radio.checked);
+}
+
+// Helper function to check if document is disabled (for resubmitted documents)
+function isDocumentDisabled(radio) {
+    return radio.disabled;
 }
 
    // Real-time validation for remarks when "Not Verified" is selected

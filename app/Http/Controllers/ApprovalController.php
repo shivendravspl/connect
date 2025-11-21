@@ -911,15 +911,23 @@ class ApprovalController extends Controller
             });
 
         // Sync verifications with checkpoints
-        $verifications = ['entity_details' => $entityCheckpoint ? $entityCheckpoint->status : '', 'main' => [], 'authorized' => [], 'additional' => []];
+        $verifications = ['entity_details' => $entityCheckpoint ? $entityCheckpoint->status : 'pending', 'main' => [], 'authorized' => [], 'additional' => []];
         $verificationNotes = ['entity_details' => $entityCheckpoint ? $entityCheckpoint->reason : '', 'main' => [], 'authorized' => [], 'additional' => []];
         $isSubmitted = !is_null($application->mis_verified_at);
+
 
         foreach ($mainDocuments as $index => $doc) {
             $checkpoint = ApplicationCheckpoint::where('application_id', $application->id)
                 ->where('checkpoint_name', $doc['checkpoint_name'])
                 ->first();
-            $verifications['main'][$index] = $checkpoint && $checkpoint->status === 'verified';
+
+            // Handle case when no checkpoint exists
+            if (!$checkpoint) {
+                $verifications['main'][$index] = null; // or 'pending' depending on your needs
+            } else {
+                $verifications['main'][$index] = $checkpoint->status === 'verified';
+            }
+
             $verificationNotes['main'][$index] = $checkpoint ? $checkpoint->reason : '';
         }
 
@@ -927,7 +935,13 @@ class ApprovalController extends Controller
             $checkpoint = ApplicationCheckpoint::where('application_id', $application->id)
                 ->where('checkpoint_name', $doc['checkpoint_name'])
                 ->first();
-            $verifications['authorized'][$index] = $checkpoint && $checkpoint->status === 'verified';
+
+            if (!$checkpoint) {
+                $verifications['authorized'][$index] = null;
+            } else {
+                $verifications['authorized'][$index] = $checkpoint->status === 'verified';
+            }
+
             $verificationNotes['authorized'][$index] = $checkpoint ? $checkpoint->reason : '';
         }
 
@@ -935,7 +949,13 @@ class ApprovalController extends Controller
             $checkpoint = ApplicationCheckpoint::where('application_id', $application->id)
                 ->where('checkpoint_name', "additional_doc_{$doc->id}")
                 ->first();
-            $verifications['additional'][$index] = $checkpoint && $checkpoint->status === 'verified';
+
+            if (!$checkpoint) {
+                $verifications['additional'][$index] = null;
+            } else {
+                $verifications['additional'][$index] = $checkpoint->status === 'verified';
+            }
+
             $verificationNotes['additional'][$index] = $checkpoint ? $checkpoint->reason : '';
         }
         // dd($verificationNotes);
@@ -975,6 +995,7 @@ class ApprovalController extends Controller
         }
 
         $verifications = $request->input('document_verifications', ['main' => [], 'authorized' => [], 'additional' => []]);
+
         $verificationNotes = $request->input('verification_notes', ['main' => [], 'authorized' => [], 'additional' => []]);
         $additionalDocuments = $request->input('additional_documents', []);
 
@@ -1799,6 +1820,9 @@ class ApprovalController extends Controller
             }
             // Determine application status based on document conditions
             $allDocumentsReceivedAndVerified = !$hasUnreceivedDocuments && !$hasUnverifiedDocuments;
+            // Check specifically if security deposit is not received
+            $securityDepositNotReceived = isset($documents['security_deposit']) &&
+                ($documents['security_deposit']['received'] ?? '0') == '0';
 
             if ($allDocumentsReceivedAndVerified) {
                 // ALL documents are received AND verified
@@ -1819,14 +1843,42 @@ class ApprovalController extends Controller
                     ->where('id', '!=', $latestDispatch?->id)
                     ->exists();
 
-                if ($hasPreviousDispatch && $latestDispatch && !$latestDispatch->receive_date) {
+                if ($securityDepositNotReceived) {
+                    // Specific status for security deposit not received
+                    $application->status = 'security_deposit_not_received';
+                    Log::info('Security deposit not received', [
+                        'application_id' => $application->id,
+                        'status' => 'security_deposit_not_received'
+                    ]);
+                } else if ($hasPreviousDispatch && $latestDispatch && !$latestDispatch->receive_date) {
                     // This is redispatched documents that haven't been received yet
                     $application->status = 'physical_docs_redispatched';
+                    Log::info('Documents redispatched but not received yet', [
+                        'application_id' => $application->id,
+                        'status' => 'physical_docs_redispatched'
+                    ]);
                 } else if ($hasUnreceivedDocuments) {
-                    $application->status = 'physical_docs_pending';
+                    // Other documents not received (but security deposit is received)
+                    $application->status = 'physical_docs_not_received';
+                    Log::info('Documents not received', [
+                        'application_id' => $application->id,
+                        'status' => 'physical_docs_not_received'
+                    ]);
                 } else if ($hasUnverifiedDocuments) {
+                    // All documents received but some not verified
+                    $application->status = 'physical_docs_not_verified';
+                    Log::info('Documents received but not verified', [
+                        'application_id' => $application->id,
+                        'status' => 'physical_docs_not_verified'
+                    ]);
+                } else {
+                    // Fallback
                     $application->status = 'physical_docs_pending';
+                    Log::warning('Unexpected state in physical document verification', [
+                        'application_id' => $application->id
+                    ]);
                 }
+
                 $application->save();
             }
 

@@ -9,35 +9,32 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class ApplicationNotification extends Mailable
+class ApprovalRequiredNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(
         public Onboarding $application,
-        protected string $mailSubject,
-        public ?string $remarks = null,
-        public ?Employee $nextApprover = null  // Add this
+        public Employee $approver,
+        public ?string $remarks = null
     ) {
-        $this->application->load(['createdBy', 'currentApprover', 'entityDetails']);
+        $this->application->load(['createdBy', 'entityDetails']);
     }
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: $this->mailSubject,
+            subject: 'Approval Required - Distributor Application',
         );
     }
 
     public function build()
     {
-        return $this->subject($this->mailSubject)
-            ->markdown('emails.application_notification')  // Updated template
+        return $this->markdown('emails.approval_required')
             ->with([
                 'application' => $this->application,
-                'mailSubject' => $this->mailSubject,
+                'approver' => $this->approver,
                 'remarks' => $this->remarks,
-                'nextApprover' => $this->nextApprover,  // Pass to template
             ]);
     }
 }

@@ -30,6 +30,7 @@ class MISProcessingController extends Controller
 
     public function verifyDocuments(Request $request, Onboarding $application)
     {
+        dd(1);
         $this->authorizeMisAction();
 
         // Validate request
@@ -333,7 +334,7 @@ class MISProcessingController extends Controller
         foreach ($employees as $employee) {
             if (filter_var($employee->emp_email, FILTER_VALIDATE_EMAIL)) {
                 Mail::to($employee->emp_email)
-                    ->queue(new DistributorCreatedNotification(
+                    ->send(new DistributorCreatedNotification(
                         application: $application,
                         distributor: $distributor
                     ));

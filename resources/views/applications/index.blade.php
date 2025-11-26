@@ -29,115 +29,115 @@ use App\Models\Status;
     </div>
 
     <!-- Compact Filters Form -->
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-body py-2">
-                <form method="GET" action="{{ route('applications.index') }}" class="row g-2 align-items-center" id="filterForm">
-                    
-                    <!-- BU Filter -->
-                    @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'all')
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                        <label for="bu" class="form-label small fw-semibold mb-1">BU</label>
-                        <select name="bu" id="bu" class="form-select form-select-sm select2-filter">
-                            @foreach ($bu_list as $key => $value)
-                            <option value="{{ $key }}" {{ ($filters['bu'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body py-2">
+                    <form method="GET" action="{{ route('applications.index') }}" class="row g-2 align-items-center" id="filterForm">
 
-                    <!-- Zone Filter -->
-                    @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'zone' || $userCapabilities['access_level'] == 'all')
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                        <label for="zone" class="form-label small fw-semibold mb-1">Zone</label>
-                        <select name="zone" id="zone" class="form-select form-select-sm select2-filter">
-                            @foreach ($zone_list as $key => $value)
-                            <option value="{{ $key }}" {{ ($filters['zone'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
-
-                    <!-- Region Filter -->
-                    @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'zone' || $userCapabilities['access_level'] == 'region' || $userCapabilities['access_level'] == 'all')
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                        <label for="region" class="form-label small fw-semibold mb-1">Region</label>
-                        <select name="region" id="region" class="form-select form-select-sm select2-filter">
-                            @foreach ($region_list as $key => $value)
-                            <option value="{{ $key }}" {{ ($filters['region'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
-
-                    <!-- Territory Filter -->
-                    @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'zone' || $userCapabilities['access_level'] == 'region' || $userCapabilities['access_level'] == 'territory' || $userCapabilities['access_level'] == 'all')
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                        <label for="territory" class="form-label small fw-semibold mb-1">Territory</label>
-                        <select name="territory" id="territory" class="form-select form-select-sm select2-filter">
-                            @foreach ($territory_list as $key => $value)
-                            <option value="{{ $key }}" {{ ($filters['territory'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    @endif
-
-                    <!-- Date filters -->
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                        <label class="form-label small fw-semibold mb-1">From Date</label>
-                        <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $filters['date_from'] ?? '' }}">
-                    </div>
-
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                        <label class="form-label small fw-semibold mb-1">To Date</label>
-                        <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] ?? '' }}">
-                    </div>
-
-                    <!-- Status filter -->
-                    <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
-                        <label class="form-label small fw-semibold mb-1">Status</label>
-                        <select name="status" class="form-select form-select-sm select2-filter" data-placeholder="All Statuses">
-                            <option value="All" {{ $filters['status'] == 'All' ? 'selected' : '' }}>All Statuses</option>
-                            <optgroup label="Main Status Groups">
-                                <option value="draft" {{ $filters['status'] == 'draft' ? 'selected' : '' }}>Draft</option>
-                                <option value="sales_approval" {{ $filters['status'] == 'sales_approval' ? 'selected' : '' }}>Sales Approval</option>
-                                <option value="mis_verification" {{ $filters['status'] == 'mis_verification' ? 'selected' : '' }}>MIS Verification</option>
-                                <option value="security_deposit_not_received" {{ $filters['status'] == 'security_deposit_not_received' ? 'selected' : '' }}>Security Deposit Not Received</option>
-                                <option value="completed" {{ $filters['status'] == 'completed' ? 'selected' : '' }}>Completed</option>
-                            </optgroup>
-                            <optgroup label="Individual Statuses">
-                                <option value="reverted" {{ $filters['status'] == 'reverted' ? 'selected' : '' }}>Reverted</option>
-                                <option value="rejected" {{ $filters['status'] == 'rejected' ? 'selected' : '' }}>Rejected</option>
-                                <option value="on_hold" {{ $filters['status'] == 'on_hold' ? 'selected' : '' }}>On Hold</option>
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    <!-- Action buttons -->
-                    <div class="col-12 col-sm-auto mt-3">
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="ri-filter-line me-1"></i>Apply
-                            </button>
-                            <a href="{{ route('applications.index') }}" class="btn btn-sm btn-outline-secondary">
-                                <i class="ri-refresh-line me-1"></i>Clear
-                            </a>
+                        <!-- BU Filter -->
+                        @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'all')
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                            <label for="bu" class="form-label small fw-semibold mb-1">BU</label>
+                            <select name="bu" id="bu" class="form-select form-select-sm select2-filter">
+                                @foreach ($bu_list as $key => $value)
+                                <option value="{{ $key }}" {{ ($filters['bu'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                    </div>
-                </form>
-                <div id="filter-loader" class="d-none position-absolute top-50 start-50 translate-middle z-3">
-                    <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;">
-                        <span class="visually-hidden">Loading filters...</span>
-                    </div>
-                    <div class="mt-2 text-center">
-                        <small class="text-muted">Loading...</small>
+                        @endif
+
+                        <!-- Zone Filter -->
+                        @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'zone' || $userCapabilities['access_level'] == 'all')
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                            <label for="zone" class="form-label small fw-semibold mb-1">Zone</label>
+                            <select name="zone" id="zone" class="form-select form-select-sm select2-filter">
+                                @foreach ($zone_list as $key => $value)
+                                <option value="{{ $key }}" {{ ($filters['zone'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+
+                        <!-- Region Filter -->
+                        @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'zone' || $userCapabilities['access_level'] == 'region' || $userCapabilities['access_level'] == 'all')
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                            <label for="region" class="form-label small fw-semibold mb-1">Region</label>
+                            <select name="region" id="region" class="form-select form-select-sm select2-filter">
+                                @foreach ($region_list as $key => $value)
+                                <option value="{{ $key }}" {{ ($filters['region'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+
+                        <!-- Territory Filter -->
+                        @if ($userCapabilities['access_level'] == 'bu' || $userCapabilities['access_level'] == 'zone' || $userCapabilities['access_level'] == 'region' || $userCapabilities['access_level'] == 'territory' || $userCapabilities['access_level'] == 'all')
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                            <label for="territory" class="form-label small fw-semibold mb-1">Territory</label>
+                            <select name="territory" id="territory" class="form-select form-select-sm select2-filter">
+                                @foreach ($territory_list as $key => $value)
+                                <option value="{{ $key }}" {{ ($filters['territory'] ?? '') == $key ? 'selected' : '' }}>{{ $value }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+
+                        <!-- Date filters -->
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                            <label class="form-label small fw-semibold mb-1">From Date</label>
+                            <input type="date" name="date_from" class="form-control form-control-sm" value="{{ $filters['date_from'] ?? '' }}">
+                        </div>
+
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                            <label class="form-label small fw-semibold mb-1">To Date</label>
+                            <input type="date" name="date_to" class="form-control form-control-sm" value="{{ $filters['date_to'] ?? '' }}">
+                        </div>
+
+                        <!-- Status filter -->
+                        <div class="col-6 col-sm-4 col-md-3 col-lg-2 filter-col">
+                            <label class="form-label small fw-semibold mb-1">Status</label>
+                            <select name="status" class="form-select form-select-sm select2-filter" data-placeholder="All Statuses">
+                                <option value="All" {{ $filters['status'] == 'All' ? 'selected' : '' }}>All Statuses</option>
+                                <optgroup label="Main Status Groups">
+                                    <option value="draft" {{ $filters['status'] == 'draft' ? 'selected' : '' }}>Draft</option>
+                                    <option value="sales_approval" {{ $filters['status'] == 'sales_approval' ? 'selected' : '' }}>Sales Approval</option>
+                                    <option value="mis_verification" {{ $filters['status'] == 'mis_verification' ? 'selected' : '' }}>MIS Verification</option>
+                                    <option value="security_deposit_not_received" {{ $filters['status'] == 'security_deposit_not_received' ? 'selected' : '' }}>Security Deposit Not Received</option>
+                                    <option value="completed" {{ $filters['status'] == 'completed' ? 'selected' : '' }}>Completed</option>
+                                </optgroup>
+                                <optgroup label="Individual Statuses">
+                                    <option value="reverted" {{ $filters['status'] == 'reverted' ? 'selected' : '' }}>Reverted</option>
+                                    <option value="rejected" {{ $filters['status'] == 'rejected' ? 'selected' : '' }}>Rejected</option>
+                                    <option value="on_hold" {{ $filters['status'] == 'on_hold' ? 'selected' : '' }}>On Hold</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="col-12 col-sm-auto mt-3">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="ri-filter-line me-1"></i>Apply
+                                </button>
+                                <a href="{{ route('applications.index') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="ri-refresh-line me-1"></i>Clear
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="filter-loader" class="d-none position-absolute top-50 start-50 translate-middle z-3">
+                        <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;">
+                            <span class="visually-hidden">Loading filters...</span>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <small class="text-muted">Loading...</small>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
     <!-- Rest of your content remains the same -->
     <!-- Role-Based Navigation -->
@@ -337,7 +337,7 @@ use App\Models\Status;
     }
 
     /* Select2 small size */
-    
+
     /* Ensure all filter elements align properly */
     .row.g-2.align-items-center {
         align-items: end !important;
@@ -476,15 +476,15 @@ use App\Models\Status;
     $(document).ready(function() {
         console.log('DOM loaded - initializing application features...');
         initializeSelect2();
-        
+
         // Initialize all features first
         initializeAllFeatures();
-        
+
         // Then initialize filter state (this will handle URL parameters)
         setTimeout(() => {
             initializeFilterState();
         }, 500);
-        
+
         setupTabReinitialization();
     });
 
@@ -513,19 +513,24 @@ use App\Models\Status;
     function initializeFilterState() {
         console.log('Initializing filter state from URL parameters...');
         isInitializingFromUrl = true;
-        
+
         const urlParams = new URLSearchParams(window.location.search);
         const bu = urlParams.get('bu');
         const zone = urlParams.get('zone');
         const region = urlParams.get('region');
         const territory = urlParams.get('territory');
-        
-        console.log('URL params:', { bu, zone, region, territory });
-        
+
+        console.log('URL params:', {
+            bu,
+            zone,
+            region,
+            territory
+        });
+
         // If we have specific filters in URL, load the cascade
         if (bu && bu !== 'All' && territory && territory !== 'All') {
             console.log('Loading cascade for territory:', territory);
-            
+
             // Load the full cascade chain
             loadFullCascade(bu, zone, region, territory);
         } else {
@@ -541,7 +546,7 @@ use App\Models\Status;
                 $('#zone').val(zone);
                 updateSelect2('#zone');
                 $('#zone').trigger('change');
-                
+
                 // Load regions for this zone
                 getRegionByZone(zone, function() {
                     // After regions loaded, select the region
@@ -549,7 +554,7 @@ use App\Models\Status;
                         $('#region').val(region);
                         updateSelect2('#region');
                         $('#region').trigger('change');
-                        
+
                         // Load territories for this region
                         getTerritoryByRegion(region, function() {
                             // After territories loaded, select the territory
@@ -628,20 +633,52 @@ use App\Models\Status;
     function showToast(type, message, title = '') {
         const toastContainer = $('.toast-container').length ? $('.toast-container') : createToastContainer();
 
+        // Map toast types to better color combinations
+        const typeConfig = {
+            'success': {
+                bg: 'success',
+                text: 'white'
+            },
+            'error': {
+                bg: 'danger',
+                text: 'white'
+            },
+            'warning': {
+                bg: 'warning',
+                text: 'dark'
+            },
+            'info': {
+                bg: 'info',
+                text: 'white'
+            },
+            'primary': {
+                bg: 'primary',
+                text: 'white'
+            }
+        };
+
+        const config = typeConfig[type] || {
+            bg: 'secondary',
+            text: 'white'
+        };
+
         const toast = $(`
-            <div class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                <div class="d-flex">
-                    <div class="toast-body">
-                        ${title ? `<strong>${title}:</strong> ` : ''}${message}
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        <div class="toast align-items-center text-bg-${config.bg} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body text-${config.text}">
+                    ${title ? `<strong class="text-${config.text}">${title}:</strong> ` : ''}${message}
                 </div>
+                <button type="button" class="btn-close btn-close-${config.text === 'white' ? 'white' : ''} me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
-        `);
+        </div>
+    `);
 
         toastContainer.append(toast);
 
-        const bsToast = new bootstrap.Toast(toast[0]);
+        const bsToast = new bootstrap.Toast(toast[0], {
+            autohide: true,
+            delay: 5000
+        });
         bsToast.show();
 
         toast.on('hidden.bs.toast', function() {
@@ -650,7 +687,7 @@ use App\Models\Status;
     }
 
     function createToastContainer() {
-        const container = $('<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999"></div>');
+        const container = $('<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 99999"></div>');
         $('body').append(container);
         return container;
     }
@@ -676,7 +713,7 @@ use App\Models\Status;
         initializeAutoCloseAlerts();
         initializeEmergencyFix();
         initializeModalListeners();
-        initializeCascadingFilters(); 
+        initializeCascadingFilters();
         console.log('All application features initialized');
     }
 
@@ -843,21 +880,21 @@ use App\Models\Status;
         });
 
         // MIS action buttons
-         $(document).on('click', '.mis-action-btn', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                closeAllTableDropdowns();
-                const url = $(this).attr('href');
-                const applicationId = $(this).data('application-id');
-                const distributorName = $(this).data('distributor-name');
-                
-                console.log('MIS action clicked:', url, 'for application:', applicationId, 'Distributor:', distributorName);
-                
-                // Redirect to the MIS action page
-                if (url) {
-                    window.location.href = url;
-                }
-            });
+        $(document).on('click', '.mis-action-btn', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeAllTableDropdowns();
+            const url = $(this).attr('href');
+            const applicationId = $(this).data('application-id');
+            const distributorName = $(this).data('distributor-name');
+
+            console.log('MIS action clicked:', url, 'for application:', applicationId, 'Distributor:', distributorName);
+
+            // Redirect to the MIS action page
+            if (url) {
+                window.location.href = url;
+            }
+        });
 
         console.log('Action buttons initialized');
     }
@@ -1088,14 +1125,10 @@ use App\Models\Status;
             $('#modal-initiator').text(initiator);
             $('#application_id').val(applicationId);
 
-            // Set the form action based on current status
-            const baseUrl = '{{ url("approvals") }}';
-            if (status === 'reverted') {
-                $('#action-form').attr('action', `${baseUrl}/${applicationId}/edit`);
-            } else {
-                $('#action-form').attr('action', `${baseUrl}/${applicationId}/approve`);
-            }
+            // Store application ID for dynamic route generation
+            $('#action-form').data('application-id', applicationId);
 
+            // Reset form state
             $('#actionType').val('');
             $('#remarks').val('');
             $('#modal-action-date').val(new Date().toISOString().split('T')[0]);
@@ -1127,15 +1160,34 @@ use App\Models\Status;
             $('#actionModal').modal('show');
         });
 
-        // Action type change handler
+        // Action type change handler - Update form action dynamically
         $(document).on('change', '#actionType', function() {
             const action = $(this).val();
-            const applicationId = $('#application_id').val();
+            const applicationId = $('#action-form').data('application-id');
 
             if (action && applicationId) {
-                const baseUrl = '{{ url("approvals") }}';
-                const url = `${baseUrl}/${applicationId}/${action}`;
-                $('#action-form').attr('action', url);
+                // Generate the correct route based on selected action
+                let formAction = '';
+
+                switch (action) {
+                    case 'approve':
+                        formAction = "{{ route('approvals.approve', ':id') }}".replace(':id', applicationId);
+                        break;
+                    case 'reject':
+                        formAction = "{{ route('approvals.reject', ':id') }}".replace(':id', applicationId);
+                        break;
+                    case 'revert':
+                        formAction = "{{ route('approvals.revert', ':id') }}".replace(':id', applicationId);
+                        break;
+                    case 'hold':
+                        formAction = "{{ route('approvals.hold', ':id') }}".replace(':id', applicationId);
+                        break;
+                    default:
+                        formAction = '';
+                }
+
+                $('#action-form').attr('action', formAction);
+                console.log('Form action set to:', formAction);
             } else {
                 $('#action-form').attr('action', '');
             }
@@ -1182,6 +1234,9 @@ use App\Models\Status;
             spinner.removeClass('d-none');
             submitText.text('Processing...');
 
+            console.log('Submitting to:', form.attr('action'));
+            console.log('Form data:', form.serialize());
+
             $.ajax({
                 url: form.attr('action'),
                 type: 'POST',
@@ -1205,19 +1260,35 @@ use App\Models\Status;
                     }, 1500);
                 },
                 error: function(xhr) {
-                    let errorMsg = 'Error performing action: ';
+                    let errorMsg = '';
                     let title = 'Action Failed';
 
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
-                        errorMsg += xhr.responseJSON.message;
+                    if (xhr.responseJSON) {
+                        // Handle validation errors (422 status)
+                        if (xhr.status === 422 && xhr.responseJSON.errors) {
+                            // Extract the first validation error message
+                            const errors = xhr.responseJSON.errors;
+                            const firstErrorKey = Object.keys(errors)[0];
+                            errorMsg = errors[firstErrorKey][0]; // Get the first error message
+                            title = 'Validation Error';
+                        }
+                        // Handle other error messages
+                        else if (xhr.responseJSON.message) {
+                            errorMsg = xhr.responseJSON.message;
+                        }
                     } else if (xhr.status === 403) {
                         errorMsg = 'You are not authorized to perform this action.';
                         title = 'Unauthorized';
-                    } else if (xhr.status === 422) {
-                        errorMsg = 'Please correct the form errors and try again.';
-                        title = 'Validation Error';
+                    } else if (xhr.status === 500) {
+                        errorMsg = 'Server error occurred. Please try again.';
+                        title = 'Server Error';
                     } else {
-                        errorMsg += 'Something went wrong. Please try again.';
+                        errorMsg = 'Something went wrong. Please try again.';
+                    }
+
+                    // If no specific error message was set, use a generic one
+                    if (!errorMsg) {
+                        errorMsg = 'Error performing action. Please try again.';
                     }
 
                     showToast('error', errorMsg, title);
@@ -1263,21 +1334,21 @@ use App\Models\Status;
         // Modified cascade handlers with initialization check
         $("#region").on("change", function() {
             if (isInitializingFromUrl) return;
-            
+
             var region = $(this).val();
             getTerritoryByRegion(region);
         });
 
         $("#zone").on("change", function() {
             if (isInitializingFromUrl) return;
-            
+
             var zone = $(this).val();
             getRegionByZone(zone);
         });
 
         $("#bu").on("change", function() {
             if (isInitializingFromUrl) return;
-            
+
             var bu = $(this).val();
             getZoneByBU(bu);
         });
@@ -1286,7 +1357,7 @@ use App\Models\Status;
     // Update your cascade functions to accept callbacks
     function getZoneByBU(bu, callback = null) {
         const zoneSelect = $('#zone');
-        
+
         if (bu === 'All' || !bu) {
             zoneSelect.empty().append('<option value="All">All Zone</option>');
             // Reset dependent dropdowns only if not initializing
@@ -1299,27 +1370,31 @@ use App\Models\Status;
             loader.addClass('d-none');
             return;
         }
-        
+
         $.ajax({
             url: "{{ route('get_zone_by_bu') }}",
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            data: { bu: bu },
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                bu: bu
+            },
             type: 'POST',
             dataType: 'json',
-            beforeSend: function() { 
-                if (!isUpdating) loader.removeClass('d-none'); 
+            beforeSend: function() {
+                if (!isUpdating) loader.removeClass('d-none');
             },
             success: function(data) {
                 loader.addClass('d-none');
                 const zoneList = data.zoneList || [];
                 zoneSelect.empty().append('<option value="All">All Zone</option>');
-                
+
                 $.each(zoneList, function(index, zone) {
                     zoneSelect.append(`<option value="${zone.id}">${zone.zone_name}</option>`);
                 });
-                
+
                 updateSelect2('#zone');
-                
+
                 if (callback) {
                     callback();
                 } else if (bu !== 'All' && zoneList.length > 0 && !isUpdating) {
@@ -1338,7 +1413,7 @@ use App\Models\Status;
 
     function getRegionByZone(zone, callback = null) {
         const regionSelect = $('#region');
-        
+
         if (zone === 'All' || !zone) {
             regionSelect.empty().append('<option value="All">All Region</option>');
             // Reset dependent dropdown only if not initializing
@@ -1350,27 +1425,31 @@ use App\Models\Status;
             loader.addClass('d-none');
             return;
         }
-        
+
         $.ajax({
             url: "{{ route('get_region_by_zone') }}",
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            data: { zone: zone },
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                zone: zone
+            },
             type: 'POST',
             dataType: 'json',
-            beforeSend: function() { 
-                if (!isUpdating) loader.removeClass('d-none'); 
+            beforeSend: function() {
+                if (!isUpdating) loader.removeClass('d-none');
             },
             success: function(data) {
                 loader.addClass('d-none');
                 const regionList = data.regionList || [];
                 regionSelect.empty().append('<option value="All">All Region</option>');
-                
+
                 $.each(regionList, function(index, region) {
                     regionSelect.append(`<option value="${region.id}">${region.region_name}</option>`);
                 });
-                
+
                 updateSelect2('#region');
-                
+
                 if (callback) {
                     callback();
                 } else if (zone !== 'All' && regionList.length > 0 && !isUpdating) {
@@ -1389,7 +1468,7 @@ use App\Models\Status;
 
     function getTerritoryByRegion(region, callback = null) {
         const territorySelect = $('#territory');
-        
+
         if (region === 'All' || !region) {
             territorySelect.empty().append('<option value="All">All Territory</option>');
             updateSelect2('#territory');
@@ -1397,27 +1476,31 @@ use App\Models\Status;
             loader.addClass('d-none');
             return;
         }
-        
+
         $.ajax({
             url: "{{ route('get_territory_by_region') }}",
-            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
-            data: { region: region },
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            data: {
+                region: region
+            },
             type: 'POST',
             dataType: 'json',
-            beforeSend: function() { 
-                if (!isUpdating) loader.removeClass('d-none'); 
+            beforeSend: function() {
+                if (!isUpdating) loader.removeClass('d-none');
             },
             success: function(data) {
                 loader.addClass('d-none');
                 const territoryList = data.territoryList || [];
                 territorySelect.empty().append('<option value="All">All Territory</option>');
-                
+
                 $.each(territoryList, function(index, territory) {
                     territorySelect.append(`<option value="${territory.id}">${territory.territory_name}</option>`);
                 });
-                
+
                 updateSelect2('#territory');
-                
+
                 if (callback) {
                     callback();
                 } else if (region !== 'All' && territoryList.length > 0 && !isUpdating) {

@@ -1,5 +1,5 @@
    @php
-    $notification = \App\Models\Notification::where('userid', auth()->id())
+        $notification = \App\Models\Notification::where('userid', auth()->user()->emp_id)
         ->where('notification_read', 0)
         ->orderBy('id', 'DESC')
         ->get();

@@ -17,7 +17,7 @@
             <tbody>
                 @foreach($applications as $index => $application)
                     @php
-                        $daysPending = $application->created_at->diffInDays(\Carbon\Carbon::now());
+                        $daysPending = floor($application->created_at->diffInDays(\Carbon\Carbon::now()));
                         $initiatorRole = $application->createdBy->emp_designation ?? 'N/A';
                         $statusBadge = $application->status_badge ?? 'secondary';
                         $statusLabel = ucwords(str_replace('_', ' ', $application->status ?? 'N/A'));

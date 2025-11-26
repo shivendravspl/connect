@@ -43,6 +43,7 @@
                         <tr>
                             <th>Establishment Name</th>
                             <th>Distributor Code</th>
+                            <th>Security Cheque Details</th>
                             <th>Created By</th>
                             <th>Status</th>
                             <th>Actions</th>
@@ -54,6 +55,37 @@
                                 <td>{{ $application->entityDetails->establishment_name ?? 'N/A' }}</td>
                                 <td>
                                     <strong>{{ $application->distributor_code ?? 'Not Assigned' }}</strong>
+                                </td>
+                                <td>
+                                    @php
+                                        $securityCheques = $application->physicalDocumentChecks->flatMap->securityChequeDetails;
+                                    @endphp
+                                    
+                                    @if($securityCheques->count() > 0)
+                                        <div class="security-cheques-summary">
+                                            @foreach($securityCheques as $cheque)
+                                                <div class="cheque-detail mb-2 p-2 border rounded">
+                                                    <small>
+                                                        <strong>Cheque No:</strong> {{ $cheque->cheque_no ?? 'N/A' }}<br>
+                                                        <strong>Date Obtained:</strong> {{ $cheque->date_obtained ? $cheque->date_obtained->format('d-m-Y') : 'N/A' }}<br>
+                                                        <strong>Purpose:</strong> {{ $cheque->purpose ?? 'N/A' }}<br>
+                                                        <strong>Date of Use:</strong> {{ $cheque->date_use ? $cheque->date_use->format('d-m-Y') : 'Not Used' }}<br>
+                                                        <strong>Date Return:</strong> {{ $cheque->date_return ? $cheque->date_return->format('d-m-Y') : 'Not Returned' }}<br>
+                                                        <strong>Status:</strong> 
+                                                        @if($cheque->date_return)
+                                                            <span class="badge bg-success">Returned</span>
+                                                        @elseif($cheque->date_use)
+                                                            <span class="badge bg-warning">In Use</span>
+                                                        @else
+                                                            <span class="badge bg-info">Held</span>
+                                                        @endif
+                                                    </small>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-muted">No security cheques recorded</span>
+                                    @endif
                                 </td>
                                 <td>{{ $application->createdBy->emp_name ?? 'N/A' }}</td>
                                 <td>
@@ -70,7 +102,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">No eligible distributors found.</td>
+                                <td colspan="6" class="text-center text-muted py-4">No eligible distributors found.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -82,4 +114,18 @@
         </div>
     </div>
 </div>
+
+<style>
+.cheque-detail {
+    background-color: #f8f9fa;
+    font-size: 0.85rem;
+}
+.cheque-detail:last-child {
+    margin-bottom: 0 !important;
+}
+.security-cheques-summary {
+    max-height: 200px;
+    overflow-y: auto;
+}
+</style>
 @endsection

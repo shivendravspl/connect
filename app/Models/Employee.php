@@ -17,7 +17,7 @@ class Employee extends Model
     protected $keyType = 'string';
 
     protected $fillable = [
-          'id',
+        'id',
         'company_id',
         'company_name',
         'employee_id',
@@ -84,7 +84,7 @@ class Employee extends Model
 
     public function reportingManager()
     {
-         return $this->belongsTo(Employee::class, 'emp_reporting', 'employee_id');
+        return $this->belongsTo(Employee::class, 'emp_reporting', 'employee_id');
     }
 
     public function subordinates()
@@ -125,4 +125,32 @@ class Employee extends Model
         return $this->departmentRelation && $this->departmentRelation->department_code === 'MIS';
     }
 
+    public function getReportingManager(int $level = 1): ?self
+    {
+        $manager = $this;
+
+        for ($i = 0; $i < $level; $i++) {
+            if (!$manager?->emp_reporting) {
+                return null;
+            }
+
+            $manager = $manager->reportingManager; // This uses the belongsTo above
+
+            if (!$manager) {
+                return null;
+            }
+        }
+
+        return $manager;
+    }
+
+    public function getReportingManagerEmail(int $level = 1): ?string
+    {
+        return $this->getReportingManager($level)?->emp_email;
+    }
+
+    public function getReportingManagerName(int $level = 1): ?string
+    {
+        return $this->getReportingManager($level)?->emp_name;
+    }
 }

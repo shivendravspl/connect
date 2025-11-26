@@ -1,29 +1,25 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>{{ $mailSubject }}</title>
-</head>
-<body>
-    <h1>{{ $mailSubject }}</h1>
+<x-mail::message>
+# Approval Required - Distributor Application
 
-    <p><strong>Application ID:</strong> {{ $application->application_code }}</p>
+Dear **{{ $nextApprover->emp_name }}**,
 
-    @if($actionType)
-        <p><strong>Action Type:</strong> {{ ucfirst($actionType) }}</p>
-    @endif
+A new distributor application has been forwarded to you for approval.
 
-    @if($remarks)
-        <p><strong>Remarks:</strong> {{ $remarks }}</p>
-    @endif
+**Application ID:** {{ $application->application_code }}  
+**Distributor:** {{ $application->entityDetails->establishment_name ?? 'N/A' }}  
+**Submitted By:** {{ $application->createdBy->emp_name ?? 'N/A' }} ({{ $application->createdBy->emp_designation ?? 'N/A' }})  
+**Submission Date:** {{ $application->created_at->format('d M, Y') }}  
 
-    <p>
-        <a href="{{ route('approvals.show', $application->id) }}"
-		style="display:inline-block; padding:10px 20px; background:#4CAF50; color:#fff; text-decoration:none; border-radius:4px;">
-		View Application
-		</a>
-    </p>
+@if($remarks)
+**Previous Remarks:** {{ $remarks }}
+@endif
 
-    <p>Thanks,<br>{{ config('app.name') }}</p>
-</body>
-</html>
+<x-mail::button :url="route('approvals.show', $application->id)">
+Review Application
+</x-mail::button>
+
+Thank you for your prompt attention to this matter.
+
+Thanks,  
+**{{ config('app.name') }} Team**
+</x-mail::message>

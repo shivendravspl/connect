@@ -7,19 +7,17 @@ use App\Models\ApprovalLog;
 use App\Models\Employee;
 use App\Jobs\ReminderJob;
 use App\Jobs\FollowUpJob;
+use Illuminate\Support\Facades\Mail;
 use App\Mail\ApplicationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
-use Spatie\Permission\Models\Permission;
 use App\Models\User;
 use App\Models\ApplicationCheckpoint;
 use App\Models\ApplicationAdditionalDocument;
 use App\Models\ApplicationAdditionalUpload;
-use App\Models\Document;
 use App\Models\EntityDetails;
 use App\Models\EntityDetailsAuditLog;
 use App\Models\AuthorizedPerson;
@@ -28,10 +26,27 @@ use App\Models\PhysicalDispatch;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Status;
-
+use App\Helpers\UserNotification;
 use App\Models\SecurityChequeDetail;
 use App\Models\SecurityDepositDetail;
 use Mpdf\Mpdf;
+use App\Jobs\SendApprovalReminder;
+use App\Mail\ApplicationApprovedNotification;
+use App\Mail\ApplicationForwardedToNextApprover;
+use App\Mail\ApplicationRevertedMail;
+use App\Mail\ApplicationRejectedMail;
+use App\Mail\ApplicationHoldMail;
+use App\Mail\MISProcessingEmail;
+use App\Mail\AdditionalDocumentsRequired;
+use App\Mail\AgreementCreatedEmail;
+use App\Mail\PhysicalDocumentsPendingEmail;
+use App\Mail\DistributorCreatedEmail;
+
+
+
+
+
+
 
 class ApprovalController extends Controller
 {
@@ -90,6 +105,7 @@ class ApprovalController extends Controller
 
     public function approve(Request $request, Onboarding $application)
     {
+
         $user = Auth::user();
 
         try {
@@ -125,8 +141,9 @@ class ApprovalController extends Controller
             }
 
             $currentApprover = Employee::where('employee_id', $user->emp_id)->firstOrFail();
+            //dd($currentApprover->emp_name);
             $nextApprover = $currentApprover->manager;
-
+            $creator = Employee::where('employee_id', $application->created_by)->firstOrFail();
             $this->createApprovalLog(
                 $application->id,
                 $user->emp_id,
@@ -135,16 +152,17 @@ class ApprovalController extends Controller
                 $request->input('remarks')
             );
 
+
             if ($this->isFinalApproval($currentApprover, $nextApprover)) {
                 $this->finalizeApproval($application);
-                $this->notifyMISTeam($application);
-                $this->notifyBusinessHead($application);
-                $this->notifySalesHierarchy($application);
-
+                // $this->notifyMISTeam($application);
+                // $this->notifyBusinessHead($application);
+                // $this->notifySalesHierarchy($application);
+                $this->notifyAfterFinalApproval($application, $currentApprover);
                 $message = 'Application approved and sent to MIS processing!';
             } else {
                 $this->moveToNextApprover($application, $currentApprover, $nextApprover);
-                $this->notifyNextApprover($nextApprover, $application, $request->input('remarks'));
+                $this->notifyNextApprover($nextApprover, $application, $request->remarks, $currentApprover, $creator);
                 $this->scheduleReminder($nextApprover, $application);
 
                 $message = 'Application approved and forwarded to next level!';
@@ -217,8 +235,9 @@ class ApprovalController extends Controller
                 'final_approver_id' => $user->emp_id
             ]);
 
-            $this->notifyCreator($application, 'Application Rejected', $request->input('remarks'));
-            $this->notifySalesHierarchy($application, 'Application Rejected');
+            // $this->notifyCreator($application, 'Application Rejected', $request->input('remarks'));
+            // $this->notifySalesHierarchy($application, 'Application Rejected');
+            $this->notifyOnReject($application, $request->input('remarks'));
 
             return response()->json([
                 'success' => true,
@@ -285,7 +304,8 @@ class ApprovalController extends Controller
                 'approval_level' => $currentApprover->emp_designation
             ]);
 
-            $this->notifyCreator($application, 'Application Reverted', $request->input('remarks'));
+            //$this->notifyCreator($application, 'Application Reverted', $request->input('remarks'));
+            $this->notifyOnRevert($application, $request->input('remarks'));
 
             return response()->json([
                 'success' => true,
@@ -345,7 +365,8 @@ class ApprovalController extends Controller
                 'follow_up_date' => $request->input('follow_up_date')
             ]);
 
-            $this->notifyCreator($application, 'Application On Hold', $request->input('remarks'));
+            //$this->notifyCreator($application, 'Application On Hold', $request->input('remarks'));
+            $this->notifyOnHold($application, $request->input('remarks'), $request->input('follow_up_date'));
             $this->scheduleFollowUp($application, $request->input('follow_up_date'));
 
             return response()->json([
@@ -560,54 +581,75 @@ class ApprovalController extends Controller
     //     return 'mis';
     // }
 
-    // ==================== NOTIFICATION METHODS ====================
 
-    private function notifyMISTeam($application)
-    {
-        //$misMembers = User::permission('process-mis')->get();
-        $misMembers = User::role('Mis User')->get();
-        foreach ($misMembers as $member) {
-            if (!empty($member->email)) {
-                Mail::to($member->email)
-                    ->queue(new ApplicationNotification(
-                        application: $application,
-                        mailSubject: 'MIS Processing Required',
-                        remarks: 'Please process this application in the MIS system.'
-                    ));
-            }
-        }
-    }
+
 
     private function notifyBusinessHead($application)
     {
-        $businessHead = Employee::where('emp_designation', 'like', '%Business Head%')->first();
-        if ($businessHead && $businessHead->emp_email) {
-            Mail::to($businessHead->emp_email)->queue(
-                new ApplicationNotification(
-                    application: $application,
-                    mailSubject: 'Application Approved',
-                    remarks: 'Fyi'
-                )
+        $businessHead = Employee::where('emp_designation', 'like', '%Business Head%')
+            ->where('emp_status', 'A')
+            ->first();
+
+        if ($businessHead) {
+            // In-app notification
+            UserNotification::notifyUser(
+                $businessHead->employee_id,
+                'Application Approved',
+                "Application #{$application->id} has been approved."
             );
-        } else {
+
+            // Email
+            if ($businessHead->emp_email) {
+                Mail::to($businessHead->emp_email)->send(
+                    new ApplicationApprovedNotification(
+                        application: $application,
+                        recipient: $businessHead,
+                        remarks: 'FYI - Application has been fully approved'
+                    )
+                );
+            }
         }
     }
 
     private function notifySalesHierarchy($application, $mailSubject = 'Application Approved')
     {
-        $approvers = collect();
+        // Get unique approvers from approval logs for this application
+        $approvers = DB::table('approval_logs')
+            ->where('application_id', $application->id)
+            ->whereNotNull('user_id')
+            ->select('user_id')
+            ->distinct()
+            ->get()
+            ->pluck('user_id');
 
-        $current = Employee::where('employee_id', $application->created_by)->first();
-
-
-        while ($current) {
-            $approvers->push($current);
-            $current = $current->manager;
+        if ($approvers->isEmpty()) {
+            return;
         }
 
-        foreach ($approvers as $approver) {
-            if ($approver->emp_email) {
-                Mail::to($approver->emp_email)->queue(
+        // Get employee details for these approvers
+        $employeesToNotify = Employee::whereIn('employee_id', $approvers)->get();
+
+        // Also include the application creator if not already in the list
+        $creatorId = $application->created_by;
+        if (!$employeesToNotify->contains('employee_id', $creatorId)) {
+            $creator = Employee::where('employee_id', $creatorId)->first();
+            if ($creator) {
+                $employeesToNotify->push($creator);
+            }
+        }
+
+        // Send notifications to all unique approvers + creator
+        foreach ($employeesToNotify as $employee) {
+            // In-app notification
+            UserNotification::notifyUser(
+                $employee->employee_id,
+                $mailSubject,
+                "Application #{$application->id} has been confirmed as distributor with code: {$application->distributor_code}"
+            );
+
+            // Email notification
+            if ($employee->emp_email) {
+                Mail::to($employee->emp_email)->send(
                     new ApplicationNotification(
                         application: $application,
                         mailSubject: $mailSubject
@@ -615,22 +657,217 @@ class ApprovalController extends Controller
                 );
             }
         }
+
+        // Log this notification action
+        $this->createApprovalLog(
+            $application->id,
+            Auth::user()->emp_id,
+            Auth::user()->employee->emp_designation,
+            'distributor_notification_sent',
+            "Distributor confirmation notifications sent to " . $employeesToNotify->count() . " approvers"
+        );
     }
 
-    private function notifyNextApprover($nextApprover, $application, $remarks)
+    private function notifyNextApprover($nextApprover, $application, $remarks, $currentApprover, $creator)
     {
-        if ($nextApprover && $nextApprover->emp_email) {
-            try {
-                Mail::to($nextApprover->emp_email)->queue(
-                    new ApplicationNotification(
+        if (!$nextApprover?->emp_email) {
+            Log::warning('Next approver has no email', ['app_id' => $application->id]);
+            return;
+        }
+
+        // In-app notification
+        UserNotification::notifyUser(
+            $nextApprover->employee_id,
+            'Approval Required',
+            "Application #{$application->id} forwarded by {$currentApprover->emp_name} for your approval."
+        );
+
+        try {
+            // TO: Next Approver → Action Button
+            Mail::to($nextApprover->emp_email)
+                ->send(new ApplicationForwardedToNextApprover(
+                    $application,
+                    $currentApprover,
+                    $nextApprover,
+                    $remarks,
+                    true  // hasAction = true
+                ));
+
+            // CC: Creator (TM/ABM) + Current Approver (RBM/ZBM) → View Only
+            $ccEmails = collect();
+
+            if ($creator?->emp_email) {
+                $ccEmails->push($creator->emp_email);
+            }
+            if ($currentApprover->emp_email && $currentApprover->employee_id !== $nextApprover->employee_id) {
+                $ccEmails->push($currentApprover->emp_email);
+            }
+
+            if ($ccEmails->isNotEmpty()) {
+                Mail::to($ccEmails->filter()->unique()->values()->all())
+                    ->send(new ApplicationForwardedToNextApprover(
+                        $application,
+                        $currentApprover,
+                        $nextApprover,
+                        $remarks,
+                        false  // hasAction = false
+                    ));
+            }
+        } catch (\Exception $e) {
+            // Log::error('Failed to send approval email', [
+            //     'error' => $e->getMessage(),
+            //     'app_id' => $application->id
+            // ]);
+        }
+    }
+
+    private function notifyOnRevert($application, $remarks)
+    {
+        $creator = Employee::where('employee_id', $application->created_by)->first();
+
+        // Collect all previous approvers from logs
+        $previousApproverIds = ApprovalLog::where('application_id', $application->id)
+            ->where('action', 'approved')
+            ->pluck('user_id');
+
+        $ccEmails = Employee::whereIn('employee_id', $previousApproverIds)
+            ->whereNotNull('emp_email')
+            ->pluck('emp_email')
+            ->toArray();
+
+        if ($creator) {
+            // In-app notification
+            UserNotification::notifyUser(
+                $creator->employee_id,
+                "Application Reverted",
+                $remarks
+            );
+
+            // Send mail with CC list
+            if ($creator->emp_email) {
+                Mail::to($creator->emp_email)
+                    ->cc($ccEmails)
+                    ->send(new ApplicationRevertedMail(
                         application: $application,
-                        mailSubject: 'Approval Required',
-                        remarks: $remarks
+                        remarks: $remarks,
+                        toName: $creator->emp_name
+                    ));
+            }
+        }
+    }
+
+    private function notifyOnReject($application, $remarks)
+    {
+        $initiator = Employee::where('employee_id', $application->created_by)->first();
+        $previousApprovers = ApprovalLog::where('application_id', $application->id)
+            ->pluck('user_id')
+            ->unique()
+            ->toArray();
+
+        $ccEmails = Employee::whereIn('employee_id', $previousApprovers)
+            ->whereNotNull('emp_email')
+            ->pluck('emp_email')
+            ->toArray();
+
+        if ($initiator && $initiator->emp_email) {
+            Mail::to($initiator->emp_email)
+                ->cc($ccEmails)
+                ->send(
+                    new ApplicationRejectedMail(
+                        application: $application,
+                        remarks: $remarks,
+                        toName: $initiator->emp_name
                     )
                 );
-            } catch (\Exception $e) {
-            }
-        } else {
+        }
+    }
+
+    private function notifyOnHold($application, $remarks, $followUpDate)
+    {
+        $initiator = Employee::where('employee_id', $application->created_by)->first();
+        $previousApprovers = ApprovalLog::where('application_id', $application->id)
+            ->pluck('user_id')
+            ->unique()
+            ->toArray();
+
+        $ccEmails = Employee::whereIn('employee_id', $previousApprovers)
+            ->whereNotNull('emp_email')
+            ->pluck('emp_email')
+            ->toArray();
+
+        if ($initiator && $initiator->emp_email) {
+            Mail::to($initiator->emp_email)
+                ->cc($ccEmails)
+                ->send(
+                    new ApplicationHoldMail(
+                        application: $application,
+                        remarks: $remarks,
+                        followUpDate: $followUpDate,
+                        toName: $initiator->emp_name
+                    )
+                );
+        }
+    }
+
+
+    private function notifyAfterFinalApproval($application, $currentApprover)
+    {
+        $user = Auth::user();
+        $misMembers = User::role('Mis User')->get();
+
+        // Sales Hierarchy users from approval logs
+        $salesHierarchy = DB::table('approval_logs')
+            ->where('application_id', $application->id)
+            ->whereNotNull('user_id')
+            ->distinct()->pluck('user_id')
+            ->toArray();
+
+        // Business Head
+        $businessHead = Employee::where('emp_designation', 'like', '%Business Head%')
+            ->where('emp_status', 'A')
+            ->first();
+
+        // Creator
+        $creator = Employee::where('employee_id', $application->created_by)->first();
+
+        // Collect all recipients for CC
+        $ccEmails = [];
+        $employeesToCC = Employee::whereIn('employee_id', $salesHierarchy)->get();
+
+        foreach ($employeesToCC as $emp) {
+            if ($emp->emp_email) $ccEmails[] = $emp->emp_email;
+
+            UserNotification::notifyUser(
+                $emp->employee_id,
+                'Application Approved',
+                "Application #{$application->id} approved. Waiting for MIS processing."
+            );
+        }
+
+        if ($businessHead && $businessHead->emp_email) {
+            $ccEmails[] = $businessHead->emp_email;
+        }
+
+        if ($creator && $creator->emp_email) {
+            $ccEmails[] = $creator->emp_email;
+        }
+
+        // Send email to MIS team
+        foreach ($misMembers as $misUser) { // Changed variable name to $misUser
+
+            UserNotification::notifyUser(
+                $misUser->emp_id,
+                'MIS Processing Required',
+                "Application #{$application->id} requires MIS processing."
+            );
+
+            Mail::to($misUser->email)
+                ->cc($ccEmails)
+                ->send(new MISProcessingEmail(
+                    $application,
+                    $misUser, // Pass the MIS user object
+                    $ccEmails
+                ));
         }
     }
 
@@ -639,46 +876,61 @@ class ApprovalController extends Controller
     {
         $creator = Employee::where('employee_id', $application->created_by)->first();
 
-        if ($creator && $creator->emp_email) {
-            Mail::to($creator->emp_email)->queue(
-                new ApplicationNotification(
-                    application: $application,
-                    mailSubject: $mailSubject,
-                    remarks: $remarks
-                )
+        if ($creator) {
+            // In-app notification
+            UserNotification::notifyUser(
+                $creator->employee_id,
+                $mailSubject,
+                $remarks
             );
+
+            // Email
+            if ($creator->emp_email) {
+                Mail::to($creator->emp_email)->send(
+                    new ApplicationNotification(
+                        application: $application,
+                        mailSubject: $mailSubject,
+                        remarks: $remarks
+                    )
+                );
+            }
         }
     }
+
+
 
     private function scheduleFollowUp($application, $followUpDate)
     {
         $creator = Employee::where('employee_id', $application->created_by)->first();
-        if ($creator && $creator->emp_email) {
-            Mail::to($creator->emp_email)->queue(
-                new ApplicationNotification(
-                    application: $application,
-                    mailSubject: 'Application On Hold',
-                )
+
+        if ($creator) {
+            // In-app notification
+            UserNotification::notifyUser(
+                $creator->employee_id,
+                'Application On Hold',
+                "Application #{$application->id} is on hold until {$followUpDate}."
             );
+
+            // Email
+            if ($creator->emp_email) {
+                Mail::to($creator->emp_email)->send(
+                    new ApplicationNotification(
+                        application: $application,
+                        mailSubject: 'Application On Hold',
+                    )
+                );
+            }
         }
-        // FollowUpJob::dispatch($application)
-        //     ->delay(Carbon::parse($followUpDate));
     }
+
 
     private function scheduleReminder($approver, $application)
     {
-        if ($approver && $approver->emp_email) {
-            Mail::to($approver->emp_email)->queue(
-                new ApplicationNotification(
-                    application: $application,
-                    mailSubject: 'Reminder: Approval Required'
-                )
-            );
+        if ($approver) {
+            // Dispatch the reminder job with 48 hours delay
+            SendApprovalReminder::dispatch($application, $approver)
+                ->delay(now()->addHours(48));
         }
-        // if ($approver) {
-        //     ReminderJob::dispatch($approver, $application)
-        //         ->delay(now()->addHours(48));
-        // }
     }
 
     public function dashboard()
@@ -999,6 +1251,9 @@ class ApprovalController extends Controller
         $verificationNotes = $request->input('verification_notes', ['main' => [], 'authorized' => [], 'additional' => []]);
         $additionalDocuments = $request->input('additional_documents', []);
 
+        // Add this line - declare the rejectedDocuments array
+        $rejectedDocuments = [];
+
         // Build mainDocuments array matching verifyDocuments method
         $mainDocuments = [];
         if ($application->entityDetails->pan_path) {
@@ -1064,6 +1319,13 @@ class ApprovalController extends Controller
                         'submitted_by' => $submittedBy,
                         'updated_at' => now()
                     ];
+
+                    if ($verifications['main'][$index] === 'not_verified') {
+                        $rejectedDocuments[] = [
+                            'document_type' => ucfirst(str_replace('_', ' ', str_replace('main_document_', '', $doc['checkpoint_name']))),
+                            'remarks' => $verificationNotes['main'][$index] ?? 'Document not verified'
+                        ];
+                    }
                 }
             }
 
@@ -1082,6 +1344,14 @@ class ApprovalController extends Controller
                         'submitted_by' => $submittedBy,
                         'updated_at' => now()
                     ];
+
+                    if ($verifications['authorized'][$index] === 'not_verified') {
+                        $docType = str_contains($doc['checkpoint_name'], 'letter') ? 'Authorization Letter' : 'Aadhar Card';
+                        $rejectedDocuments[] = [
+                            'document_type' => $docType,
+                            'remarks' => $verificationNotes['authorized'][$index] ?? 'Document not verified'
+                        ];
+                    }
                 }
             }
 
@@ -1104,6 +1374,13 @@ class ApprovalController extends Controller
                             'status' => $verifications['additional'][$index],
                             'updated_at' => now()
                         ]);
+                    }
+
+                    if ($verifications['additional'][$index] === 'not_verified') {
+                        $rejectedDocuments[] = [
+                            'document_type' => $doc->document_name,
+                            'remarks' => $verificationNotes['additional'][$index] ?? 'Additional document not verified'
+                        ];
                     }
                 }
             }
@@ -1118,6 +1395,12 @@ class ApprovalController extends Controller
                         'submitted_by' => $submittedBy,
                         'updated_at' => now()
                     ];
+                    if ($verifications['main'][$index] === 'not_verified') {
+                        $rejectedDocuments[] = [
+                            'document_type' => ucfirst(str_replace('_', ' ', str_replace('main_document_', '', $doc['checkpoint_name']))),
+                            'remarks' => $verificationNotes['main'][$index] ?? 'Document not verified'
+                        ];
+                    }
                 }
             }
 
@@ -1131,9 +1414,15 @@ class ApprovalController extends Controller
                         'submitted_by' => $submittedBy,
                         'updated_at' => now()
                     ];
+                    if ($verifications['authorized'][$index] === 'not_verified') {
+                        $docType = str_contains($doc['checkpoint_name'], 'letter') ? 'Authorization Letter' : 'Aadhar Card';
+                        $rejectedDocuments[] = [
+                            'document_type' => $docType,
+                            'remarks' => $verificationNotes['authorized'][$index] ?? 'Document not verified'
+                        ];
+                    }
                 }
             }
-
             foreach ($additionalDocs as $index => $doc) {
                 if (isset($verifications['additional'][$index])) {
                     $checkpointsToUpdate[] = [
@@ -1154,9 +1443,17 @@ class ApprovalController extends Controller
                             'updated_at' => now()
                         ]);
                     }
+
+                    if ($verifications['additional'][$index] === 'not_verified') {
+                        $rejectedDocuments[] = [
+                            'document_type' => $doc->document_name,
+                            'remarks' => $verificationNotes['additional'][$index] ?? 'Additional document not verified'
+                        ];
+                    }
                 }
             }
         }
+        // if (!empty($rejectedDocuments) && ($hasNotVerifiedDocs || $hasNewAdditionalDocs)) {
 
         // Insert or update additional documents
         $hasNewAdditionalDocs = false;
@@ -1188,6 +1485,14 @@ class ApprovalController extends Controller
                                     'status' => $verifications['additional'][$index],
                                     'updated_at' => now()
                                 ]);
+                        }
+
+                        // Track new additional requirements for email
+                        if (!isset($doc['id']) && $docStatus === 'pending') {
+                            $rejectedDocuments[] = [
+                                'document_type' => trim($doc['name']),
+                                'remarks' => $doc['remark'] ?? 'Additional document required'
+                            ];
                         }
 
                         // Set hasNewAdditionalDocs only for new documents
@@ -1240,6 +1545,7 @@ class ApprovalController extends Controller
             $application->doc_verification_status = 'documents_verified';
             $application->mis_verified_at = now();
             $application->mis_rejected_at = null;
+            $this->sendAgreementCreatedEmail($application);
         } else {
             $application->status = 'documents_pending';
             if ($hasNotVerifiedDocs || $hasNewAdditionalDocs) {
@@ -1259,11 +1565,144 @@ class ApprovalController extends Controller
             );
         }
 
+        if (!empty($rejectedDocuments) && ($hasNotVerifiedDocs || $hasNewAdditionalDocs)) {
+            $this->sendAdditionalDocumentsEmail($application, $rejectedDocuments);
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Verification updated successfully.',
             'redirect' => route('applications.index')
         ], 200);
+    }
+
+    private function sendAdditionalDocumentsEmail(Onboarding $application, array $missingDocuments)
+    {
+        try {
+            // Sales Hierarchy users from approval logs
+            $salesHierarchy = DB::table('approval_logs')
+                ->where('application_id', $application->id)
+                ->whereNotNull('user_id')
+                ->distinct()->pluck('user_id')
+                ->toArray();
+
+            // Creator (TM/ABM)
+            $creator = Employee::where('employee_id', $application->created_by)->first();
+
+            if (!$creator || !$creator->emp_email) {
+                Log::warning("Creator not found or no email for application: {$application->id}");
+                return;
+            }
+
+            // Collect all recipients for CC - RBM, ZBM, GM from approval logs
+            $ccEmails = [];
+            $employeesToCC = Employee::whereIn('employee_id', $salesHierarchy)->get();
+
+            foreach ($employeesToCC as $emp) {
+                if ($emp->emp_email) {
+                    $ccEmails[] = $emp->emp_email;
+                }
+
+                // Send notification to all approvers in the hierarchy
+                UserNotification::notifyUser(
+                    $emp->employee_id,
+                    'Additional Documents Required',
+                    "Application #{$application->id} requires additional documents. Please check with sales team."
+                );
+            }
+
+            // Send notification to creator (TM/ABM)
+            UserNotification::notifyUser(
+                $creator->employee_id,
+                'Additional Documents Required',
+                "Application #{$application->id} requires additional documents. Please check your email."
+            );
+
+            // Send email to creator (TM/ABM) with CC to RBM, ZBM, GM
+            Mail::to($creator->emp_email)
+                ->cc($ccEmails)
+                ->send(new AdditionalDocumentsRequired(
+                    $application,
+                    $creator,
+                    $missingDocuments,
+                    $ccEmails
+                ));
+
+            Log::info("Additional documents email sent for application: {$application->id}", [
+                'to' => $creator->emp_email,
+                'cc' => $ccEmails,
+                'missing_documents_count' => count($missingDocuments),
+                'creator_id' => $creator->employee_id
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to send additional documents email for application: {$application->id}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    private function sendAgreementCreatedEmail(Onboarding $application)
+    {
+        try {
+            // Sales Hierarchy users from approval logs
+            $salesHierarchy = DB::table('approval_logs')
+                ->where('application_id', $application->id)
+                ->whereNotNull('user_id')
+                ->distinct()->pluck('user_id')
+                ->toArray();
+
+            // Creator (TM/ABM)
+            $creator = Employee::where('employee_id', $application->created_by)->first();
+
+            if (!$creator || !$creator->emp_email) {
+                Log::warning("Creator not found or no email for application: {$application->id}");
+                return;
+            }
+
+            // Collect all recipients for CC - RBM, ZBM, GM from approval logs
+            $allCCEmails = [];
+            $employeesToCC = Employee::whereIn('employee_id', $salesHierarchy)->get();
+
+            foreach ($employeesToCC as $emp) {
+                if ($emp->emp_email) {
+                    $allCCEmails[] = $emp->emp_email;
+                }
+
+                // Send notification to all approvers in the hierarchy
+                UserNotification::notifyUser(
+                    $emp->employee_id,
+                    'Draft Agreement Ready',
+                    "Draft agreement for application #{$application->id} is ready for download."
+                );
+            }
+
+            UserNotification::notifyUser(
+                $creator->employee_id,
+                'Draft Agreement Ready',
+                "Draft agreement for application #{$application->id} is ready for download."
+            );
+
+            // Send email to creator (TM/ABM) with CC to RBM, ZBM, GM and MIS Team
+            Mail::to($creator->emp_email)
+                ->cc($allCCEmails)
+                ->send(new AgreementCreatedEmail(
+                    $application,
+                    $creator,
+                    $allCCEmails
+                ));
+
+            Log::info("Agreement created email sent for application: {$application->id}", [
+                'to' => $creator->emp_email,
+                'cc' => $allCCEmails,
+                'creator_id' => $creator->employee_id
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to send agreement created email for application: {$application->id}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 
     public function updateEntityDetails(Request $request, Onboarding $application)
@@ -1859,10 +2298,10 @@ class ApprovalController extends Controller
                     ]);
                 } else if ($hasUnreceivedDocuments) {
                     // Other documents not received (but security deposit is received)
-                    $application->status = 'physical_docs_not_received';
+                    $application->status = 'physical_docs_pending';
                     Log::info('Documents not received', [
                         'application_id' => $application->id,
-                        'status' => 'physical_docs_not_received'
+                        'status' => 'physical_docs_pending'
                     ]);
                 } else if ($hasUnverifiedDocuments) {
                     // All documents received but some not verified
@@ -1976,17 +2415,76 @@ class ApprovalController extends Controller
                 'created_at' => now(),
             ]);
 
+            // Send email notification if documents need attention (not all verified)
+            if (!$allVerified && !empty($documentsNeedingAttention)) {
+                $this->sendPhysicalDocumentsPendingEmail($application, $documentsNeedingAttention);
+            }
+
             Log::info('Document notification sent', [
                 'application_id' => $applicationId,
                 'creator_id' => Auth::user()->id,
                 'all_verified' => $allVerified,
                 'is_redispatched' => $isRedispatched,
-                'documents_count' => count($documentsNeedingAttention)
+                'documents_count' => count($documentsNeedingAttention),
+                'email_sent' => !$allVerified && !empty($documentsNeedingAttention)
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to send document notification', [
                 'application_id' => $application->id,
                 'error' => $e->getMessage()
+            ]);
+        }
+    }
+
+    private function sendPhysicalDocumentsPendingEmail(Onboarding $application, array $pendingDocuments)
+    {
+        try {
+            // Get all users from approval logs (includes TM/ABM, RBM, ZBM, GM, and MIS)
+            $salesHierarchy = DB::table('approval_logs')
+                ->where('application_id', $application->id)
+                ->whereNotNull('user_id')
+                ->distinct()->pluck('user_id')
+                ->toArray();
+
+            // Creator (TM/ABM)
+            $creator = Employee::where('employee_id', $application->created_by)->first();
+
+            if (!$creator || !$creator->emp_email) {
+                Log::warning("Creator not found or no email for application: {$application->id}");
+                return;
+            }
+
+            // Collect all recipients for CC - RBM, ZBM, GM, MIS from approval logs
+            $ccEmails = [];
+            $employeesToCC = Employee::whereIn('employee_id', $salesHierarchy)->get();
+
+            foreach ($employeesToCC as $emp) {
+                if ($emp->emp_email) {
+                    $ccEmails[] = $emp->emp_email;
+                }
+                // REMOVED: UserNotification calls to avoid duplicates
+            }
+
+            // Send email to creator (TM/ABM) with CC to RBM, ZBM, GM, MIS Team
+            Mail::to($creator->emp_email)
+                ->cc($ccEmails)
+                ->send(new PhysicalDocumentsPendingEmail(
+                    $application,
+                    $creator,
+                    $pendingDocuments,
+                    $ccEmails
+                ));
+
+            Log::info("Physical documents pending email sent for application: {$application->id}", [
+                'to' => $creator->emp_email,
+                'cc' => $ccEmails,
+                'pending_documents_count' => count($pendingDocuments),
+                'creator_id' => $creator->employee_id
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to send physical documents pending email for application: {$application->id}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
         }
     }
@@ -2175,17 +2673,17 @@ class ApprovalController extends Controller
             );
 
             // Notify creator and sales hierarchy
-            $this->notifyCreator(
-                $application,
-                'Distributorship Confirmed',
-                "Your application has been confirmed as a distributor.\n" .
-                    "Distributor Code: {$request->distributor_code}\n" .
-                    "Appointment Date: {$request->date_of_appointment}\n" .
-                    "Authorized By: {$request->authorized_person_name} ({$request->authorized_person_designation})"
-            );
+            // $this->notifyCreator(
+            //     $application,
+            //     'Distributorship Confirmed',
+            //     "Your application has been confirmed as a distributor.\n" .
+            //         "Distributor Code: {$request->distributor_code}\n" .
+            //         "Appointment Date: {$request->date_of_appointment}\n" .
+            //         "Authorized By: {$request->authorized_person_name} ({$request->authorized_person_designation})"
+            // );
 
-            $this->notifySalesHierarchy($application, 'Distributorship Confirmed');
-
+            // $this->notifySalesHierarchy($application, 'Distributorship Confirmed');
+            $this->sendDistributorCreatedEmail($application);
             // Commit transaction
             DB::commit();
 
@@ -2209,8 +2707,97 @@ class ApprovalController extends Controller
         }
     }
 
+    private function sendDistributorCreatedEmail(Onboarding $application)
+    {
+        try {
+            // Get all users from approval logs (includes TM/ABM, RBM, ZBM, GM, and MIS)
+            $salesHierarchy = DB::table('approval_logs')
+                ->where('application_id', $application->id)
+                ->whereNotNull('user_id')
+                ->distinct()->pluck('user_id')
+                ->toArray();
 
+            // Creator (TM/ABM)
+            $creator = Employee::where('employee_id', $application->created_by)->first();
 
+            if (!$creator || !$creator->emp_email) {
+                Log::warning("Creator not found or no email for application: {$application->id}");
+                return;
+            }
+
+            // Collect all recipients for TO (Creator + Sales Hierarchy + Business Head)
+            $toEmails = [];
+
+            // Add Creator first
+            $toEmails[] = $creator->emp_email;
+
+            // Add all sales hierarchy from approval logs (includes TM/ABM, RBM, ZBM, GM, MIS)
+            $employeesToEmail = Employee::whereIn('employee_id', $salesHierarchy)->get();
+            foreach ($employeesToEmail as $emp) {
+                if ($emp->emp_email && !in_array($emp->emp_email, $toEmails)) {
+                    $toEmails[] = $emp->emp_email;
+                }
+            }
+
+            // Add Business Head
+            $businessHead = Employee::where('emp_designation', 'like', '%Business Head%')
+                ->where('emp_status', 'A')
+                ->first();
+            if ($businessHead && $businessHead->emp_email && !in_array($businessHead->emp_email, $toEmails)) {
+                $toEmails[] = $businessHead->emp_email;
+            }
+
+            // Prepare notification details
+            $mailSubject = 'Distributor Appointed Successfully';
+            $remarks = "Distributor {$application->distributor_code} - {$application->entityDetails->establishment_name} has been successfully created in FOCUS/ESS and can begin commercial operations.";
+
+            // Send notifications to all recipients (including creator and MIS from approval logs)
+            foreach ($employeesToEmail as $emp) {
+                UserNotification::notifyUser(
+                    $emp->employee_id,
+                    $mailSubject,
+                    $remarks
+                );
+            }
+
+            // Notify Business Head
+            if ($businessHead) {
+                UserNotification::notifyUser(
+                    $businessHead->employee_id,
+                    $mailSubject,
+                    $remarks
+                );
+            }
+
+            // Notify Creator (TM/ABM) specifically (in case they're not in approval logs)
+            UserNotification::notifyUser(
+                $creator->employee_id,
+                $mailSubject,
+                $remarks
+            );
+
+            // Send email to all (Creator + Sales Hierarchy + Business Head)
+            // No need for CC since everyone is in TO
+            Mail::to($toEmails)
+                ->send(new DistributorCreatedEmail(
+                    $application,
+                    $toEmails,
+                    [] // Empty CC since everyone is in TO
+                ));
+
+            Log::info("Distributor created email sent for application: {$application->id}", [
+                'to' => $toEmails,
+                'distributor_code' => $application->distributor_code,
+                'application_id' => $application->id,
+                'notifications_sent' => count($employeesToEmail) + ($businessHead ? 1 : 0) + 1 // +1 for creator
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to send distributor created email for application: {$application->id}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
     public function applications(Request $request)
     {
         // Get filters from request
@@ -2378,8 +2965,12 @@ class ApprovalController extends Controller
             abort(403, 'Unauthorized access. Only MIS team can view security cheques list.');
         }
 
-        $query = Onboarding::with(['entityDetails', 'createdBy'])
-            ->whereIn('status', ['distributorship_created', 'completed']) // Adjust statuses as needed
+        $query = Onboarding::with([
+            'entityDetails',
+            'createdBy',
+            'physicalDocumentChecks.securityChequeDetails' // Updated relationship path
+        ])
+            ->whereIn('status', ['distributorship_created', 'completed'])
             ->orderBy('created_at', 'desc');
 
         // Optional: Add search/filter by establishment name or distributor code

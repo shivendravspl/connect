@@ -13,17 +13,11 @@ class DistributorCreatedNotification extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(
         public $application,
         public $distributor
     ) {}
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -31,13 +25,10 @@ class DistributorCreatedNotification extends Mailable implements ShouldQueue
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
-            view: 'emails.distributor_created',
+            markdown: 'emails.distributor_created',
             with: [
                 'application' => $this->application,
                 'distributor' => $this->distributor,

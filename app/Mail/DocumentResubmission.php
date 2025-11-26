@@ -38,18 +38,20 @@ class DocumentResubmission extends Mailable
     public function build()
     {
         $subject = 'Document Resubmission: ' . $this->application->application_code;
-        
+
         return $this->subject($subject)
-                    ->view('emails.document_resubmission')
-                    ->with([
-                        'application_id' => $this->application->id,
-                        'application_code' => $this->application->application_code,
-                        'user_name' => $this->user->name,
-                        'establishment_name' => $this->application->entityDetails->establishment_name ?? 'N/A',
-                        'resubmitted_at' => $this->application->resubmitted_at ? $this->application->resubmitted_at->format('M d, Y \a\t g:i A') : now()->format('M d, Y \a\t g:i A'),
-                        'feedback' => $this->feedback,
-                        'checkpoints' => $this->feedback['checkpoints'] ?? [],
-                        'additional_documents' => $this->feedback['additional_documents'] ?? [],
-                    ]);
+            ->markdown('emails.document_resubmission')
+            ->with([
+                'application_id' => $this->application->id,
+                'application_code' => $this->application->application_code,
+                'user_name' => $this->user->name,
+                'establishment_name' => $this->application->entityDetails->establishment_name ?? 'N/A',
+                'resubmitted_at' => $this->application->resubmitted_at
+                    ? $this->application->resubmitted_at->format('M d, Y \a\t g:i A')
+                    : now()->format('M d, Y \a\t g:i A'),
+                'feedback' => $this->feedback,
+                'checkpoints' => $this->feedback['checkpoints'] ?? [],
+                'additional_documents' => $this->feedback['additional_documents'] ?? [],
+            ]);
     }
 }

@@ -3228,11 +3228,11 @@ class OnboardingController extends Controller
             }
             // Get approver information
             $creator = Employee::where('employee_id', $user->emp_id)->firstOrFail();
-
+            $rbm = $creator->getReportingManager(1);
+            $zbm = $creator->getReportingManager(2);
             // Get first approver (creator's reporting manager)
-            $firstApprover = $creator->reportingManager;
-
-            if (!$firstApprover) {
+            //firstApprover = $creator->reportingManager;
+            if (!$rbm) {
                 throw new \Exception('No reporting manager assigned for this employee.');
             }
 
@@ -3241,22 +3241,41 @@ class OnboardingController extends Controller
 
             $application->update([
                 'status' => 'under_level1_review',
-                'current_approver_id' => $firstApprover->employee_id,
-                'approval_level' => $firstApprover->emp_designation,
+                'current_approver_id' => $rbm->employee_id,
+                'approval_level' => $rbm->emp_designation,
                 'is_hierarchy_approved' => false,
                 'updated_at' => now()
             ]);
 
-            try {
-                Mail::to($firstApprover->emp_email)->send(new ApplicationSubmitted($application, $user, $firstApprover));
+            $this->createNotification(
+                $rbm->employee_id, // approver's userid
+                'New Application for Approval',
+                "Application {$application_id} requires your approval.",
+                false
+            );
 
-                $this->createNotification(
-                    $firstApprover->employee_id, // approver's userid
-                    'New Application for Approval',
-                    "Application {$application_id} requires your approval.",
-                    false
-                );
+            try {
+                $ccEmails = collect([
+                    $zbm?->emp_email, 
+                    $creator->emp_email
+                ])->filter()->unique()->values()->all();
+
+                // Email to Approver (RBM) with action button
+                Mail::to($rbm->emp_email)
+                    ->send(new ApplicationSubmitted($application, $user, true));   // approver
+
+                // Email to CC recipients with view only
+                if (!empty($ccEmails)) {
+                    Mail::to($ccEmails)
+                        ->send(new ApplicationSubmitted($application, $user, false)); // cc, no action
+                }
+
             } catch (\Exception $e) {
+                Log::warning('Application submission email failed', [
+                    'application_id' => $application_id,
+                    'to' => $rbm->emp_email,
+                    'error' => $e->getMessage()
+                ]);
             }
 
             DB::commit();

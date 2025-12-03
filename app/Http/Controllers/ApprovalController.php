@@ -41,6 +41,8 @@ use App\Mail\AdditionalDocumentsRequired;
 use App\Mail\AgreementCreatedEmail;
 use App\Mail\PhysicalDocumentsPendingEmail;
 use App\Mail\DistributorCreatedEmail;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\SecurityChequesExport;
 
 
 
@@ -2935,7 +2937,17 @@ class ApprovalController extends Controller
      */
     public function showDraftAgreement($id)
     {
-        $application = Onboarding::with(['entityDetails', 'createdBy'])->findOrFail($id);
+        $application = Onboarding::with([
+            'entityDetails',
+            'createdBy',
+            'individualDetails',
+            'partnershipPartners',
+            'partnershipSignatories',
+            'llpPartners',
+            'directors',
+            'committeeMembers',
+            'trustees'
+        ])->findOrFail($id);
 
         $allowedStatuses = [
             'documents_resubmitted',
@@ -2950,10 +2962,149 @@ class ApprovalController extends Controller
             abort(403, 'Draft agreement is not available for the current application status.');
         }
 
-        // Default to 'e-stamp'
+        // Get contact person name based on entity type
+        $contactPersonName = $this->getContactPersonName($application);
+
+        // Get formatted address
+        $formattedAddress = $this->getFormattedAddress($application);
+
+        // Get entity type in readable format
+        $entityType = $this->getEntityTypeText($application);
+
+        // Get establishment name (firm name)
+        $establishmentName = $application->entityDetails->establishment_name ?? null;
+
         $type = 'e-stamp';
 
-        return view('approvals.draft-agreement', compact('application', 'type'));
+        return view('approvals.draft-agreement', compact(
+            'application',
+            'type',
+            'contactPersonName',
+            'formattedAddress',
+            'entityType',
+            'establishmentName'
+        ));
+    }
+
+    private function getContactPersonName($application)
+    {
+        $entityType = $application->entityDetails->entity_type ?? null;
+
+        switch ($entityType) {
+            case 'individual':
+            case 'proprietorship':
+                // For individual/proprietorship, use name from individualDetails
+                return $application->individualDetails->name ?? null;
+
+            case 'partnership':
+                // For partnership, use the first signatory or partner
+                if ($application->partnershipSignatories->isNotEmpty()) {
+                    return $application->partnershipSignatories->first()->name ?? null;
+                } elseif ($application->partnershipPartners->isNotEmpty()) {
+                    return $application->partnershipPartners->first()->name ?? null;
+                }
+                break;
+
+            case 'llp':
+                // For LLP, use the first designated partner
+                if ($application->llpPartners->isNotEmpty()) {
+                    return $application->llpPartners->first()->name ?? null;
+                }
+                break;
+
+            case 'private_company':
+            case 'public_company':
+                // For companies, use the first director
+                if ($application->directors->isNotEmpty()) {
+                    return $application->directors->first()->name ?? null;
+                }
+                break;
+
+            case 'cooperative_society':
+                // For cooperative, use the first committee member
+                if ($application->committeeMembers->isNotEmpty()) {
+                    return $application->committeeMembers->first()->name ?? null;
+                }
+                break;
+
+            case 'trust':
+                // For trust, use the first trustee
+                if ($application->trustees->isNotEmpty()) {
+                    return $application->trustees->first()->name ?? null;
+                }
+                break;
+        }
+
+        // Fallback to name from individualDetails
+        return $application->individualDetails->name ?? null;
+    }
+
+    private function getFormattedAddress($application)
+    {
+        if (!$application->entityDetails) {
+            return null;
+        }
+
+        $addressParts = [];
+
+        // Add house number
+        if ($application->entityDetails->house_no) {
+            $addressParts[] = $application->entityDetails->house_no;
+        }
+
+        // Add landmark
+        if ($application->entityDetails->landmark) {
+            $addressParts[] = $application->entityDetails->landmark;
+        }
+
+        // Add city
+        if ($application->entityDetails->city) {
+            $addressParts[] = $application->entityDetails->city;
+        }
+
+        // Add district (you might need to load district relationship)
+        if ($application->entityDetails->district_id) {
+            // You can either load the district relationship or use your existing districts array
+            // Option 1: If you have districts loaded elsewhere
+            // Option 2: Load it here
+            $district = \App\Models\CoreDistrict::find($application->entityDetails->district_id);
+            if ($district) {
+                $addressParts[] = $district->district_name;
+            }
+        }
+
+        // Add state (you might need to load state relationship)
+        if ($application->entityDetails->state_id) {
+            $state = \App\Models\CoreState::find($application->entityDetails->state_id);
+            if ($state) {
+                $addressParts[] = $state->state_name;
+            }
+        }
+
+        // Add pincode
+        if ($application->entityDetails->pincode) {
+            $addressParts[] = $application->entityDetails->pincode;
+        }
+
+        return !empty($addressParts) ? implode(', ', $addressParts) : null;
+    }
+
+    private function getEntityTypeText($application)
+    {
+        $entityType = $application->entityDetails->entity_type ?? null;
+
+        $entityTypeMap = [
+            'individual' => 'Individual',
+            'proprietorship' => 'Sole Proprietorship',
+            'partnership' => 'Partnership Firm',
+            'llp' => 'Limited Liability Partnership',
+            'private_company' => 'Private Limited Company',
+            'public_company' => 'Public Limited Company',
+            'cooperative_society' => 'Cooperative Society',
+            'trust' => 'Trust'
+        ];
+
+        return $entityTypeMap[$entityType] ?? 'Entity';
     }
 
     /**
@@ -2968,12 +3119,10 @@ class ApprovalController extends Controller
         $query = Onboarding::with([
             'entityDetails',
             'createdBy',
-            'physicalDocumentChecks.securityChequeDetails' // Updated relationship path
+            'physicalDocumentChecks.securityChequeDetails'
         ])
-            ->whereIn('status', ['distributorship_created', 'completed'])
-            ->orderBy('created_at', 'desc');
+            ->whereIn('status', ['distributorship_created', 'completed']);
 
-        // Optional: Add search/filter by establishment name or distributor code
         if ($search = $request->get('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('distributor_code', 'like', "%{$search}%")
@@ -2983,9 +3132,54 @@ class ApprovalController extends Controller
             });
         }
 
-        $applications = $query->paginate(20);
+        $applications = $query->get(); // Get all, we'll flatten
 
-        return view('mis.list-security-cheques', compact('applications'));
+        // Flatten: One row per security cheque
+        $chequeRows = collect();
+
+        foreach ($applications as $application) {
+            $cheques = $application->physicalDocumentChecks
+                ->flatMap->securityChequeDetails;
+
+            if ($cheques->isEmpty()) {
+                // Add a row even if no cheque (optional)
+                $chequeRows->push([
+                    'application' => $application,
+                    'cheque' => null
+                ]);
+            } else {
+                foreach ($cheques as $cheque) {
+                    $chequeRows->push([
+                        'application' => $application,
+                        'cheque' => $cheque
+                    ]);
+                }
+            }
+        }
+
+        // Pagination on flattened collection
+        $perPage = 20;
+        $currentPage = $request->get('page', 1);
+        $paginatedCheques = new \Illuminate\Pagination\LengthAwarePaginator(
+            $chequeRows->forPage($currentPage, $perPage),
+            $chequeRows->count(),
+            $perPage,
+            $currentPage,
+            ['path' => route('mis.list-security-cheques')]
+        );
+
+        // Preserve search query in pagination links
+        $paginatedCheques->appends($request->query());
+
+        // Export button logic
+        if ($request->has('export')) {
+            return Excel::download(
+                new SecurityChequesExport($chequeRows),
+                'security-cheques-' . now()->format('Y-m-d') . '.xlsx'
+            );
+        }
+
+        return view('mis.list-security-cheques', compact('paginatedCheques'));
     }
 
     public function manageSecurityCheques(Onboarding $application)

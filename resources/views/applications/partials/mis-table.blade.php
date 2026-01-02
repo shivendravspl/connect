@@ -104,7 +104,7 @@ use App\Models\Status;
                             {{-- Document Verified Actions --}}
                             @if (($application->status == 'documents_verified' || 
                                 $application->status == 'physical_docs_pending' || 
-                                $application->status == 'physical_docs_redispatched') && 
+                                $application->status == 'physical_docs_redispatched' || $application->status === 'security_deposit_not_received') && 
                                 $application->physicalDispatch)
                             <li>
                                 <a class="dropdown-item mis-action-btn"

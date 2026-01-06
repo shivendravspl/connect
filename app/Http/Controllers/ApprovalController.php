@@ -2991,8 +2991,7 @@ class ApprovalController extends Controller
         $entityType = $application->entityDetails->entity_type ?? null;
 
         switch ($entityType) {
-            case 'individual':
-            case 'proprietorship':
+            case 'individual_person':
             case 'sole_proprietorship':
                 // For individual/proprietorship, use name from individualDetails
                 return $application->individualDetails->name ?? null;
